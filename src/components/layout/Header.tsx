@@ -134,7 +134,7 @@ const Header: React.FC = () => {
         )}
 
         {/* بخش پایین: منوی ناوبری - فقط دسکتاپ */}
-        <div className="hidden lg:flex justify-between items-center pt-1 border-t border-gray-100">
+        <div className="hidden lg:flex justify-between items-center">
           
           {/* منوی اصلی */}
           <nav>
