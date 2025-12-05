@@ -1,0 +1,2363 @@
+==> src/app/admin/products/[id]/page.tsx <==
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
+
+export default function EditProductPage() {
+  const router = useRouter();
+  const params = useParams();
+  const id = params.id as string;
+  
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    slug: '',
+    description: '',
+    price: '',
+    category: '',
+    stock: '',
+    images: [] as string[],
+    isActive: true
+  });
+
+  useEffect(() => {
+    if (id) {
+      fetchProduct();
+    }
+  }, [id]);
+
+  const fetchProduct = async () => {
+    const res = await fetch(`/api/products/${id}`);
+    const data = await res.json();
+    
+    if (data.success) {
+      const p = data.data;
+      setFormData({
+        name: p.name,
+        slug: p.slug,
+        description: p.description || '',
+        price: p.price.toString(),
+        category: p.category || '',
+        stock: p.stock.toString(),
+        images: p.images || [],
+        isActive: p.isActive
+      });
+    }
+    setLoading(false);
+  };
+
+  const handleChange = (e: any) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    const uploadedUrls: string[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', file);
+
+      try {
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          body: formDataUpload,
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          uploadedUrls.push(data.url);
+        } else {
+          alert(`خطا در آپلود ${file.name}: ${data.message}`);
+        }
+      } catch (error) {
+        alert(`خطا در آپلود ${file.name}`);
+      }
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      images: [...prev.images, ...uploadedUrls]
+    }));
+    setUploading(false);
+  };
+
+  const removeImage = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+
+    const res = await fetch(`/api/products/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...formData,
+        price: Number(formData.price),
+        stock: Number(formData.stock)
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      alert('محصول با موفقیت ویرایش شد!');
+      router.push('/admin/products');
+    } else {
+      alert('خطا: ' + data.message);
+    }
+
+    setSaving(false);
+  };
+
+  if (loading) {
+    return <div className="p-8 text-center">در حال بارگذاری...</div>;
+  }
+
+  return (
+    <div className="min-h-screen p-8 bg-gray-50" dir="rtl">
+      <div className="max-w-2xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">ویرایش محصول</h1>
+          <Link 
+            href="/admin/products"
+            className="text-blue-600 hover:underline"
+          >
+            ← بازگشت به لیست
+          </Link>
+        </div>
+
+        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6 space-y-4">
+          
+          <div>
+            <label className="block font-bold mb-2">نام دستگاه *</label>
+            <input
+              type="text"
+              name="name"
+              required
+              value={formData.name}
+              onChange={handleChange}
+              className="w-full border rounded px-4 py-2"
+            />
+          </div>
+
+          <div>
+            <label className="block font-bold mb-2">Slug *</label>
+            <input
+              type="text"
+              name="slug"
+              required
+              value={formData.slug}
+              onChange={handleChange}
+              className="w-full border rounded px-4 py-2"
+            />
+          </div>
+
+          <div>
+            <label className="block font-bold mb-2">توضیحات</label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              className="w-full border rounded px-4 py-2"
+              rows={4}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block font-bold mb-2">قیمت (تومان) *</label>
+              <input
+                type="number"
+                name="price"
+                required
+                value={formData.price}
+                onChange={handleChange}
+                className="w-full border rounded px-4 py-2"
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold mb-2">موجودی *</label>
+              <input
+                type="number"
+                name="stock"
+                required
+                value={formData.stock}
+                onChange={handleChange}
+                className="w-full border rounded px-4 py-2"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block font-bold mb-2">دسته‌بندی</label>
+            <select
+              name="category"
+              value={formData.category}
+              onChange={handleChange}
+              className="w-full border rounded px-4 py-2"
+            >
+              <option value="">انتخاب کنید</option>
+              <option value="بستنی‌ساز">دستگاه بستنی‌ساز</option>
+              <option value="آبمیوه‌گیری">دستگاه آبمیوه‌گیری</option>
+              <option value="یخ‌ساز">دستگاه یخ‌ساز</option>
+              <option value="فریزر">فریزر صنعتی</option>
+              <option value="یخچال">یخچال صنعتی</option>
+            </select>
+          </div>
+
+          {/* بخش آپلود تصویر */}
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+            <label className="block font-bold mb-2">تصاویر محصول 📸</label>
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={handleImageUpload}
+              disabled={uploading}
+              className="w-full border rounded px-4 py-2 mb-2"
+            />
+            {uploading && (
+              <p className="text-blue-600 mt-2 animate-pulse">⏳ در حال آپلود تصاویر...</p>
+            )}
+            <p className="text-sm text-gray-500">می‌توانید تصاویر جدید اضافه کنید</p>
+          </div>
+
+          {/* نمایش تصاویر */}
+          {formData.images.length > 0 && (
+            <div>
+              <p className="font-bold mb-2">تصاویر محصول ({formData.images.length}):</p>
+              <div className="grid grid-cols-3 gap-4">
+                {formData.images.map((url, index) => (
+                  <div key={index} className="relative group">
+                    <img
+                      src={url}
+                      alt={`تصویر ${index + 1}`}
+                      className="w-full h-32 object-cover rounded border"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="حذف تصویر"
+                    >
+                      ×
+                    </button>
+                    {index === 0 && (
+                      <span className="absolute bottom-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded">
+                        تصویر اصلی
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              name="isActive"
+              checked={formData.isActive}
+              onChange={handleChange}
+              className="ml-2"
+            />
+            <label>محصول فعال باشد</label>
+          </div>
+
+          <div className="flex gap-4 pt-4">
+            <button
+              type="submit"
+              disabled={saving || uploading}
+              className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              {saving ? 'در حال ذخیره...' : uploading ? 'صبر کنید...' : '✓ ذخیره تغییرات'}
+            </button>
+            
+            <Link
+              href="/admin/products"
+              className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg hover:bg-gray-300 text-center flex items-center justify-center"
+            >
+              انصراف
+            </Link>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+==> src/app/admin/products/new/page.tsx <==
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+
+export default function NewProductPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    slug: '',
+    description: '',
+    price: '',
+    category: '',
+    stock: '',
+    images: [] as string[],
+    isActive: true
+  });
+
+  const handleChange = (e: any) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    const uploadedUrls: string[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', file);
+
+      try {
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          body: formDataUpload,
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          uploadedUrls.push(data.url);
+        } else {
+          alert(`خطا در آپلود ${file.name}: ${data.message}`);
+        }
+      } catch (error) {
+        alert(`خطا در آپلود ${file.name}`);
+      }
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      images: [...prev.images, ...uploadedUrls]
+    }));
+    
+    setUploading(false);
+  };
+
+  const removeImage = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    const res = await fetch('/api/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...formData,
+        price: Number(formData.price),
+        stock: Number(formData.stock)
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      alert('محصول با موفقیت اضافه شد!');
+      router.push('/admin/products');
+    } else {
+      alert('خطا: ' + data.message);
+    }
+
+    setLoading(false);
+  };
+
+  return (
+    <div className="min-h-screen p-8 bg-gray-50" dir="rtl">
+      <div className="max-w-2xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">افزودن دستگاه جدید</h1>
+          <Link 
+            href="/admin/products"
+            className="text-blue-600 hover:underline"
+          >
+            ← بازگشت به لیست
+          </Link>
+        </div>
+
+        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6 space-y-4">
+          
+          <div>
+            <label className="block font-bold mb-2">نام دستگاه *</label>
+            <input
+              type="text"
+              name="name"
+              required
+              value={formData.name}
+              onChange={handleChange}
+              className="w-full border rounded px-4 py-2"
+              placeholder="مثال: دستگاه بستنی ساز صنعتی"
+            />
+          </div>
+
+          <div>
+            <label className="block font-bold mb-2">Slug (نام انگلیسی) *</label>
+            <input
+              type="text"
+              name="slug"
+              required
+              value={formData.slug}
+              onChange={handleChange}
+              className="w-full border rounded px-4 py-2"
+              placeholder="مثال: industrial-ice-cream-maker"
+            />
+          </div>
+
+          <div>
+            <label className="block font-bold mb-2">توضیحات</label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              className="w-full border rounded px-4 py-2"
+              rows={4}
+              placeholder="مشخصات فنی، قابلیت‌ها و ویژگی‌های دستگاه..."
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block font-bold mb-2">قیمت (تومان) *</label>
+              <input
+                type="number"
+                name="price"
+                required
+                value={formData.price}
+                onChange={handleChange}
+                className="w-full border rounded px-4 py-2"
+                placeholder="25000000"
+              />
+            </div>
+
+            <div>
+              <label className="block font-bold mb-2">موجودی *</label>
+              <input
+                type="number"
+                name="stock"
+                required
+                value={formData.stock}
+                onChange={handleChange}
+                className="w-full border rounded px-4 py-2"
+                placeholder="10"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block font-bold mb-2">دسته‌بندی</label>
+            <select
+              name="category"
+              value={formData.category}
+              onChange={handleChange}
+              className="w-full border rounded px-4 py-2"
+            >
+              <option value="">انتخاب کنید</option>
+              <option value="بستنی‌ساز">دستگاه بستنی‌ساز</option>
+              <option value="آبمیوه‌گیری">دستگاه آبمیوه‌گیری</option>
+              <option value="یخ‌ساز">دستگاه یخ‌ساز</option>
+              <option value="فریزر">فریزر صنعتی</option>
+              <option value="یخچال">یخچال صنعتی</option>
+            </select>
+          </div>
+
+          {/* بخش آپلود تصویر */}
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+            <label className="block font-bold mb-2">تصاویر محصول 📸</label>
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={handleImageUpload}
+              disabled={uploading}
+              className="w-full border rounded px-4 py-2 mb-2"
+            />
+            {uploading && (
+              <p className="text-blue-600 mt-2 animate-pulse">⏳ در حال آپلود تصاویر...</p>
+            )}
+            <p className="text-sm text-gray-500">می‌توانید چند تصویر انتخاب کنید</p>
+          </div>
+
+          {/* نمایش تصاویر آپلود شده */}
+          {formData.images.length > 0 && (
+            <div>
+              <p className="font-bold mb-2">تصاویر آپلود شده ({formData.images.length}):</p>
+              <div className="grid grid-cols-3 gap-4">
+                {formData.images.map((url, index) => (
+                  <div key={index} className="relative group">
+                    <img
+                      src={url}
+                      alt={`تصویر ${index + 1}`}
+                      className="w-full h-32 object-cover rounded border"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="حذف تصویر"
+                    >
+                      ×
+                    </button>
+                    {index === 0 && (
+                      <span className="absolute bottom-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded">
+                        تصویر اصلی
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              name="isActive"
+              checked={formData.isActive}
+              onChange={handleChange}
+              className="ml-2"
+            />
+            <label>محصول فعال باشد</label>
+          </div>
+
+          <div className="flex gap-4 pt-4">
+            <button
+              type="submit"
+              disabled={loading || uploading}
+              className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              {loading ? 'در حال ذخیره...' : uploading ? 'صبر کنید...' : '✓ ذخیره محصول'}
+            </button>
+            
+            <Link
+              href="/admin/products"
+              className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg hover:bg-gray-300 text-center flex items-center justify-center"
+            >
+              انصراف
+            </Link>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+==> src/app/admin/products/page.tsx <==
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+
+export default function AdminProductsPage() {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    const res = await fetch('/api/products');
+    const data = await res.json();
+    setProducts(data.data || []);
+    setLoading(false);
+  };
+
+  const deleteProduct = async (id: string, name: string) => {
+    if (!confirm(`آیا از حذف "${name}" مطمئن هستید؟`)) return;
+    
+    const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    
+    if (data.success) {
+      alert('محصول حذف شد');
+      fetchProducts();
+    } else {
+      alert('خطا در حذف');
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  if (loading) {
+    return <div className="p-8 text-center">در حال بارگذاری...</div>;
+  }
+
+  return (
+    <div className="min-h-screen p-8 bg-gray-50" dir="rtl">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">مدیریت محصولات</h1>
+          
+          <Link 
+            href="/admin/products/new"
+            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700"
+          >
+            + افزودن محصول جدید
+          </Link>
+        </div>
+
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="px-6 py-3 text-right">تصویر</th>
+                <th className="px-6 py-3 text-right">نام</th>
+                <th className="px-6 py-3 text-right">قیمت</th>
+                <th className="px-6 py-3 text-right">موجودی</th>
+                <th className="px-6 py-3 text-right">دسته</th>
+                <th className="px-6 py-3 text-right">وضعیت</th>
+                <th className="px-6 py-3 text-center">عملیات</th>
+              </tr>
+            </thead>
+            <tbody>
+              {products.map((product: any) => (
+                <tr key={product._id} className="border-t hover:bg-gray-50">
+                  <td className="px-6 py-4">
+                    {product.images && product.images.length > 0 ? (
+                      <img 
+                        src={product.images[0]} 
+                        alt={product.name}
+                        className="w-16 h-16 object-cover rounded"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center">
+                        <span className="text-gray-400">📦</span>
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 font-medium">{product.name}</td>
+                  <td className="px-6 py-4">
+                    {product.price.toLocaleString('fa-IR')} تومان
+                  </td>
+                  <td className="px-6 py-4">{product.stock}</td>
+                  <td className="px-6 py-4">{product.category || '-'}</td>
+                  <td className="px-6 py-4">
+                    <span className={`px-2 py-1 rounded text-sm ${
+                      product.isActive 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {product.isActive ? 'فعال' : 'غیرفعال'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    <Link
+                      href={`/admin/products/${product._id}`}
+                      className="text-blue-600 hover:underline ml-4"
+                    >
+                      ویرایش
+                    </Link>
+                    <button
+                      onClick={() => deleteProduct(product._id, product.name)}
+                      className="text-red-600 hover:underline"
+                    >
+                      حذف
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {products.length === 0 && (
+          <p className="text-center text-gray-500 mt-8">
+            هیچ محصولی وجود ندارد
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+==> src/app/api/products/[id]/route.ts <==
+import { NextRequest, NextResponse } from 'next/server';
+import dbConnect from '@/lib/db';
+import Product from '@/models/Product';
+
+// دریافت یک محصول
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    await dbConnect();
+    const product = await Product.findById(id);
+    
+    if (!product) {
+      return NextResponse.json({ 
+        success: false, 
+        message: 'محصول یافت نشد' 
+      }, { status: 404 });
+    }
+    
+    return NextResponse.json({ success: true, data: product });
+  } catch (error) {
+    return NextResponse.json({ 
+      success: false, 
+      message: 'خطا در دریافت محصول' 
+    }, { status: 500 });
+  }
+}
+
+// ویرایش محصول
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    await dbConnect();
+    const body = await request.json();
+    
+    const product = await Product.findByIdAndUpdate(
+      id,
+      body,
+      { new: true, runValidators: true }
+    );
+    
+    if (!product) {
+      return NextResponse.json({ 
+        success: false, 
+        message: 'محصول یافت نشد' 
+      }, { status: 404 });
+    }
+    
+    return NextResponse.json({ success: true, data: product });
+  } catch (error: any) {
+    return NextResponse.json({ 
+      success: false, 
+      message: error.message 
+    }, { status: 400 });
+  }
+}
+
+// حذف محصول
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    await dbConnect();
+    const product = await Product.findByIdAndDelete(id);
+    
+    if (!product) {
+      return NextResponse.json({ 
+        success: false, 
+        message: 'محصول یافت نشد' 
+      }, { status: 404 });
+    }
+    
+    return NextResponse.json({ 
+      success: true, 
+      message: 'محصول حذف شد' 
+    });
+  } catch (error) {
+    return NextResponse.json({ 
+      success: false, 
+      message: 'خطا در حذف محصول' 
+    }, { status: 500 });
+  }
+}
+==> src/app/api/products/route.ts <==
+import { NextRequest, NextResponse } from 'next/server';
+import dbConnect from '@/lib/db';
+import Product from '@/models/Product';
+
+// دریافت همه محصولات
+export async function GET() {
+  try {
+    await dbConnect();
+    const products = await Product.find({ isActive: true });
+    
+    return NextResponse.json({ 
+      success: true, 
+      count: products.length,
+      data: products 
+    });
+  } catch (error) {
+    return NextResponse.json({ 
+      success: false, 
+      message: 'خطا در دریافت محصولات' 
+    }, { status: 500 });
+  }
+}
+
+// ساخت محصول جدید
+export async function POST(request: NextRequest) {
+  try {
+    await dbConnect();
+    const body = await request.json();
+    
+    const product = await Product.create(body);
+    
+    return NextResponse.json({ 
+      success: true, 
+      data: product 
+    }, { status: 201 });
+  } catch (error: any) {
+    return NextResponse.json({ 
+      success: false, 
+      message: error.message || 'خطا در ساخت محصول' 
+    }, { status: 400 });
+  }
+}
+==> src/app/api/test/route.ts <==
+import { NextResponse } from 'next/server';
+import dbConnect from '@/lib/db';
+
+export async function GET() {
+  try {
+    await dbConnect();
+    return NextResponse.json({ 
+      success: true, 
+      message: '🎉 دیتابیس متصل شد!' 
+    });
+  } catch (error) {
+    return NextResponse.json({ 
+      success: false, 
+      message: 'خطا در اتصال به دیتابیس' 
+    }, { status: 500 });
+  }
+}
+==> src/app/api/upload/route.ts <==
+import { NextRequest, NextResponse } from 'next/server';
+import cloudinary from '@/lib/cloudinary';
+
+export async function POST(request: NextRequest) {
+  try {
+    const formData = await request.formData();
+    const file = formData.get('file') as File;
+
+    if (!file) {
+      return NextResponse.json(
+        { success: false, message: 'فایلی انتخاب نشده' },
+        { status: 400 }
+      );
+    }
+
+    // تبدیل File به Buffer
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+
+    // آپلود به Cloudinary
+    const result: any = await new Promise((resolve, reject) => {
+      cloudinary.uploader.upload_stream(
+        {
+          folder: 'ice-center-products', // پوشه در Cloudinary
+          resource_type: 'image',
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      ).end(buffer);
+    });
+
+    return NextResponse.json({
+      success: true,
+      url: result.secure_url,
+    });
+  } catch (error: any) {
+    console.error('خطا در آپلود:', error);
+    return NextResponse.json(
+      { success: false, message: error.message },
+      { status: 500 }
+    );
+  }
+}
+==> src/app/globals.css <==
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #ffffff;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #fafafa;
+    --foreground: #ffffff;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-vazir), sans-serif;
+}
+
+.font-vazir {
+  font-family: var(--font-vazir), sans-serif;
+}
+==> src/app/layout.tsx <==
+import type { Metadata } from "next";
+import { Vazirmatn } from "next/font/google";
+import "./globals.css";
+import TopBanner from "@/components/layout/TopBar";
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
+
+// تنظیم فونت وزیر
+const vazir = Vazirmatn({
+  subsets: ["arabic"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-vazir",
+  display: "swap",
+});
+
+export const metadata: Metadata = {
+  title: "آیس سنتر | تجهیزات صنعتی بستنی و یخچال",
+  description: "فروشگاه تخصصی دستگاه بستنی‌ساز، یخ‌ساز، آبمیوه‌گیری، فریزر و یخچال صنعتی",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="fa" dir="rtl">
+      <body className={`${vazir.variable} font-vazir antialiased bg-gray-50`}>
+        <TopBanner />
+        <Header />
+        <main className="min-h-screen">
+          {children}
+        </main>
+        <Footer />
+      </body>
+    </html>
+  );
+}
+==> src/app/page.tsx <==
+import BannerSection from '@/components/home/BannerSection';
+import CategorySection from '@/components/home/CategorySection';
+import HeroSlider from '@/components/home/HeroSlider';
+import AmazingOfferCarousel from '@/components/home/OfferCarousel';
+
+async function getProducts() {
+  const res = await fetch('http://localhost:3000/api/products', {
+    cache: 'no-store'
+  });
+  
+  if (!res.ok) return [];
+  
+  const data = await res.json();
+  return data.data || [];
+}
+
+const singleBanner = [
+  {
+    id: 1,
+    image: {
+      desktop: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1764054358/banner_SingleFullWidthBanner_yk8jye_a6284428-1eb1-497b-bcbc-d9e4f93199c8_skkgva.png',
+      mobile: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1764054358/banner_SingleFullWidthBanner_yk8jye_a6284428-1eb1-497b-bcbc-d9e4f93199c8_skkgva.png'
+    },
+    link: '/special-offer',
+    alt: 'Special Offer Banner'
+  }
+];
+
+export default async function Home() {
+  const products = await getProducts();
+
+  return (
+    <>
+      {/* اسلایدر اصلی */}
+      <HeroSlider />
+
+      {/* بخش دسته‌بندی‌ها */}
+      <CategorySection />
+
+      {/* تخفیف‌های ویژه */}
+      <AmazingOfferCarousel />
+
+      {/* بخش بنرها */}
+      <BannerSection 
+        banners={singleBanner}
+        heightClass="h-[130px] md:h-[250px] lg:h-[180px] xl:h-[210px]"
+      />
+
+      {/* بقیه محتوا */}
+      <main className="min-h-screen p-8" dir="rtl">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-4xl font-bold mb-2 text-center">
+            🍦 فروشگاه آیس سنتر
+          </h1>
+          <p className="text-center text-gray-600 mb-8">
+            تجهیزات و دستگاه‌های صنعتی بستنی، آبمیوه‌گیری و یخ‌سازی
+          </p>
+
+          {products.length === 0 ? (
+            <p className="text-center text-gray-500">
+              هنوز محصولی وجود ندارد
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {products.map((product: any) => (
+                <div 
+                  key={product._id} 
+                  className="border rounded-lg overflow-hidden hover:shadow-xl transition-shadow bg-white"
+                >
+                  {product.images && product.images.length > 0 ? (
+                    <img 
+                      src={product.images[0]} 
+                      alt={product.name}
+                      className="w-full h-56 object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-56 bg-gray-200 flex items-center justify-center">
+                      <span className="text-gray-400 text-4xl">📦</span>
+                    </div>
+                  )}
+                  
+                  <div className="p-4">
+                    {product.category && (
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                        {product.category}
+                      </span>
+                    )}
+                    
+                    <h3 className="font-bold text-lg mb-2 mt-2">
+                      {product.name}
+                    </h3>
+                    
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                      {product.description || 'بدون توضیحات'}
+                    </p>
+                    
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-xl font-bold text-blue-600">
+                        {product.price.toLocaleString('fa-IR')} تومان
+                      </span>
+                    </div>
+                    
+                    <button className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">
+                      🛒 افزودن به سبد
+                    </button>
+                    
+                    <p className="text-xs text-gray-500 mt-2 text-center">
+                      موجودی: {product.stock} عدد
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </main>
+    </>
+  );
+}
+==> src/components/home/BannerSection.tsx <==
+'use client';
+
+import React from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+
+interface Banner {
+  id: number;
+  image: {
+    mobile: string;
+    desktop: string;
+  };
+  link: string;
+  alt: string;
+}
+
+interface BannerSectionProps {
+  banners: Banner[];
+  heightClass?: string;
+}
+
+const BannerSection: React.FC<BannerSectionProps> = ({
+  banners,
+  heightClass = 'h-[200px] md:h-[300px] lg:h-[350px]',
+}) => {
+  
+  if (banners.length === 0) return null;
+
+  // تشخیص تعداد ستون
+  const columns = banners.length;
+  const gridClass = {
+    1: 'grid-cols-1',
+    2: 'md:grid-cols-2',
+    3: 'md:grid-cols-3',
+  }[Math.min(columns, 3)] || 'md:grid-cols-2';
+
+  return (
+    <section className="w-full bg-white py-6 md:py-8">
+      <div className="max-w-[1600px] mx-auto px-4">
+        
+        <div className={`grid grid-cols-1 ${gridClass} gap-4`}>
+          {banners.map((banner) => (
+            <Link
+              key={banner.id}
+              href={banner.link}
+              className="group block overflow-hidden rounded-xl shadow-sm hover:shadow-md transition-all duration-300"
+            >
+              {/* تصویر موبایل */}
+              <div className={`md:hidden relative w-full ${heightClass}`}>
+                <Image
+                  src={banner.image.mobile}
+                  alt={banner.alt}
+                  fill
+                  className="object-contain group-hover:scale-105 transition-transform duration-500"
+                  sizes="100vw"
+                />
+              </div>
+
+              {/* تصویر دسکتاپ/تبلت */}
+              <div className={`hidden md:block relative w-full ${heightClass}`}>
+                <Image
+                  src={banner.image.desktop}
+                  alt={banner.alt}
+                  fill
+                  className="group-hover:scale-105 transition-transform duration-500"
+                  sizes="(max-width: 1024px) 50vw, 33vw"
+                />
+              </div>
+            </Link>
+          ))}
+        </div>
+
+      </div>
+    </section>
+  );
+};
+
+export default BannerSection;
+==> src/components/home/CategorySection.tsx <==
+'use client';
+
+import React from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Navigation, Autoplay } from 'swiper/modules';
+
+// Import Swiper styles
+import 'swiper/css';
+import 'swiper/css/navigation';
+
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  image: string;
+}
+
+const CategorySection: React.FC = () => {
+  const categories: Category[] = [
+    {
+      id: 1,
+      name: 'دستگاه بستنی‌ساز',
+      slug: 'ice-cream-maker',
+      image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999156/711Jw2d2LuL_jwsd9x.jpg'
+    },
+    {
+      id: 2,
+      name: 'دستگاه یخ‌ساز',
+      slug: 'ice-maker',
+      image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999174/yakhsaz-50kg-1232_adlyut.jpg'
+    },
+    {
+      id: 3,
+      name: 'فریزر صنعتی',
+      slug: 'freezer',
+      image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999204/001-min-2_ip52ev.jpg'
+    },
+    {
+      id: 4,
+      name: 'یخچال صنعتی',
+      slug: 'refrigerator',
+      image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999204/001-min-2_ip52ev.jpg'
+    },
+    {
+      id: 5,
+      name: 'آبمیوه‌گیر',
+      slug: 'juice-maker',
+      image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999218/dc2c39_kz3wpy.jpg'
+    },
+    {
+      id: 6,
+      name: 'قطعات یدکی',
+      slug: 'spare-parts',
+      image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999349/cp401-404-mobile-430in430-3_scz9sw.png'
+    },
+    {
+      id: 7,
+      name: 'لوازم جانبی',
+      slug: 'accessories',
+      image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999349/D9_81_D8_B1_DB_8C_D8_B2-_D8_AF_D8_B1_D8_A7_DB_8C_D8_B1-_D8_AF_D9_87-_DA_A9_D8_B4_D9_88-_D8_A2_D8_B1_DB_8C_D8_A7-_D8_AA_D8_AC_D9_87_DB_8C_D8_B2_D8_A7_D8_AA_kprigf.jpg'
+    },
+    {
+      id: 8,
+      name: 'تجهیزات کافی‌شاپ',
+      slug: 'cafe-equipment',
+      image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999309/D9_82_D9_87_D9_88_D9_87-_D8_B3_D8_A7_D8_B2-_DA_A9_D8_A7_D9_81_DB_8C-_D8_B4_D8_A7_D9_BE-_D8_AF_D9_88-_DA_AF_D8_B1_D9_88_D9_BE-_D9_81_D8_A7_D8_A6_D9_85_D8_A7-_D9_85_D8_AF_D9_84-Dieci-A2-Tall_i9vkgd.jpg'
+    },
+  ];
+
+  return (
+    <section className="w-full bg-white py-8 md:py-12">
+      <div className="max-w-[1600px] mx-auto px-4">
+        
+        {/* اسلایدر دسته‌بندی‌ها */}
+        <div className="relative">
+          <Swiper
+            modules={[Navigation, Autoplay]}
+            spaceBetween={16}
+            slidesPerView={3}
+            navigation={{
+              nextEl: '.category-button-next',
+              prevEl: '.category-button-prev',
+            }}
+            autoplay={{
+              delay: 3500,
+              disableOnInteraction: true,
+              pauseOnMouseEnter: true,
+            }}
+            breakpoints={{
+              640: {
+                slidesPerView: 4,
+                spaceBetween: 20,
+              },
+              768: {
+                slidesPerView: 5,
+                spaceBetween: 24,
+              },
+              1024: {
+                slidesPerView: 7,
+                spaceBetween: 24,
+              },
+              1280: {
+                slidesPerView: 8,
+                spaceBetween: 24,
+              },
+            }}
+            loop={categories.length > 8}
+            className="category-slider"
+          >
+            {categories.map((category) => (
+              <SwiperSlide key={category.id}>
+                <Link
+                  href={`/category/${category.slug}`}
+                  className="group flex flex-col items-center"
+                >
+                  {/* دایره با 2 بوردر */}
+                  <div className="relative mb-3">
+                    
+                    {/* بوردر میانی (Ring دوم) */}
+                    <div className="relative w-20 h-20 md:w-24 md:h-24 lg:w-30 lg:h-30 rounded-full border-3 border-sky-500 group-hover:border-sky-600 transition-all duration-300 bg-white">
+                      
+                      {/* بوردر داخلی */}
+                      <div className="absolute inset-1 rounded-full border-2 border-gray-200 transition-all duration-300 overflow-hidden">
+                        
+                        {/* تصویر */}
+                        <Image
+                          src={category.image}
+                          alt={category.name}
+                          fill
+                          className="object-cover scale-65 group-hover:scale-75 transition-transform duration-300"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Badge تعداد */}
+                    <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-6 h-6 lg:w-7 lg:h-7 rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                      12
+                    </div>
+                  </div>
+
+                  {/* نام دسته */}
+                  <span className="text-xs md:text-sm lg:text-base font-medium text-gray-700 text-center group-hover:text-blue-600 transition-colors duration-300 line-clamp-2 px-1">
+                    {category.name}
+                  </span>
+                </Link>
+              </SwiperSlide>
+            ))}
+          </Swiper>
+
+          {/* دکمه‌های Navigation - فقط دسکتاپ و اگه بیش از 8 تا باشه */}
+          {categories.length > 8 && (
+            <>
+              <button 
+                className="category-button-prev hidden lg:flex absolute -right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white hover:bg-blue-50 rounded-full items-center justify-center cursor-pointer shadow-lg transition-all hover:scale-110 border border-gray-200"
+                aria-label="دسته قبلی"
+              >
+                <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+
+              <button 
+                className="category-button-next hidden lg:flex absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white hover:bg-blue-50 rounded-full items-center justify-center cursor-pointer shadow-lg transition-all hover:scale-110 border border-gray-200"
+                aria-label="دسته بعدی"
+              >
+                <svg className="w-6 h-6 text-gray-700 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default CategorySection;
+==> src/components/home/HeroSlider.tsx <==
+'use client';
+
+import React from 'react';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Navigation, Pagination, Autoplay, EffectFade } from 'swiper/modules';
+import Image from 'next/image';
+import Link from 'next/link';
+
+// Import Swiper styles
+import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
+import 'swiper/css/effect-fade';
+
+interface Slide {
+  id: number;
+  desktopImage: string;
+  mobileImage: string;
+  link: string;
+  alt: string;
+}
+
+const HeroSlider: React.FC = () => {
+  const slides: Slide[] = [
+    {
+      id: 1,
+      desktopImage: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763996646/banner_8aea786e-9d20-4118-85ec-bcd9c03cdd1f_umupvr.jpg',
+      mobileImage: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763996646/banner_8aea786e-9d20-4118-85ec-bcd9c03cdd1f_umupvr.jpg',
+      link: '/offers/ice-cream-maker',
+      alt: 'تخفیف ویژه دستگاه بستنی ساز'
+    },
+    {
+      id: 2,
+      desktopImage: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763997961/20250325151925_336_vsdvza.jpg',
+      mobileImage: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763997961/20250325151925_336_vsdvza.jpg',
+      link: '/offers/freezer',
+      alt: 'فریزر صنعتی با گارانتی'
+    },
+    {
+      id: 3,
+      desktopImage: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763996706/20190226173421_988_mp1urf.jpg',
+      mobileImage: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763996706/20190226173421_988_mp1urf.jpg',
+      link: '/offers/ice-maker',
+      alt: 'دستگاه یخ‌ساز حرفه‌ای'
+    },
+  ];
+
+  return (
+    <div className="w-full relative">
+      <Swiper
+        modules={[Navigation, Pagination, Autoplay, EffectFade]}
+        spaceBetween={0}
+        slidesPerView={1}
+        navigation={{
+          nextEl: '.swiper-button-next-custom',
+          prevEl: '.swiper-button-prev-custom',
+        }}
+        pagination={{
+          clickable: true,
+          el: '.swiper-pagination-custom',
+        }}
+        autoplay={{
+          delay: 4000,
+          disableOnInteraction: false,
+          pauseOnMouseEnter: true,
+        }}
+        effect="fade"
+        fadeEffect={{
+          crossFade: true
+        }}
+        loop={true}
+        className="hero-slider"
+      >
+        {slides.map((slide) => (
+          <SwiperSlide key={slide.id}>
+            <Link href={slide.link} className="block relative">
+              {/* تصویر دسکتاپ - ارتفاع ثابت */}
+              <div className="hidden md:block relative w-full h-[380px]">
+                <Image
+                  src={slide.desktopImage}
+                  alt={slide.alt}
+                  fill
+                  className="object-cover"
+                  priority={slide.id === 1}
+                  sizes="100vw"
+                />
+              </div>
+
+              {/* تصویر موبایل - ارتفاع کوتاه‌تر */}
+              <div className="md:hidden relative w-full h-[200px]">
+                <Image
+                  src={slide.mobileImage}
+                  alt={slide.alt}
+                  fill
+                  className="object-cover"
+                  priority={slide.id === 1}
+                  sizes="100vw"
+                />
+              </div>
+            </Link>
+          </SwiperSlide>
+        ))}
+
+        {/* دکمه‌های Next/Prev - فقط دسکتاپ */}
+        <div className="swiper-button-prev-custom hidden md:flex absolute top-1/2 right-4 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 hover:bg-white rounded-full items-center justify-center cursor-pointer shadow-lg transition-all hover:scale-110">
+          <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
+        <div className="swiper-button-next-custom hidden md:flex absolute top-1/2 left-4 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 hover:bg-white rounded-full items-center justify-center cursor-pointer shadow-lg transition-all hover:scale-110">
+          <svg className="w-6 h-6 text-gray-800 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
+
+        {/* Pagination Dots */}
+        <div className="swiper-pagination-custom absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-2"></div>
+      </Swiper>
+    </div>
+  );
+};
+
+export default HeroSlider;
+==> src/components/home/OfferCarousel.tsx <==
+'use client';
+
+import React, { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
+import useEmblaCarousel from 'embla-carousel-react';
+import Autoplay from 'embla-carousel-autoplay';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
+// --- Mock Data ---
+const products = [
+  {
+    id: 1,
+    title: 'دستگاه بستنی ساز خانگی مدل IC-200',
+    price: 12500000,
+    oldPrice: 15000000,
+    discount: 17,
+    image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999156/711Jw2d2LuL_jwsd9x.jpg',
+  },
+  {
+    id: 2,
+    title: 'دستگاه یخ ساز صنعتی 50 کیلوگرمی',
+    price: 35000000,
+    oldPrice: 42000000,
+    discount: 17,
+    image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999174/yakhsaz-50kg-1232_adlyut.jpg',
+  },
+  {
+    id: 3,
+    title: 'فریزر صنعتی 6 درب مدل F-600',
+    price: 28000000,
+    oldPrice: 35000000,
+    discount: 20,
+    image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999204/001-min-2_ip52ev.jpg',
+  },
+  {
+    id: 4,
+    title: 'دستگاه آبمیوه گیری حرفه‌ای',
+    price: 8500000,
+    oldPrice: 11000000,
+    discount: 23,
+    image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999218/dc2c39_kz3wpy.jpg',
+  },
+  {
+    id: 5,
+    title: 'یخچال ویترینی دو درب صنعتی',
+    price: 22000000,
+    oldPrice: 28000000,
+    discount: 21,
+    image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999204/001-min-2_ip52ev.jpg',
+  },
+  {
+    id: 6,
+    title: 'قهوه ساز دو گروپ فایما',
+    price: 45000000,
+    oldPrice: 55000000,
+    discount: 18,
+    image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999309/D9_82_D9_87_D9_88_D9_87-_D8_B3_D8_A7_D8_B2-_DA_A9_D8_A7_D9_81_DB_8C-_D8_B4_D8_A7_D9_BE-_D8_AF_D9_88-_DA_AF_D8_B1_D9_88_D9_BE-_D9_81_D8_A7_D8_A6_D9_85_D8_A7-_D9_85_D8_AF_D9_84-Dieci-A2-Tall_i9vkgd.jpg',
+  },
+  {
+    id: 7,
+    title: 'بستنی ساز صنعتی 3 فاز',
+    price: 68000000,
+    oldPrice: 85000000,
+    discount: 20,
+    image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999156/711Jw2d2LuL_jwsd9x.jpg',
+  },
+  {
+    id: 8,
+    title: 'قطعات یدکی دستگاه بستنی ساز',
+    price: 1500000,
+    oldPrice: 2000000,
+    discount: 25,
+    image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999349/cp401-404-mobile-430in430-3_scz9sw.png',
+  }
+];
+
+const AmazingOfferCarousel = () => {
+  // --- Timer Logic ---
+  const [time, setTime] = useState({ hours: 14, minutes: 57, seconds: 27 });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTime((prev) => {
+        let { hours, minutes, seconds } = prev;
+        if (seconds > 0) seconds--;
+        else {
+          seconds = 59;
+          if (minutes > 0) minutes--;
+          else {
+            minutes = 59;
+            if (hours > 0) hours--;
+          }
+        }
+        return { hours, minutes, seconds };
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatTime = (num: number) => num.toString().padStart(2, '0');
+
+  // --- Embla Carousel Setup ---
+  const [emblaRef, emblaApi] = useEmblaCarousel(
+    {
+      align: 'start',
+      direction: 'rtl',
+      slidesToScroll: 1,
+      containScroll: 'trimSnaps',
+    },
+    [Autoplay({ delay: 4000, stopOnInteraction: false })]
+  );
+
+  const [canScrollPrev, setCanScrollPrev] = useState(false);
+  const [canScrollNext, setCanScrollNext] = useState(false);
+
+  const scrollPrev = useCallback(() => {
+    if (emblaApi) emblaApi.scrollPrev();
+  }, [emblaApi]);
+
+  const scrollNext = useCallback(() => {
+    if (emblaApi) emblaApi.scrollNext();
+  }, [emblaApi]);
+
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setCanScrollPrev(emblaApi.canScrollPrev());
+    setCanScrollNext(emblaApi.canScrollNext());
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    onSelect();
+    emblaApi.on('select', onSelect);
+    emblaApi.on('reInit', onSelect);
+  }, [emblaApi, onSelect]);
+
+  return (
+    <div className="w-full max-w-[1600px] mx-auto mt-2 mb-4 px-4 font-vazir" dir="rtl">
+      
+      <div className="bg-gradient-to-l from-sky-500 to-sky-600 rounded-2xl py-4 px-2 pr-0 flex h-[300px] relative overflow-hidden shadow-xl">
+        
+        {/* --- Right Side: Banner & Timer --- */}
+        <div className="w-[160px] sm:w-[190px] flex flex-col items-center justify-center text-white shrink-0 z-10 relative">
+          
+          {/* Title */}
+          <div className="text-center mb-4">
+            <h3 className="text-lg font-extrabold leading-snug">پیشنهاد</h3>
+            <h3 className="text-lg font-extrabold leading-snug">شگفت</h3>
+            <h3 className="text-lg font-extrabold leading-snug">انگیز!</h3>
+          </div>
+
+          {/* Timer */}
+          <div className="flex gap-1 mb-4" dir="ltr">
+            <div className="bg-white text-sky-600 w-8 h-8 rounded flex items-center justify-center font-bold text-sm shadow-md">
+              {formatTime(time.seconds)}
+            </div>
+            <span className="text-white font-bold self-center">:</span>
+            <div className="bg-white text-sky-600 w-8 h-8 rounded flex items-center justify-center font-bold text-sm shadow-md">
+              {formatTime(time.minutes)}
+            </div>
+            <span className="text-white font-bold self-center">:</span>
+            <div className="bg-white text-sky-600 w-8 h-8 rounded flex items-center justify-center font-bold text-sm shadow-md">
+              {formatTime(time.hours)}
+            </div>
+          </div>
+
+          {/* Icon */}
+          <div className="mb-4">
+            <div className="w-20 h-20 bg-white/30 rounded-full flex items-center justify-center">
+              <Image 
+                src="https://res.cloudinary.com/dxooxiqcz/image/upload/v1764050064/pngtree-snowflake-on-blue-ice-icon-vector-png-image_6699545_fknw7o.png" 
+                alt="Offer Icon" 
+                width={95} 
+                height={95} 
+                className="object-contain"
+              />
+            </div>
+          </div>
+
+          {/* See All Link */}
+          <Link href="/offers" className="flex items-center text-sm font-medium hover:text-gray-200 transition-colors">
+            مشاهده همه
+            <ChevronLeft size={16} className="mr-1" />
+          </Link>
+        </div>
+
+        {/* --- Left Side: Embla Carousel --- */}
+        <div className="flex-1 overflow-hidden rounded-xl bg-sky-600 relative">
+          
+          {/* Embla Container */}
+          <div className="overflow-hidden h-full" ref={emblaRef}>
+            <div className="flex h-full gap-2">
+              {products.map((product) => (
+                <div 
+                  key={product.id} 
+                  className="flex-[0_0_170px] sm:flex-[0_0_200px] bg-white first:rounded-r-xl last:rounded-l-xl"
+                >
+                  <Link href={`/product/${product.id}`} className="flex flex-col h-full p-4 hover:shadow-lg transition-shadow duration-200">
+                    
+                    {/* Image */}
+                    <div className="relative w-full h-[140px] mb-4">
+                      <Image 
+                        src={product.image} 
+                        alt={product.title} 
+                        fill 
+                        className="object-contain"
+                      />
+                    </div>
+
+                    {/* Title */}
+                    <h3 className="text-[13px] text-gray-700 font-medium leading-6 line-clamp-2 mb-auto h-[48px]">
+                      {product.title}
+                    </h3>
+
+                    {/* Price Section */}
+                    <div className="mt-3">
+                      {/* Row 1: Old Price & Badge */}
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="bg-sky-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
+                          {product.discount}%
+                        </div>
+                        <del className="text-gray-400 text-xs font-light">
+                          {product.oldPrice.toLocaleString('fa-IR')}
+                        </del>
+                      </div>
+
+                      {/* Row 2: Current Price */}
+                      <div className="flex items-center justify-end gap-1">
+                        <span className="text-gray-800 font-bold text-base">
+                          {product.price.toLocaleString('fa-IR')}
+                        </span>
+                        <span className="text-gray-600 text-[10px]">تومان</span>
+                      </div>
+                    </div>
+                    
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* --- Navigation Buttons --- */}
+          <button 
+            onClick={scrollPrev}
+            disabled={!canScrollPrev}
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-md text-gray-500 hover:text-gray-900 transition-all disabled:opacity-0 disabled:cursor-default"
+            aria-label="قبلی"
+          >
+            <ChevronLeft size={24} />
+          </button>
+
+          <button 
+            onClick={scrollNext}
+            disabled={!canScrollNext}
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-md text-gray-500 hover:text-gray-900 transition-all disabled:opacity-0 disabled:cursor-default"
+            aria-label="بعدی"
+          >
+            <ChevronRight size={24} />
+          </button>
+
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AmazingOfferCarousel;
+==> src/components/layout/Footer.tsx <==
+import React from 'react';
+import Link from 'next/link';
+import { Phone, Mail, MapPin, Instagram, Send } from 'lucide-react';
+
+const Footer: React.FC = () => {
+  return (
+    <footer className="bg-gray-900 text-gray-300 mt-20">
+      <div className="max-w-[1600px] mx-auto px-4 py-12">
+        
+        {/* بخش اصلی */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+          
+          {/* درباره ما */}
+          <div>
+            <h3 className="text-white font-bold text-lg mb-4">آیس سنتر</h3>
+            <p className="text-sm leading-7">
+              فروشگاه تخصصی تجهیزات صنعتی بستنی، یخ‌سازی و سرمایش. 
+              ارائه دستگاه‌های با کیفیت با گارانتی معتبر.
+            </p>
+          </div>
+
+          {/* دسترسی سریع */}
+          <div>
+            <h3 className="text-white font-bold text-lg mb-4">دسترسی سریع</h3>
+            <ul className="space-y-2 text-sm">
+              <li><Link href="/about" className="hover:text-white transition">درباره ما</Link></li>
+              <li><Link href="/contact" className="hover:text-white transition">تماس با ما</Link></li>
+              <li><Link href="/warranty" className="hover:text-white transition">گارانتی و خدمات</Link></li>
+              <li><Link href="/corporate" className="hover:text-white transition">خرید سازمانی</Link></li>
+            </ul>
+          </div>
+
+          {/* خدمات مشتریان */}
+          <div>
+            <h3 className="text-white font-bold text-lg mb-4">خدمات مشتریان</h3>
+            <ul className="space-y-2 text-sm">
+              <li><Link href="/faq" className="hover:text-white transition">سوالات متداول</Link></li>
+              <li><Link href="/return-policy" className="hover:text-white transition">رویه بازگشت کالا</Link></li>
+              <li><Link href="/privacy" className="hover:text-white transition">حریم خصوصی</Link></li>
+              <li><Link href="/terms" className="hover:text-white transition">قوانین و مقررات</Link></li>
+            </ul>
+          </div>
+
+          {/* تماس با ما */}
+          <div>
+            <h3 className="text-white font-bold text-lg mb-4">تماس با ما</h3>
+            <ul className="space-y-3 text-sm">
+              <li className="flex items-center gap-2">
+                <Phone size={16} />
+                <span>021-12345678</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Mail size={16} />
+                <span>info@icecenter.ir</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <MapPin size={16} className="mt-1" />
+                <span>تهران، خیابان ولیعصر، پلاک 123</span>
+              </li>
+            </ul>
+            
+            {/* شبکه‌های اجتماعی */}
+            <div className="flex gap-3 mt-4">
+              <a href="#" className="w-9 h-9 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-blue-600 transition">
+                <Instagram size={18} />
+              </a>
+              <a href="#" className="w-9 h-9 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-blue-600 transition">
+                <Send size={18} />
+              </a>
+            </div>
+          </div>
+
+        </div>
+
+        {/* خط جداکننده */}
+        <div className="border-t border-gray-800 pt-6">
+          <p className="text-center text-sm text-gray-500">
+            © 1403 تمامی حقوق این سایت متعلق به <span className="text-white font-bold">آیس سنتر</span> می‌باشد.
+          </p>
+        </div>
+
+      </div>
+    </footer>
+  );
+};
+
+export default Footer;
+==> src/components/layout/Header.tsx <==
+'use client';
+
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { 
+  Search, 
+  User, 
+  ShoppingCart, 
+  Menu, 
+  Phone,
+  Snowflake,
+  IceCream,
+  Refrigerator,
+  HeartHandshake,
+  Award,
+  X
+} from 'lucide-react';
+
+const Header: React.FC = () => {
+  const [cartCount] = useState(0);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  return (
+    <div className="w-full bg-white shadow-sm sticky top-0 z-50">
+      <header className="max-w-[1600px] mx-auto px-4 py-4">
+        
+        {/* بخش بالا: لوگو، سرچ، اکشن‌ها */}
+        <div className="flex justify-between items-center mb-0 lg:mb-5">
+          
+          {/* موبایل/تبلت: لوگو سمت راست */}
+          <div className="flex items-center lg:hidden">
+            <Link href="/" className="flex items-center gap-2">
+              <Snowflake className="text-blue-600" size={28} />
+              <div>
+                <h1 className="text-base font-bold text-gray-800">آیس سنتر</h1>
+              </div>
+            </Link>
+          </div>
+
+          {/* دسکتاپ: لوگو و سرچ */}
+          <div className="hidden lg:flex items-center flex-grow max-w-4xl">
+            {/* لوگو */}
+            <Link href="/" className="ml-6 shrink-0">
+              <div className="flex items-center gap-2">
+                <Snowflake className="text-blue-600" size={32} />
+                <div>
+                  <h1 className="text-xl font-bold text-gray-800">آیس سنتر</h1>
+                  <p className="text-[10px] text-gray-500">تجهیزات صنعتی سرمایش</p>
+                </div>
+              </div>
+            </Link>
+
+            {/* جستجو */}
+            <div className="flex items-center bg-[#f0f0f1] rounded-lg px-4 h-12 w-full max-w-[600px]">
+              <input 
+                type="text" 
+                placeholder="جستجو در محصولات: بستنی‌ساز، یخ‌ساز، فریزر و..."
+                className="w-full bg-transparent border-none outline-none text-gray-700 placeholder-gray-400 text-sm ml-2"
+              />
+              <button className="text-gray-500 hover:text-gray-800 transition">
+                <Search size={20} />
+              </button>
+            </div>
+          </div>
+
+          {/* موبایل/تبلت: دکمه جستجو و سبد خرید */}
+          <div className="flex items-center gap-2 lg:hidden">
+            {/* دکمه جستجو */}
+            <button 
+              onClick={() => setIsSearchOpen(!isSearchOpen)}
+              className="flex items-center justify-center w-10 h-10 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              <Search size={20} />
+            </button>
+            
+            {/* دکمه سبد خرید */}
+            <Link 
+              href="/cart" 
+              className="relative flex items-center justify-center w-10 h-10 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              <ShoppingCart size={20} />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full font-bold">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+          </div>
+
+          {/* دسکتاپ: ورود و سبد خرید */}
+          <div className="hidden lg:flex items-center gap-4">
+            {/* دکمه ورود */}
+            <Link 
+              href="/login" 
+              className="flex items-center justify-center w-11 h-11 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              <User size={20} />
+            </Link>
+            
+            {/* دکمه سبد خرید */}
+            <Link 
+              href="/cart" 
+              className="relative flex items-center justify-center w-11 h-11 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              <ShoppingCart size={20} />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full font-bold">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+          </div>
+        </div>
+
+        {/* باکس جستجو موبایل (وقتی باز میشه) */}
+        {isSearchOpen && (
+          <div className="lg:hidden mt-3 pb-3">
+            <div className="flex items-center bg-[#f0f0f1] rounded-lg px-4 h-12 w-full">
+              <input 
+                type="text" 
+                placeholder="جستجو در محصولات..."
+                className="w-full bg-transparent border-none outline-none text-gray-700 placeholder-gray-400 text-sm ml-2"
+                autoFocus
+              />
+              <button 
+                onClick={() => setIsSearchOpen(false)}
+                className="text-gray-500 hover:text-gray-800 transition"
+              >
+                <X size={20} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* بخش پایین: منوی ناوبری - فقط دسکتاپ */}
+        <div className="hidden lg:flex justify-between items-center">
+          
+          {/* منوی اصلی */}
+          <nav>
+            <ul className="flex items-center gap-6 text-sm text-gray-700 font-medium">
+              
+              {/* دسته‌بندی محصولات */}
+              <li 
+                className="flex items-center cursor-pointer hover:text-blue-600 group transition"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+              >
+                <Menu size={18} className="ml-2 text-gray-500 group-hover:text-blue-600" />
+                <span className="font-bold">دسته‌بندی محصولات</span>
+              </li>
+
+              {/* دستگاه بستنی‌ساز */}
+              <li>
+                <Link href="/category/ice-cream" className="flex items-center cursor-pointer hover:text-blue-600 group transition">
+                  <IceCream size={18} className="ml-2 text-gray-500 group-hover:text-blue-600" />
+                  <span>بستنی‌ساز</span>
+                </Link>
+              </li>
+
+              {/* دستگاه یخ‌ساز */}
+              <li>
+                <Link href="/category/ice-maker" className="flex items-center cursor-pointer hover:text-blue-600 group transition">
+                  <Snowflake size={18} className="ml-2 text-gray-500 group-hover:text-blue-600" />
+                  <span>یخ‌ساز</span>
+                </Link>
+              </li>
+
+              {/* فریزر و یخچال */}
+              <li>
+                <Link href="/category/freezer" className="flex items-center cursor-pointer hover:text-blue-600 group transition">
+                  <Refrigerator size={18} className="ml-2 text-gray-500 group-hover:text-blue-600" />
+                  <span>فریزر و یخچال</span>
+                </Link>
+              </li>
+
+              {/* خرید سازمانی */}
+              <li>
+                <Link href="/corporate" className="flex items-center cursor-pointer hover:text-blue-600 group transition">
+                  <HeartHandshake size={18} className="ml-2 text-gray-500 group-hover:text-blue-600" />
+                  <span>خرید سازمانی</span>
+                </Link>
+              </li>
+
+              {/* گارانتی */}
+              <li>
+                <Link href="/warranty" className="flex items-center cursor-pointer hover:text-blue-600 group transition">
+                  <Award size={18} className="ml-2 text-gray-500 group-hover:text-blue-600" />
+                  <span>گارانتی و خدمات</span>
+                </Link>
+              </li>
+
+            </ul>
+          </nav>
+
+          {/* تماس با ما */}
+          <Link 
+            href="/contact" 
+            className="flex items-center gap-2 text-sm font-bold text-gray-700 hover:text-blue-600 cursor-pointer transition"
+          >
+            <Phone size={18} />
+            <span>تماس با ما</span>
+          </Link>
+
+        </div>
+
+        {/* منوی موبایل/تبلت - دکمه همبرگر */}
+        <div className="lg:hidden border-t border-gray-100 pt-3 mt-3">
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="flex items-center gap-2 text-sm font-bold text-gray-700 hover:text-blue-600 transition w-full"
+          >
+            <Menu size={20} />
+            <span>دسته‌بندی محصولات</span>
+          </button>
+        </div>
+
+        {/* منوی کشویی موبایل */}
+        {isMenuOpen && (
+          <div className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-50" onClick={() => setIsMenuOpen(false)}>
+            <div 
+              className="bg-white w-4/5 max-w-sm h-full p-6 overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* هدر منو */}
+              <div className="flex justify-between items-center mb-6 pb-4 border-b">
+                <h3 className="text-lg font-bold text-gray-800">منوی اصلی</h3>
+                <button 
+                  onClick={() => setIsMenuOpen(false)}
+                  className="text-gray-500 hover:text-gray-800"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              {/* آیتم‌های منو */}
+              <nav>
+                <ul className="space-y-4">
+                  
+                  <li>
+                    <Link 
+                      href="/category/ice-cream" 
+                      className="flex items-center gap-3 text-gray-700 hover:text-blue-600 transition py-2"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <IceCream size={20} />
+                      <span>دستگاه بستنی‌ساز</span>
+                    </Link>
+                  </li>
+
+                  <li>
+                    <Link 
+                      href="/category/ice-maker" 
+                      className="flex items-center gap-3 text-gray-700 hover:text-blue-600 transition py-2"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Snowflake size={20} />
+                      <span>دستگاه یخ‌ساز</span>
+                    </Link>
+                  </li>
+
+                  <li>
+                    <Link 
+                      href="/category/freezer" 
+                      className="flex items-center gap-3 text-gray-700 hover:text-blue-600 transition py-2"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Refrigerator size={20} />
+                      <span>فریزر و یخچال</span>
+                    </Link>
+                  </li>
+
+                  <li className="border-t pt-4">
+                    <Link 
+                      href="/corporate" 
+                      className="flex items-center gap-3 text-gray-700 hover:text-blue-600 transition py-2"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <HeartHandshake size={20} />
+                      <span>خرید سازمانی</span>
+                    </Link>
+                  </li>
+
+                  <li>
+                    <Link 
+                      href="/warranty" 
+                      className="flex items-center gap-3 text-gray-700 hover:text-blue-600 transition py-2"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Award size={20} />
+                      <span>گارانتی و خدمات</span>
+                    </Link>
+                  </li>
+
+                  <li>
+                    <Link 
+                      href="/contact" 
+                      className="flex items-center gap-3 text-gray-700 hover:text-blue-600 transition py-2"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Phone size={20} />
+                      <span>تماس با ما</span>
+                    </Link>
+                  </li>
+
+                  <li className="border-t pt-4">
+                    <Link 
+                      href="/login" 
+                      className="flex items-center gap-3 text-gray-700 hover:text-blue-600 transition py-2"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <User size={20} />
+                      <span>ورود / ثبت‌نام</span>
+                    </Link>
+                  </li>
+
+                </ul>
+              </nav>
+            </div>
+          </div>
+        )}
+
+      </header>
+    </div>
+  );
+};
+
+export default Header;
+==> src/components/layout/TopBar.tsx <==
+'use client';
+
+import React, { useState } from 'react';
+import { X } from 'lucide-react';
+import Link from 'next/link';
+import Image from 'next/image';
+
+const TopBanner: React.FC = () => {
+  const [isVisible, setIsVisible] = useState(true);
+
+  if (!isVisible) return null;
+
+  return (
+    <div className="bg-gray-100 relative">
+      <Link href="/offers" className="block">
+        <div className="max-w-[1600px] mx-auto relative">
+          
+          {/* Desktop Banner */}
+          <div className="hidden md:block">
+            <Image
+              src="https://res.cloudinary.com/dxooxiqcz/image/upload/v1763988428/987cdc3bf9940e6b1a6b7cdef88ceb34053b0e45_1763452592_cvydy3.gif"
+              alt="بنر تخفیف"
+              width={1600}
+              height={80}
+              className="w-full h-auto"
+              priority
+            />
+          </div>
+
+          {/* Mobile Banner - قد بیشتر */}
+          <div className="md:hidden">
+            <Image
+              src="https://res.cloudinary.com/dxooxiqcz/image/upload/v1763989840/e12050ea14c679eac7085a161b02d8b22cc695e4_1763452593_zac8ie.gif"
+              alt="بنر تخفیف موبایل"
+              width={600}
+              height={50}
+              className="w-full h-8 object-cover"
+              priority
+            />
+          </div>
+
+          {/* Close Button - فقط دسکتاپ */}
+          <button 
+            onClick={(e) => {
+              e.preventDefault();
+              setIsVisible(false);
+            }}
+            className="hidden md:block absolute top-1/2 left-2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full p-1 transition z-10"
+            aria-label="بستن بنر"
+          >
+            <X size={18} />
+          </button>
+
+        </div>
+      </Link>
+    </div>
+  );
+};
+
+export default TopBanner;
+==> src/lib/cloudinary.ts <==
+import { v2 as cloudinary } from 'cloudinary';
+
+cloudinary.config({
+  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+export default cloudinary;
+==> src/lib/db.ts <==
+import mongoose from 'mongoose';
+
+const MONGODB_URI = process.env.MONGODB_URI || '';
+
+if (!MONGODB_URI) {
+  throw new Error('لطفا MONGODB_URI را در .env.local تعریف کنید');
+}
+
+async function dbConnect() {
+  try {
+    await mongoose.connect(MONGODB_URI);
+    console.log('✅ اتصال به MongoDB موفق بود');
+  } catch (error) {
+    console.error('❌ خطا در اتصال به MongoDB:', error);
+    throw error;
+  }
+}
+
+export default dbConnect;
+==> src/models/Product.ts <==
+import mongoose from 'mongoose';
+
+const ProductSchema = new mongoose.Schema({
+  name: { 
+    type: String, 
+    required: true 
+  },
+  slug: { 
+    type: String, 
+    required: true, 
+    unique: true 
+  },
+  description: { 
+    type: String 
+  },
+  price: { 
+    type: Number, 
+    required: true 
+  },
+  images: { 
+    type: [String], 
+    default: [] 
+  },
+  category: { 
+    type: String 
+  },
+  stock: { 
+    type: Number, 
+    default: 0 
+  },
+  isActive: { 
+    type: Boolean, 
+    default: true 
+  },
+}, { 
+  timestamps: true 
+});
+
+// پاک کردن cache قبل از export
+if (mongoose.models.Product) {
+  delete mongoose.models.Product;
+}
+
+export default mongoose.model('Product', ProductSchema);
+
+
+===========
+other code i pasted manually
+===========
+
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #ffffff;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #fafafa;
+    --foreground: #ffffff;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-vazir), sans-serif;
+}
+
+.font-vazir {
+  font-family: var(--font-vazir), sans-serif;
+}
+
+==============
+
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  reactStrictMode: true,
+
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'via.placeholder.com',
+        port: '',
+        pathname: '/**',  // یا هر الگوی path که لازم داری
+      },
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        port: '',
+        pathname: '/**',
+      }
+    ],
+  },
+};
+
+export default nextConfig;

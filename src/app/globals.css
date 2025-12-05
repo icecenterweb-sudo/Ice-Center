@@ -6,6 +6,7 @@
 }
 
 @theme inline {
+  --font-sans: var(--font-yekan), sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 }
@@ -20,9 +21,9 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-vazir), sans-serif;
+  font-family: var(--font-yekan), sans-serif;
 }
 
-.font-vazir {
-  font-family: var(--font-vazir), sans-serif;
+.font-yekan {
+  font-family: var(--font-yekan), sans-serif;
 }

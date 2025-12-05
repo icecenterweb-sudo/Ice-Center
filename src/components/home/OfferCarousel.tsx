@@ -6,7 +6,8 @@ import Link from 'next/link';
 import useEmblaCarousel from 'embla-carousel-react';
 import Autoplay from 'embla-carousel-autoplay';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-
+import DiscountBadge from '../ui/DiscountBadge';
+  
 // --- Mock Data ---
 const products = [
   {
@@ -136,9 +137,9 @@ const AmazingOfferCarousel = () => {
   }, [emblaApi, onSelect]);
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto my-8 px-4 font-vazir" dir="rtl">
+    <div className="w-full max-w-[1600px] mx-auto mt-2 mb-4 px-4 font-yekan" dir="rtl">
       
-      <div className="bg-gradient-to-l from-sky-500 to-sky-600 rounded-2xl p-1 pr-0 flex h-[300px] relative overflow-hidden shadow-xl">
+      <div className="bg-gradient-to-l from-sky-500 to-sky-600 rounded-3xl py-4 px-2 pr-0 flex h-[300px] relative overflow-hidden shadow-xl">
         
         {/* --- Right Side: Banner & Timer --- */}
         <div className="w-[160px] sm:w-[190px] flex flex-col items-center justify-center text-white shrink-0 z-10 relative">
@@ -186,7 +187,7 @@ const AmazingOfferCarousel = () => {
         </div>
 
         {/* --- Left Side: Embla Carousel --- */}
-        <div className="flex-1 overflow-hidden rounded-l-2xl bg-sky-600 relative">
+        <div className="flex-1 overflow-hidden rounded-xl bg-sky-600 relative">
           
           {/* Embla Container */}
           <div className="overflow-hidden h-full" ref={emblaRef}>
@@ -209,7 +210,7 @@ const AmazingOfferCarousel = () => {
                     </div>
 
                     {/* Title */}
-                    <h3 className="text-[13px] text-gray-700 font-medium leading-6 line-clamp-2 mb-auto h-[48px]">
+                    <h3 className="text-[13px] text-gray-800 font-normal leading-6 line-clamp-2 mb-auto h-[48px]">
                       {product.title}
                     </h3>
 
@@ -217,9 +218,7 @@ const AmazingOfferCarousel = () => {
                     <div className="mt-3">
                       {/* Row 1: Old Price & Badge */}
                       <div className="flex items-center justify-between mb-1">
-                        <div className="bg-sky-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
-                          {product.discount}%
-                        </div>
+                        <DiscountBadge discount={product.discount} />
                         <del className="text-gray-400 text-xs font-light">
                           {product.oldPrice.toLocaleString('fa-IR')}
                         </del>
@@ -227,10 +226,10 @@ const AmazingOfferCarousel = () => {
 
                       {/* Row 2: Current Price */}
                       <div className="flex items-center justify-end gap-1">
-                        <span className="text-gray-800 font-bold text-base">
+                        <span className="text-gray-900 font-bold font-yekan text-[16px] sm:text-[18px]">
                           {product.price.toLocaleString('fa-IR')}
                         </span>
-                        <span className="text-gray-600 text-[10px]">تومان</span>
+                        <span className="text-gray-600 text-[12px]">تومان</span>
                       </div>
                     </div>
                     

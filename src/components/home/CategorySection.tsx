@@ -172,20 +172,6 @@ const CategorySection: React.FC = () => {
             </>
           )}
         </div>
-
-        {/* دکمه مشاهده همه */}
-        <div className="text-center mt-8">
-          <Link
-            href="/categories"
-            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium text-sm md:text-base group"
-          >
-            <span>مشاهده همه دسته‌بندی‌ها</span>
-            <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </Link>
-        </div>
-
       </div>
     </section>
   );
