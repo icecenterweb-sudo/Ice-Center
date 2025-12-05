@@ -185,14 +185,14 @@ const ProductCarousel: React.FC<ProductCarouselProps> = ({
                     >
                       {/* Top strip: time + label */}
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-[11px] text-red-500 font-bold">
+                        <span className="text-md text-blue-500 font-bold">
                           تک‌تخفیف
                         </span>
-                        <span className="text-[11px] text-red-500 font-bold">
+                        <span className="text-md text-blue-500 font-bold">
                           {product.timeLabel || '۰۰:۲۳:۴۹'}
                         </span>
                       </div>
-                      <div className="h-[2px] w-full bg-red-500 mb-2" />
+                      <div className="h-[2px] w-full bg-blue-400 mb-2" />
 
                       {/* Image */}
                       <div className="relative w-full h-[150px] sm:h-[170px] mb-3">
