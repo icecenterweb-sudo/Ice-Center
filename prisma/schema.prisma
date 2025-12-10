@@ -1,0 +1,78 @@
+// Prisma Schema for Ice-Center Industrial Equipment E-commerce
+// PostgreSQL Database for Ice Cream Machines and Industrial Equipment
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Product {
+  // Primary Key
+  id        Int      @id @default(autoincrement())
+  
+  // Core Product Information
+  name        String
+  slug        String   @unique
+  description String?  @db.Text
+  
+  // Brand & Model Information
+  brand        String?
+  model        String?
+  manufacturer String?
+  sku          String?  @unique
+  
+  // Pricing
+  price         Float
+  originalPrice Float?   // For showing discounts
+  discount      Float?   @default(0) // Percentage discount
+  taxRate       Float?   @default(0) // Tax percentage
+  
+  // Images
+  images        String[] @default([])
+  thumbnail     String?  // Main thumbnail image
+  
+  // Categories & Organization
+  category      String?
+  subcategory   String?
+  tags          String[] @default([])
+  
+  // Stock & Availability
+  stock         Int      @default(0)
+  inStock       Boolean  @default(true)
+  isActive      Boolean  @default(true)
+  featured      Boolean  @default(false) // For homepage featured products
+  
+  // Product Specifications (JSON for flexible data)
+  specifications Json?   // { "power": "220V", "capacity": "10L", etc }
+  features      String[] @default([]) // Array of feature descriptions
+  
+  // Physical Properties
+  weight        Float?   // in kg
+  dimensions    Json?    // { "width": 50, "height": 100, "depth": 60 }
+  
+  // Warranty & Support
+  warranty      String?  // e.g., "2 years", "1 year manufacturer warranty"
+  
+  // SEO & Marketing
+  metaTitle       String?
+  metaDescription String?  @db.Text
+  keywords        String[] @default([])
+  
+  // Ratings & Reviews
+  rating        Float?   @default(0) // Average rating (0-5)
+  reviewCount   Int      @default(0)
+  
+  // Timestamps
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([slug])
+  @@index([category])
+  @@index([brand])
+  @@index([isActive])
+  @@index([featured])
+  @@index([createdAt])
+}

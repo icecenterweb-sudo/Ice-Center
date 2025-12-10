@@ -1,19 +1,19 @@
-import mongoose from 'mongoose';
+import { PrismaClient } from '@prisma/client';
 
-const MONGODB_URI = process.env.MONGODB_URI || '';
+// PrismaClient is attached to the `global` object in development to prevent
+// exhausting your database connection limit.
+// Learn more: https://pris.ly/d/help/next-js-best-practices
 
-if (!MONGODB_URI) {
-  throw new Error('لطفا MONGODB_URI را در .env.local تعریف کنید');
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
+
+export const prisma = globalForPrisma.prisma ?? new PrismaClient({
+  log: ['query', 'error', 'warn'],
+});
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma;
 }
 
-async function dbConnect() {
-  try {
-    await mongoose.connect(MONGODB_URI);
-    console.log('✅ اتصال به MongoDB موفق بود');
-  } catch (error) {
-    console.error('❌ خطا در اتصال به MongoDB:', error);
-    throw error;
-  }
-}
-
-export default dbConnect;
+export default prisma;

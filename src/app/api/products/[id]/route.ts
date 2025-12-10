@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import Product from '@/models/Product';
+import prisma from '@/lib/db';
 
 // دریافت یک محصول
 export async function GET(
@@ -9,21 +8,32 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    await dbConnect();
-    const product = await Product.findById(id);
-    
+    const productId = parseInt(id);
+
+    if (isNaN(productId)) {
+      return NextResponse.json({
+        success: false,
+        message: 'شناسه محصول نامعتبر است'
+      }, { status: 400 });
+    }
+
+    const product = await prisma.product.findUnique({
+      where: { id: productId }
+    });
+
     if (!product) {
-      return NextResponse.json({ 
-        success: false, 
-        message: 'محصول یافت نشد' 
+      return NextResponse.json({
+        success: false,
+        message: 'محصول یافت نشد'
       }, { status: 404 });
     }
-    
+
     return NextResponse.json({ success: true, data: product });
   } catch (error) {
-    return NextResponse.json({ 
-      success: false, 
-      message: 'خطا در دریافت محصول' 
+    console.error('خطا در دریافت محصول:', error);
+    return NextResponse.json({
+      success: false,
+      message: 'خطا در دریافت محصول'
     }, { status: 500 });
   }
 }
@@ -35,27 +45,35 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    await dbConnect();
+    const productId = parseInt(id);
     const body = await request.json();
-    
-    const product = await Product.findByIdAndUpdate(
-      id,
-      body,
-      { new: true, runValidators: true }
-    );
-    
-    if (!product) {
-      return NextResponse.json({ 
-        success: false, 
-        message: 'محصول یافت نشد' 
-      }, { status: 404 });
+
+    if (isNaN(productId)) {
+      return NextResponse.json({
+        success: false,
+        message: 'شناسه محصول نامعتبر است'
+      }, { status: 400 });
     }
-    
+
+    const product = await prisma.product.update({
+      where: { id: productId },
+      data: body
+    });
+
     return NextResponse.json({ success: true, data: product });
   } catch (error: any) {
-    return NextResponse.json({ 
-      success: false, 
-      message: error.message 
+    console.error('خطا در ویرایش محصول:', error);
+
+    if (error.code === 'P2025') {
+      return NextResponse.json({
+        success: false,
+        message: 'محصول یافت نشد'
+      }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      success: false,
+      message: error.message || 'خطا در ویرایش محصول'
     }, { status: 400 });
   }
 }
@@ -67,24 +85,36 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    await dbConnect();
-    const product = await Product.findByIdAndDelete(id);
-    
-    if (!product) {
-      return NextResponse.json({ 
-        success: false, 
-        message: 'محصول یافت نشد' 
+    const productId = parseInt(id);
+
+    if (isNaN(productId)) {
+      return NextResponse.json({
+        success: false,
+        message: 'شناسه محصول نامعتبر است'
+      }, { status: 400 });
+    }
+
+    await prisma.product.delete({
+      where: { id: productId }
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'محصول حذف شد'
+    });
+  } catch (error: any) {
+    console.error('خطا در حذف محصول:', error);
+
+    if (error.code === 'P2025') {
+      return NextResponse.json({
+        success: false,
+        message: 'محصول یافت نشد'
       }, { status: 404 });
     }
-    
-    return NextResponse.json({ 
-      success: true, 
-      message: 'محصول حذف شد' 
-    });
-  } catch (error) {
-    return NextResponse.json({ 
-      success: false, 
-      message: 'خطا در حذف محصول' 
+
+    return NextResponse.json({
+      success: false,
+      message: 'خطا در حذف محصول'
     }, { status: 500 });
   }
 }

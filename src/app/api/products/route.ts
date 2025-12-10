@@ -1,22 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import Product from '@/models/Product';
+import prisma from '@/lib/db';
 
 // دریافت همه محصولات
 export async function GET() {
   try {
-    await dbConnect();
-    const products = await Product.find({ isActive: true });
-    
-    return NextResponse.json({ 
-      success: true, 
+    const products = await prisma.product.findMany({
+      where: { isActive: true },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    return NextResponse.json({
+      success: true,
       count: products.length,
-      data: products 
+      data: products
     });
   } catch (error) {
-    return NextResponse.json({ 
-      success: false, 
-      message: 'خطا در دریافت محصولات' 
+    console.error('خطا در دریافت محصولات:', error);
+    return NextResponse.json({
+      success: false,
+      message: 'خطا در دریافت محصولات'
     }, { status: 500 });
   }
 }
@@ -24,19 +26,21 @@ export async function GET() {
 // ساخت محصول جدید
 export async function POST(request: NextRequest) {
   try {
-    await dbConnect();
     const body = await request.json();
-    
-    const product = await Product.create(body);
-    
-    return NextResponse.json({ 
-      success: true, 
-      data: product 
+
+    const product = await prisma.product.create({
+      data: body
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: product
     }, { status: 201 });
   } catch (error: any) {
-    return NextResponse.json({ 
-      success: false, 
-      message: error.message || 'خطا در ساخت محصول' 
+    console.error('خطا در ساخت محصول:', error);
+    return NextResponse.json({
+      success: false,
+      message: error.message || 'خطا در ساخت محصول'
     }, { status: 400 });
   }
 }
