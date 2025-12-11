@@ -1,9 +1,17 @@
+'use client';
+
+import { useState } from 'react';
 import ProductImageGallery from '@/components/product/ProductImageGallery';
 import ProductInfo from '@/components/product/ProductInfo';
 import PricingBox from '@/components/product/PricingBox';
 import ProductSpecifications from '@/components/product/ProductSpecifications';
 import ProductReviews from '@/components/product/ProductReviews';
-import { Shield, Zap, Snowflake, Settings, Award, Wrench, Package, Phone } from 'lucide-react';
+import TrustBadges from '@/components/product/TrustBadges';
+import MiniPricingBox from '@/components/product/MiniPricingBox';
+import MobileActionBar from '@/components/product/MobileActionBar';
+import SimilarProducts from '@/components/product/SimilarProducts';
+import ProductTabs from '@/components/product/ProductTabs';
+import { Zap, Snowflake, Settings, Award, Shield, Wrench, Package, Phone } from 'lucide-react';
 
 // Demo product data
 const product = {
@@ -24,7 +32,7 @@ const product = {
     ],
     warranty: 'گارانتی 18 ماهه شرکت آیس سنتر',
     seller: 'فروشنده: آیس سنتر ایران',
-    description: 'دستگاه بستنی‌ساز صنعتی با ظرفیت تولید بالا، مناسب برای کارخانجات، بستنی‌فروشی‌ها و کافه‌های بزرگ. ساخت ایتالیا با کیفیت عالی و قطعات اصلی.',
+    description: 'دستگاه بستنی‌ساز صنعتی با ظرفیت تولید بالا، مناسب برای کارخانجات، بستنی‌فروشی‌ها و کافه‌های بزرگ. ساخت ایتالیا با کیفیت عالی و قطعات اصلی. این دستگاه با بهره‌گیری از تکنولوژی روز اروپا، مصرف انرژی پایین و بازدهی بسیار بالا را تضمین می‌کند.',
 };
 
 const advantages = [
@@ -32,13 +40,6 @@ const advantages = [
     { icon: Snowflake, title: 'کمپرسور صنعتی', description: 'اسکرو ایتالیایی Copeland' },
     { icon: Settings, title: 'کنترل دیجیتال', description: 'پنل PLC هوشمند' },
     { icon: Award, title: 'استاندارد بهداشتی', description: 'استیل ضد زنگ 304' },
-];
-
-const trustBadges = [
-    { icon: Shield, text: 'گارانتی 18 ماهه' },
-    { icon: Wrench, text: 'نصب رایگان' },
-    { icon: Package, text: 'قطعات یدکی اصلی' },
-    { icon: Phone, text: '10 سال پشتیبانی' },
 ];
 
 const specifications = [
@@ -71,15 +72,6 @@ const specifications = [
             { label: 'وزن خالص', value: '280 کیلوگرم' },
         ],
     },
-    {
-        title: 'مواد و ساخت',
-        specs: [
-            { label: 'بدنه خارجی', value: 'استیل ضد زنگ 304' },
-            { label: 'مخزن', value: 'استیل بهداشتی با قابلیت شستشوی آسان' },
-            { label: 'سیلندر', value: 'آلومینیوم آندایز شده' },
-            { label: 'کشور سازنده', value: 'ایتالیا (مونتاژ ایران)' },
-        ],
-    },
 ];
 
 const reviews = [
@@ -88,7 +80,7 @@ const reviews = [
         customerName: 'محمد رضایی',
         businessType: 'بستنی‌فروشی رضوان - تهران',
         rating: 5,
-        comment: 'دستگاه فوق‌العاده‌ای است. 8 ماهه که استفاده می‌کنیم و هیچ مشکلی نداشتیم. کیفیت بستنی تولیدی عالی و سرعت تولید بسیار بالاست. خدمات پس از فروش هم حرف نداره.',
+        comment: 'دستگاه فوق‌العاده‌ای است. 8 ماهه که استفاده می‌کنیم و هیچ مشکلی نداشتیم.',
         date: '2 ماه پیش',
     },
     {
@@ -96,103 +88,113 @@ const reviews = [
         customerName: 'احمد کریمی',
         businessType: 'کارخانه بستنی سحر - اصفهان',
         rating: 5,
-        comment: 'برای کارخانه 3 دستگاه خریدیم. کیفیت ساخت ایتالیایی معلومه. کمپرسور قوی و سیستم کنترل دیجیتال عالیه. پیشنهاد می‌کنم حتماً بخرید.',
+        comment: 'کیفت ساخت ایتالیایی برای کارخانه 3 دستگاه خریدیم. پیشنهاد می‌کنم.',
         date: '4 ماه پیش',
-    },
-    {
-        id: 3,
-        customerName: 'فاطمه احمدی',
-        businessType: 'کافه رستوران آرامیس - شیراز',
-        rating: 4,
-        comment: 'دستگاه خوبیه ولی کمی سنگینه. برای نصب نیاز به فضای مناسب داره. در کل راضی هستیم و کیفیت بستنی‌ها خیلی بهتر شده.',
-        date: '6 ماه پیش',
     },
 ];
 
 export default function ProductPage() {
+    const [activeTab, setActiveTab] = useState('desc');
+
     return (
-        <div className="min-h-screen bg-gray-50" dir="rtl">
-            <div className="max-w-[95%] mx-auto px-4 py-4">
+        <div className="min-h-screen bg-white" dir="rtl">
 
-                {/* Breadcrumb */}
-                <div className="flex items-center gap-2 text-xs text-gray-600 mb-3">
-                    <span>خانه</span>
-                    <span>/</span>
+            {/* Breadcrumb */}
+            <div className="border-b border-gray-200">
+                <div className="max-w-[1400px] mx-auto px-4 py-3 text-xs text-gray-500">
+                    <span>فروشگاه اینترنتی آیس سنتر</span>
+                    <span className="mx-2">/</span>
                     <span>تجهیزات صنعتی</span>
-                    <span>/</span>
-                    <span className="text-gray-900">دستگاه بستنی‌ساز</span>
+                    <span className="mx-2">/</span>
+                    <span className="font-bold text-gray-800">دستگاه بستنی‌ساز</span>
                 </div>
+            </div>
 
-                {/* Main Content Grid - 75/25 split */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+            <main className="max-w-[1400px] mx-auto px-4 py-6">
 
-                    {/* Left Column - Content Boxes (9 cols = 75%) */}
-                    <div className="lg:col-span-9 space-y-3">
+                {/* Top Section: Gallery, Info, BuyBox */}
+                {/* Desktop: 3 Columns. Mobile/Tablet: Stacked */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 border-b border-gray-100 pb-10">
 
-                        {/* MAIN PRODUCT BOX */}
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 lg:p-8">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-
-                                {/* Left: Product Information */}
-                                <ProductInfo product={product} advantages={advantages} />
-
-                                {/* Right: Image Gallery */}
-                                <div>
-                                    <ProductImageGallery images={product.images} productName={product.name} />
-                                </div>
-
-                            </div>
-                        </div>
-
-                        {/* Product Description Box */}
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                            <h2 className="text-base font-bold text-gray-900 mb-2.5 pb-2.5 border-b border-gray-200">
-                                توضیحات محصول
-                            </h2>
-                            <p className="text-sm text-gray-700 leading-relaxed">{product.description}</p>
-                        </div>
-
-                        {/* Technical Specifications Box */}
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                            <ProductSpecifications categories={specifications} />
-                        </div>
-
-                        {/* Trust & Warranty Box */}
-                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-4">
-                            <h2 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
-                                <Shield className="w-4 h-4 text-blue-600" />
-                                خدمات و پشتیبانی
-                            </h2>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-                                {trustBadges.map((badge, index) => (
-                                    <div
-                                        key={index}
-                                        className="bg-white rounded-lg p-3 border border-blue-100 flex flex-col items-center text-center gap-1.5"
-                                    >
-                                        <badge.icon className="w-5 h-5 text-blue-600" />
-                                        <span className="text-xs font-medium text-gray-900">{badge.text}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Reviews Box */}
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                            <ProductReviews reviews={reviews} averageRating={4.7} totalReviews={reviews.length} />
-                        </div>
-
+                    {/* Right: Gallery (approx 33%) */}
+                    <div className="lg:col-span-4">
+                        <ProductImageGallery images={product.images} productName={product.name} />
                     </div>
 
-                    {/* Right Column - Sticky Pricing Card (3 cols = 25%) */}
+                    {/* Center: Product Info (approx 42%) */}
+                    <div className="lg:col-span-5 relative">
+                        <ProductInfo product={product} advantages={advantages} />
+                    </div>
+
+                    {/* Left: Buy Box (approx 25%) */}
                     <div className="lg:col-span-3">
-                        <div className="lg:sticky lg:top-4">
+                        <div className="bg-gray-100 p-2 rounded-xl lg:sticky lg:top-4">
                             <PricingBox product={product} />
                         </div>
                     </div>
 
                 </div>
 
-            </div>
+                {/* Trust / Services Section - Full Width */}
+                <TrustBadges />
+
+                {/* Content Sections with Sticky Tabs */}
+                <div className="mt-8">
+                    <ProductTabs
+                        activeTab={activeTab}
+                        onTabChange={setActiveTab}
+                        tabs={[
+                            { id: 'desc', label: 'نقد و بررسی' },
+                            { id: 'specs', label: 'مشخصات' },
+                            { id: 'comments', label: 'دیدگاه‌ها' },
+                        ]}
+                    />
+
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                        <div className="lg:col-span-9 space-y-12">
+
+                            {/* Description Section */}
+                            <section id="desc" className="bg-white scroll-mt-24">
+                                <h2 className="text-xl font-bold text-gray-900 mb-4 border-r-4 border-red-500 pr-3">نقد و بررسی تخصصی</h2>
+                                <div className="text-gray-700 leading-8 text-justify">
+                                    <p className="mb-4">{product.description}</p>
+                                    <p>طراحی ارگونومیک و استفاده از متریال درجه یک، این دستگاه را به یکی از محبوب‌ترین انتخاب‌ها در بازار تبدیل کرده است. سیستم شستشوی خودکار باعث صرفه‌جویی در زمان شده و پنل لمسی امکان کنترل دقیق تمامی پارامترها را فراهم می‌کند.</p>
+                                </div>
+                            </section>
+
+                            {/* Specs Section */}
+                            <section id="specs" className="scroll-mt-24">
+                                <ProductSpecifications categories={specifications} />
+                            </section>
+
+                            {/* Reviews Section */}
+                            <section id="comments" className="scroll-mt-24">
+                                <ProductReviews reviews={reviews} averageRating={4.7} totalReviews={reviews.length} />
+                            </section>
+
+                        </div>
+
+                        {/* Sidebar Banners or Similar Products could go here */}
+                        <div className="hidden lg:block lg:col-span-3">
+                            <div className="sticky top-24 space-y-4">
+                                <MiniPricingBox product={product} />
+
+                                <SimilarProducts />
+
+                                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 text-center">
+                                    <p className="text-xs text-gray-500 leading-6">
+                                        با اطمینان خرید کنید. پشتیبانی ۲۴ ساعته ما در کنار شماست.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </main>
+
+            <MobileActionBar product={product} />
         </div>
     );
 }

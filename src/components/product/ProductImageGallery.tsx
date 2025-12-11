@@ -14,32 +14,32 @@ export default function ProductImageGallery({ images, productName }: ProductImag
     return (
         <div className="space-y-4">
             {/* Main Image */}
-            <div className="relative aspect-square bg-white rounded-xl border-2 border-gray-100 overflow-hidden shadow-lg">
+            <div className="relative aspect-square bg-white rounded-xl border border-gray-100 overflow-hidden group cursor-zoom-in">
                 <Image
                     src={images[selectedImage]}
                     alt={productName}
                     fill
-                    className="object-contain p-8"
+                    className="object-contain p-4 transition-transform duration-500 group-hover:scale-110"
                     priority
                 />
             </div>
 
             {/* Thumbnail Gallery */}
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-4 gap-2">
                 {images.map((image, index) => (
                     <button
                         key={index}
                         onClick={() => setSelectedImage(index)}
-                        className={`relative aspect-square rounded-lg border-2 overflow-hidden transition-all hover:scale-105 ${selectedImage === index
-                                ? 'border-blue-500 shadow-lg'
-                                : 'border-gray-200 hover:border-blue-300'
+                        className={`relative aspect-square rounded-lg border overflow-hidden transition-all ${selectedImage === index
+                            ? 'border-gray-900 shadow-sm opacity-100'
+                            : 'border-gray-200 hover:border-gray-400 opacity-70 hover:opacity-100'
                             }`}
                     >
                         <Image
                             src={image}
                             alt={`${productName} - تصویر ${index + 1}`}
                             fill
-                            className="object-contain p-2"
+                            className="object-contain p-1"
                         />
                     </button>
                 ))}
