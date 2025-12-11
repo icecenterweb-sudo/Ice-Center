@@ -1,0 +1,36 @@
+C:\Users\Hamidreza\OneDrive\Documents\Desktop\Ice-Center\node_modules\@prisma\client\runtime\client.js: Invalid source 
+map. Only conformant source maps can be used to find the original code. Cause: Error: sourceMapURL could not be parsed 
+C:\Users\Hamidreza\OneDrive\Documents\Desktop\Ice-Center\.next\dev\server\chunks\[root-of-the-server]__4cf339af._.js: Invalid source map. Only conformant source maps can be used to find the original code. Cause: Error: sourceMapURL could 
+not be parsed
+C:\Users\Hamidreza\OneDrive\Documents\Desktop\Ice-Center\.next\dev\server\chunks\[turbopack]_runtime.js: Invalid source map. Only conformant source maps can be used to find the original code. Cause: Error: sourceMapURL could not be parsedC:\Users\Hamidreza\OneDrive\Documents\Desktop\Ice-Center\.next\dev\server\chunks\node_modules_next_1b4fe249._.js: Invalid source map. Only conformant source maps can be used to find the original code. Cause: Error: sourceMapURL could not 
+be parsed
+C:\Users\Hamidreza\OneDrive\Documents\Desktop\Ice-Center\node_modules\next\dist\server\require-hook.js: Invalid source 
+map. Only conformant source maps can be used to find the original code. Cause: Error: sourceMapURL could not be parsed 
+C:\Users\Hamidreza\OneDrive\Documents\Desktop\Ice-Center\node_modules\next\dist\server\require.js: Invalid source map. 
+Only conformant source maps can be used to find the original code. Cause: Error: sourceMapURL could not be parsed      
+C:\Users\Hamidreza\OneDrive\Documents\Desktop\Ice-Center\node_modules\next\dist\server\load-components.js: Invalid source map. Only conformant source maps can be used to find the original code. Cause: Error: sourceMapURL could not be parsed
+C:\Users\Hamidreza\OneDrive\Documents\Desktop\Ice-Center\node_modules\next\dist\server\next-server.js: Invalid source map. Only conformant source maps can be used to find the original code. Cause: Error: sourceMapURL could not be parsed  
+C:\Users\Hamidreza\OneDrive\Documents\Desktop\Ice-Center\node_modules\next\dist\server\lib\trace\tracer.js: Invalid source map. Only conformant source maps can be used to find the original code. Cause: Error: sourceMapURL could not be parsed
+C:\Users\Hamidreza\OneDrive\Documents\Desktop\Ice-Center\node_modules\next\dist\server\dev\next-dev-server.js: Invalid 
+source map. Only conformant source maps can be used to find the original code. Cause: Error: sourceMapURL could not be 
+parsed
+C:\Users\Hamidreza\OneDrive\Documents\Desktop\Ice-Center\node_modules\next\dist\server\base-server.js: Invalid source map. Only conformant source maps can be used to find the original code. Cause: Error: sourceMapURL could not be parsed  
+C:\Users\Hamidreza\OneDrive\Documents\Desktop\Ice-Center\node_modules\next\dist\trace\trace.js: Invalid source map. Only conformant source maps can be used to find the original code. Cause: Error: sourceMapURL could not be parsed
+C:\Users\Hamidreza\OneDrive\Documents\Desktop\Ice-Center\node_modules\next\dist\server\lib\router-server.js: Invalid source map. Only conformant source maps can be used to find the original code. Cause: Error: sourceMapURL could not be parsed
+ ⨯ Error [PrismaClientConstructorValidationError]: Using engine type "client" requires either "adapter" or "accelerateUrl" to be provided to PrismaClient constructor.
+Read more at https://pris.ly/d/client-constructor
+    at module evaluation (C:\Users\Hamidreza\OneDrive\Documents\Desktop\Ice-Center\.next\dev\server\chunks\[root-of-the-server]__4cf339af._.js:65:42)
+    at instantiateModule (C:\Users\Hamidreza\OneDrive\Documents\Desktop\Ice-Center\.next\dev\server\chunks\[turbopack]_runtime.js:715:9)
+    at getOrInstantiateModuleFromParent (C:\Users\Hamidreza\OneDrive\Documents\Desktop\Ice-Center\.next\dev\server\chunks\[turbopack]_runtime.js:738:12)
+    at Context.esmImport [as i] (C:\Users\Hamidreza\OneDrive\Documents\Desktop\Ice-Center\.next\dev\server\chunks\[turbopack]_runtime.js:228:20)
+    at module evaluation (C:\Users\Hamidreza\OneDrive\Documents\Desktop\Ice-Center\.next\dev\server\chunks\[root-of-the-server]__4cf339af._.js:87:144)
+    at instantiateModule (C:\Users\Hamidreza\OneDrive\Documents\Desktop\Ice-Center\.next\dev\server\chunks\[turbopack]_runtime.js:715:9)
+    at getOrInstantiateModuleFromParent (C:\Users\Hamidreza\OneDrive\Documents\Desktop\Ice-Center\.next\dev\server\chunks\[turbopack]_runtime.js:738:12)
+    at Context.esmImport [as i] (C:\Users\Hamidreza\OneDrive\Documents\Desktop\Ice-Center\.next\dev\server\chunks\[turbopack]_runtime.js:228:20)
+    at instantiateModule (C:\Users\Hamidreza\OneDrive\Documents\Desktop\Ice-Center\.next\dev\server\chunks\[turbopack]_runtime.js:715:9)
+    at instantiateRuntimeModule (C:\Users\Hamidreza\OneDrive\Documents\Desktop\Ice-Center\.next\dev\server\chunks\[turbopack]_runtime.js:743:12)
+    at getOrInstantiateRuntimeModule (C:\Users\Hamidreza\OneDrive\Documents\Desktop\Ice-Center\.next\dev\server\chunks\[turbopack]_runtime.js:756:12)
+    at Object.m (C:\Users\Hamidreza\OneDrive\Documents\Desktop\Ice-Center\.next\dev\server\chunks\[turbopack]_runtime.js:765:18)
+    at Object.<anonymous> (C:\Users\Hamidreza\OneDrive\Documents\Desktop\Ice-Center\.next\dev\server\app\api\products\route.js:5:3) {
+  page: '/api/products'
+}

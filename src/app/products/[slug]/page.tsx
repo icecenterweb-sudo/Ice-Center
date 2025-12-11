@@ -11,7 +11,7 @@ import MiniPricingBox from '@/components/product/MiniPricingBox';
 import MobileActionBar from '@/components/product/MobileActionBar';
 import SimilarProducts from '@/components/product/SimilarProducts';
 import ProductTabs from '@/components/product/ProductTabs';
-import { Zap, Snowflake, Settings, Award, Shield, Wrench, Package, Phone } from 'lucide-react';
+import { Zap, Snowflake, Settings, Award } from 'lucide-react';
 
 // Demo product data
 const product = {
@@ -48,9 +48,9 @@ const specifications = [
         specs: [
             { label: 'ظرفیت تولید', value: '30 لیتر در ساعت' },
             { label: 'نوع کمپرسور', value: 'کمپرسور اسکرو ایتالیایی Copeland' },
-            { label: 'سیستم سرمایش', value: 'سیستم خنک‌کننده دوبل با گاز R404A' },
+            { label: 'سیستم سرمایش', value: 'سیستم خنک‌کننده دوبل گاز R404A' },
             { label: 'توان موتور', value: '3.5 کیلووات' },
-            { label: 'سیستم کنترل', value: 'پنل دیجیتال PLC با نمایشگر لمسی' },
+            { label: 'سیستم کنترل', value: 'پنل دیجیتال PLC نمایشگر لمسی' },
             { label: 'دمای کاری', value: '-8 تا -12 درجه سانتیگراد' },
         ],
     },
@@ -114,7 +114,7 @@ export default function ProductPage() {
 
                 {/* Top Section: Gallery, Info, BuyBox */}
                 {/* Desktop: 3 Columns. Mobile/Tablet: Stacked */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 border-b border-gray-100 pb-10">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 border-b border-gray-100 pb-10">
 
                     {/* Right: Gallery (approx 33%) */}
                     <div className="lg:col-span-4">
