@@ -3,66 +3,130 @@
 
 generator client {
   provider = "prisma-client-js"
+  engineType = "library"
 }
 
 datasource db {
   provider = "postgresql"
 }
 
+// ----------------------------------------------------------------------
+// Enums for Robust Filtering
+// ----------------------------------------------------------------------
+
+enum ProductCondition {
+  NEW
+  REFURBISHED
+  USED
+}
+
+enum PowerSource {
+  ELECTRIC
+  GAS
+  HYBRID
+}
+
+enum CoolingSystem {
+  AIR
+  WATER
+  MIXED
+}
+
+enum InventoryStatus {
+  IN_STOCK
+  LOW_STOCK
+  OUT_OF_STOCK
+  PRE_ORDER
+  DISCONTINUED
+}
+
+// ----------------------------------------------------------------------
+// Product Model
+// ----------------------------------------------------------------------
+
 model Product {
-  // Primary Key
-  id        Int      @id @default(autoincrement())
-  
-  // Core Product Information
+  // 1. Identity & Classification
+  id          Int      @id @default(autoincrement())
   name        String
   slug        String   @unique
+  sku         String?  @unique
   description String?  @db.Text
   
-  // Brand & Model Information
-  brand        String?
-  model        String?
-  manufacturer String?
-  sku          String?  @unique
-  
-  // Pricing
+  // Brand & Origin (Manufacturer merged into Brand)
+  brand                String?
+  model                String?
+  manufacturingCountry String?
+  condition            ProductCondition @default(NEW)
+
+  // 2. Pricing & Commercial
   price         Float
-  originalPrice Float?   // For showing discounts
-  discount      Float?   @default(0) // Percentage discount
-  taxRate       Float?   @default(0) // Tax percentage
+  listPrice     Float?   // MSRP / Before Discount
+  // currency removed (Assumed domestic)
+  // taxRate removed (Global config)
   
-  // Images
+  // 3. Inventory Status
+  stock         Int             @default(0)
+  inventoryStatus InventoryStatus @default(IN_STOCK)
+  // leadTime removed (Use description or specs)
+  
+  // Flags
+  isActive      Boolean  @default(true)
+  featured      Boolean  @default(false)
+  
+  // 4. Technical Specifications (Critical Filters ONLY)
+  // Power & Electrical
+  powerSource       PowerSource?    @default(ELECTRIC)
+  voltage           String?         // e.g. "220-240V"
+  phase             Int?            // e.g. 1 or 3
+  // frequency removed -> JSON
+  
+  power             String?         // e.g. "3.5 kW" (Display)
+  powerConsumption  Float?          // kW (Numeric for filtering)
+  
+  // Cooling & Systems
+  coolingSystem     CoolingSystem?
+  // refrigerantGas removed -> JSON
+  // compressorType removed -> JSON
+  // compressorBrand removed -> JSON
+  
+  // 5. Capacity & Performance
+  // productionCapacity removed -> JSON
+  // temperatureMin/Max removed -> JSON
+  
+  // 6. Physical Dimensions
+  width       Float?   // cm
+  depth       Float?   // cm
+  height      Float?   // cm
+  weightNet   Float?   // kg
+  weightGross Float?   // kg
+  
+  // 7. Media & Resources
   images        String[] @default([])
-  thumbnail     String?  // Main thumbnail image
+  thumbnail     String?
+  // videoUrl removed
+  files         String[] @default([]) // Manuals, Datasheets
   
-  // Categories & Organization
-  category      String?
-  subcategory   String?
+  // 8. Organization & Metadata
+  // category removed
+  // subcategory removed
+  subcategoryId Int?
+  subcategory   Subcategory? @relation(fields: [subcategoryId], references: [id])
+
   tags          String[] @default([])
   
-  // Stock & Availability
-  stock         Int      @default(0)
-  inStock       Boolean  @default(true)
-  isActive      Boolean  @default(true)
-  featured      Boolean  @default(false) // For homepage featured products
+  // Flexible Specs (Container for ALL removed niche fields)
+  specifications Json?   
+  features      String[] @default([])
   
-  // Product Specifications (JSON for flexible data)
-  specifications Json?   // { "power": "220V", "capacity": "10L", etc }
-  features      String[] @default([]) // Array of feature descriptions
-  
-  // Physical Properties
-  weight        Float?   // in kg
-  dimensions    Json?    // { "width": 50, "height": 100, "depth": 60 }
-  
-  // Warranty & Support
-  warranty      String?  // e.g., "2 years", "1 year manufacturer warranty"
-  
-  // SEO & Marketing
+  warranty      String?
+
+  // SEO
   metaTitle       String?
   metaDescription String?  @db.Text
   keywords        String[] @default([])
   
-  // Ratings & Reviews
-  rating        Float?   @default(0) // Average rating (0-5)
+  // Ratings
+  rating        Float?   @default(0)
   reviewCount   Int      @default(0)
   
   // Timestamps
@@ -70,9 +134,110 @@ model Product {
   updatedAt     DateTime @updatedAt
   
   @@index([slug])
-  @@index([category])
+  @@index([subcategoryId])
   @@index([brand])
+  @@index([sku])
   @@index([isActive])
   @@index([featured])
-  @@index([createdAt])
+}
+
+// ----------------------------------------------------------------------
+// Category & Subcategory Models
+// ----------------------------------------------------------------------
+
+model Category {
+  id            Int           @id @default(autoincrement())
+  name          String
+  slug          String        @unique
+  description   String?       @db.Text
+  image         String?
+  
+  subcategories Subcategory[]
+  
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Subcategory {
+  id          Int       @id @default(autoincrement())
+  name        String
+  slug        String    @unique
+  description String?   @db.Text
+  
+  categoryId  Int
+  category    Category  @relation(fields: [categoryId], references: [id])
+  
+  products    Product[]
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@index([categoryId])
+}
+
+// ----------------------------------------------------------------------
+// User & Customer Models
+// ----------------------------------------------------------------------
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+}
+
+model User {
+  id        Int        @id @default(autoincrement())
+  phone     String     @unique
+  name      String?
+  status    UserStatus @default(ACTIVE)
+  
+  addresses Address[]
+  
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([phone])
+}
+
+model Address {
+  id         Int      @id @default(autoincrement())
+  city       String
+  province   String?
+  address    String   @db.Text
+  postalCode String?
+  isDefault  Boolean  @default(false)
+  
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id])
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// ----------------------------------------------------------------------
+// Admin & Internal Models
+// ----------------------------------------------------------------------
+
+enum AdminRole {
+  ADMIN
+  EDITOR
+}
+
+enum AdminStatus {
+  ACTIVE
+  BLOCKED
+}
+
+model Admin {
+  id        Int         @id @default(autoincrement())
+  phone     String      @unique
+  name      String?
+  role      AdminRole   @default(ADMIN)
+  status    AdminStatus @default(ACTIVE)
+  
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([phone])
 }

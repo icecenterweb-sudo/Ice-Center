@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 
+export const runtime = 'nodejs'; // Prisma requires the Node.js runtime so the binary engine can run.
+
 // دریافت همه محصولات
 export async function GET() {
   try {

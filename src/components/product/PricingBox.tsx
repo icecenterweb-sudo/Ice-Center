@@ -2,9 +2,9 @@ import { CheckCircle2, Phone, Shield } from 'lucide-react';
 
 interface PricingBoxProps {
     product: {
-        availability: string;
+        inventoryStatus: string;
         price: number;
-        originalPrice: number;
+        listPrice: number;
         warranty: string;
     };
 }
@@ -14,7 +14,12 @@ export default function PricingBox({ product }: PricingBoxProps) {
         return new Intl.NumberFormat('fa-IR').format(price);
     };
 
-    const discount = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
+    const discount = product.listPrice
+        ? Math.round(((product.listPrice - product.price) / product.listPrice) * 100)
+        : 0;
+
+    const isInStock = product.inventoryStatus === 'IN_STOCK';
+    const inventoryLabel = isInStock ? 'موجود در انبار' : 'ناموجود';
 
     return (
         <div className="bg-gray-50/50 rounded-lg border border-gray-200 p-4 space-y-4">
@@ -48,10 +53,10 @@ export default function PricingBox({ product }: PricingBoxProps) {
 
             {/* Shipping */}
             <div className="flex items-center gap-2 px-1">
-                <CheckCircle2 className="w-4 h-4 text-cyan-600" />
+                <CheckCircle2 className={`w-4 h-4 ${isInStock ? 'text-cyan-600' : 'text-gray-400'}`} />
                 <span className="text-xs font-medium text-gray-700">
-                    {product.availability}
-                    <span className="mr-1 text-gray-400 text-[10px]">(ارسال از ۳ روز کاری آینده)</span>
+                    {inventoryLabel}
+                    {isInStock && <span className="mr-1 text-gray-400 text-[10px]">(ارسال از ۳ روز کاری آینده)</span>}
                 </span>
             </div>
 
@@ -61,7 +66,7 @@ export default function PricingBox({ product }: PricingBoxProps) {
                 <div className="flex flex-col items-end mb-4">
                     {discount > 0 && (
                         <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs text-gray-400 line-through tracking-wider">{formatPrice(product.originalPrice)}</span>
+                            <span className="text-xs text-gray-400 line-through tracking-wider">{formatPrice(product.listPrice)}</span>
                             <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">%{discount}</span>
                         </div>
                     )}
@@ -71,8 +76,8 @@ export default function PricingBox({ product }: PricingBoxProps) {
                     </div>
                 </div>
 
-                <button className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-lg transition-colors shadow-md text-sm mb-2">
-                    افزودن به سبد خرید
+                <button className={`w-full font-bold py-3 rounded-lg transition-colors shadow-md text-sm mb-2 ${isInStock ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}>
+                    {isInStock ? 'افزودن به سبد خرید' : 'ناموجود'}
                 </button>
                 <button className="w-full bg-white border border-gray-300 hover:border-gray-400 text-gray-700 font-semibold py-2.5 rounded-lg transition-colors text-sm">
                     مشاوره رایگان خرید

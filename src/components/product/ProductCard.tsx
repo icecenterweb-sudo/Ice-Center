@@ -10,11 +10,11 @@ interface ProductCardProps {
         slug: string;
         name: string;
         price: number;
-        originalPrice?: number;
+        listPrice?: number;
         image: string;
         rating: number;
         reviewCount: number;
-        availability: boolean;
+        inventoryStatus: string;
         specs?: {
             capacity?: string;
             power?: string;
@@ -29,9 +29,11 @@ export default function ProductCard({ product }: ProductCardProps) {
         return new Intl.NumberFormat('fa-IR').format(price);
     };
 
-    const discount = product.originalPrice
-        ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+    const discount = product.listPrice
+        ? Math.round(((product.listPrice - product.price) / product.listPrice) * 100)
         : 0;
+
+    const isInStock = product.inventoryStatus === 'IN_STOCK' || product.inventoryStatus === 'LOW_STOCK';
 
     return (
         <Link href={`/products/${product.slug}`} className="block h-full group">
@@ -104,7 +106,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
                             {/* Availability/Rating */}
                             <div className="flex flex-col gap-1">
-                                {product.availability ? (
+                                {isInStock ? (
                                     <div className="flex items-center gap-1 text-[10px] text-teal-600 font-medium bg-teal-50 px-2 py-0.5 rounded-full w-fit">
                                         <Check className="w-3 h-3" />
                                         <span>موجود در انبار</span>
@@ -118,12 +120,12 @@ export default function ProductCard({ product }: ProductCardProps) {
 
                             {/* Price */}
                             <div className="text-left">
-                                {product.availability ? (
+                                {isInStock ? (
                                     product.price > 0 ? (
                                         <>
-                                            {product.originalPrice && (
+                                            {product.listPrice && product.listPrice > product.price && (
                                                 <div className="text-[11px] text-gray-400 line-through decoration-red-200 mb-0.5 ml-1">
-                                                    {formatPrice(product.originalPrice)}
+                                                    {formatPrice(product.listPrice)}
                                                 </div>
                                             )}
                                             <div className="flex items-center gap-1 text-gray-900">

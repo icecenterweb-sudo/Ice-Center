@@ -6,9 +6,9 @@ interface MiniPricingBoxProps {
     product: {
         name: string;
         price: number;
-        originalPrice: number;
+        listPrice: number;
         images: string[];
-        availability: string;
+        inventoryStatus: string;
     };
 }
 
@@ -16,6 +16,9 @@ export default function MiniPricingBox({ product }: MiniPricingBoxProps) {
     const formatPrice = (price: number) => {
         return new Intl.NumberFormat('fa-IR').format(price);
     };
+
+    const isInStock = product.inventoryStatus === 'IN_STOCK';
+    const inventoryLabel = isInStock ? 'موجود' : 'ناموجود';
 
     return (
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-3">
@@ -34,8 +37,8 @@ export default function MiniPricingBox({ product }: MiniPricingBoxProps) {
                         {product.name}
                     </h3>
                     <div className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                        <span className="text-[10px] text-gray-500">{product.availability}</span>
+                        <span className={`w-2 h-2 rounded-full ${isInStock ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                        <span className="text-[10px] text-gray-500">{inventoryLabel}</span>
                     </div>
                 </div>
             </div>
@@ -43,9 +46,9 @@ export default function MiniPricingBox({ product }: MiniPricingBoxProps) {
             {/* Price & Action */}
             <div>
                 <div className="flex flex-col items-end mb-3">
-                    {product.originalPrice > product.price && (
+                    {product.listPrice > product.price && (
                         <span className="text-xs text-gray-400 line-through tracking-wider mb-0.5">
-                            {formatPrice(product.originalPrice)}
+                            {formatPrice(product.listPrice)}
                         </span>
                     )}
                     <div className="flex items-center gap-1">
@@ -54,8 +57,8 @@ export default function MiniPricingBox({ product }: MiniPricingBoxProps) {
                     </div>
                 </div>
 
-                <button className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 rounded-lg transition-colors shadow-sm text-sm">
-                    افزودن به سبد
+                <button className={`w-full font-bold py-2.5 rounded-lg transition-colors shadow-sm text-sm ${isInStock ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}>
+                    {isInStock ? 'افزودن به سبد' : 'ناموجود'}
                 </button>
             </div>
         </div>

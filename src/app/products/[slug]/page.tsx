@@ -20,8 +20,8 @@ const product = {
     brand: 'آیس سنتر',
     model: 'ICE-Pro 3000',
     price: 285000000,
-    originalPrice: 320000000,
-    availability: 'موجود در انبار',
+    listPrice: 320000000,
+    inventoryStatus: 'IN_STOCK',
     rating: 4.7,
     reviewCount: 127,
     images: [

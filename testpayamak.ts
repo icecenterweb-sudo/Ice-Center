@@ -1,0 +1,48 @@
+const https = require('https');
+
+console.log('Script started');
+
+// Use the previously tested number
+const data = JSON.stringify({
+    'to': '09130027927'
+});
+
+const options = {
+    hostname: 'console.melipayamak.com',
+    port: 443,
+    path: '/api/send/otp/c9e9786d954841d0a03bbab359faa072',
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': data.length
+    }
+};
+
+console.log('Options prepared');
+
+const req = https.request(options, (res) => {
+    console.log('statusCode: ' + res.statusCode);
+
+    res.on('data', (d) => {
+        console.log('Data received chunk');
+        process.stdout.write(d);
+    });
+
+    res.on('end', () => {
+        console.log('\nResponse ended');
+    });
+});
+
+req.on('error', (error) => {
+    console.error('Request Error:', error);
+});
+
+req.on('socket', () => {
+    console.log('Socket assigned');
+});
+
+console.log('Writing data...');
+req.write(data);
+console.log('Ending request...');
+req.end();
+console.log('Request ended, waiting for response...');
