@@ -8,14 +8,14 @@ export async function createProduct(formData: FormData) {
     const name = formData.get('name') as string;
     const description = formData.get('description') as string;
     const price = parseFloat(formData.get('price') as string);
-    const stock = parseInt(formData.get('stock') as string);
+    const stock = parseInt(formData.get('stock') as string) || 0;
     const brand = formData.get('brand') as string;
     const sku = formData.get('sku') as string;
-    // const categoryId = parseInt(formData.get('category') as string); // Need to fix schema/seed first
+    const subcategoryId = formData.get('subcategoryId') as string;
 
     // Basic validation
     if (!name || isNaN(price)) {
-        return { error: 'لطفاً نام و قیمت را وارد کنید' };
+        throw new Error('لطفاً نام و قیمت را وارد کنید');
     }
 
     try {
@@ -32,15 +32,14 @@ export async function createProduct(formData: FormData) {
                 sku: sku || undefined,
                 slug,
                 isActive: true,
-                // Temporary hardcoded default until category selection is robust
-                // subcategoryId: categoryId || undefined 
+                subcategoryId: subcategoryId ? parseInt(subcategoryId) : undefined
             }
         });
 
         revalidatePath('/admin/dashboard/products');
     } catch (error) {
         console.error('Failed to create product:', error);
-        return { error: 'خطا در ثبت محصول' };
+        throw new Error('خطا در ثبت محصول');
     }
 
     redirect('/admin/dashboard/products');

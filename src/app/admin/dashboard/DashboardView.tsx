@@ -4,13 +4,16 @@ import StatsCard from '@/components/admin/StatsCard';
 import { Package, Users, FolderTree, ShoppingCart, TrendingUp, Clock, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { toPersianNumber } from '@/utils/persian';
+import { toPersianNumber, formatPersianNumber } from '@/utils/persian';
 
 interface DashboardViewProps {
     productCount: number;
+    userCount: number;
+    monthlySales: number;
+    newOrdersCount: number;
 }
 
-export default function DashboardView({ productCount }: DashboardViewProps) {
+export default function DashboardView({ productCount, userCount, monthlySales, newOrdersCount }: DashboardViewProps) {
     const router = useRouter();
 
     return (
@@ -58,7 +61,7 @@ export default function DashboardView({ productCount }: DashboardViewProps) {
                     icon={Package}
                     title="محصولات فعال"
                     value={toPersianNumber(productCount)}
-                    trend="۱۲%"
+                    trend={productCount > 0 ? "فعال" : ""}
                     trendUp
                     color="blue"
                     index={0}
@@ -66,8 +69,8 @@ export default function DashboardView({ productCount }: DashboardViewProps) {
                 <StatsCard
                     icon={Users}
                     title="کاربران ثبت‌نامی"
-                    value="۱,۲۰۵"
-                    trend="۸%"
+                    value={toPersianNumber(userCount)}
+                    trend={userCount > 0 ? "کاربر" : ""}
                     trendUp
                     color="purple"
                     index={1}
@@ -75,8 +78,8 @@ export default function DashboardView({ productCount }: DashboardViewProps) {
                 <StatsCard
                     icon={ShoppingCart}
                     title="سفارشات جدید"
-                    value="۱۸"
-                    trend="۲%"
+                    value={toPersianNumber(newOrdersCount)}
+                    trend={newOrdersCount > 0 ? "جدید" : ""}
                     trendUp={false}
                     color="cyan"
                     index={2}
@@ -84,8 +87,8 @@ export default function DashboardView({ productCount }: DashboardViewProps) {
                 <StatsCard
                     icon={TrendingUp}
                     title="فروش ماهانه"
-                    value="۴۵۰M"
-                    trend="۲۴%"
+                    value={monthlySales > 0 ? formatPersianNumber(monthlySales) + " تومان" : "۰ تومان"}
+                    trend={monthlySales > 0 ? "این ماه" : ""}
                     trendUp
                     color="orange"
                     index={3}
