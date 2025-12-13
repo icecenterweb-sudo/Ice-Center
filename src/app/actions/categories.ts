@@ -12,6 +12,7 @@ export async function createCategory(formData: FormData) {
     const name = formData.get('name') as string;
     const slug = formData.get('slug') as string;
     const description = formData.get('description') as string;
+    const imageData = formData.get('imageData') as string | null;
 
     if (!name || !slug) {
         throw new Error('نام و اسلاگ الزامی است');
@@ -22,7 +23,8 @@ export async function createCategory(formData: FormData) {
             data: {
                 name,
                 slug,
-                description: description || undefined
+                description: description || undefined,
+                image: imageData || undefined
             }
         });
 
@@ -39,6 +41,7 @@ export async function updateCategory(id: number, formData: FormData) {
     const name = formData.get('name') as string;
     const slug = formData.get('slug') as string;
     const description = formData.get('description') as string;
+    const imageData = formData.get('imageData') as string | null;
 
     if (!name || !slug) {
         throw new Error('نام و اسلاگ الزامی است');
@@ -50,7 +53,8 @@ export async function updateCategory(id: number, formData: FormData) {
             data: {
                 name,
                 slug,
-                description: description || undefined
+                description: description || undefined,
+                ...(imageData && { image: imageData })
             }
         });
 

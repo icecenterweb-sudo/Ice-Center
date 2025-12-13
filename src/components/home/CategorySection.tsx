@@ -9,70 +9,28 @@ import { Navigation, Autoplay } from 'swiper/modules';
 // Import Swiper styles
 import 'swiper/css';
 import 'swiper/css/navigation';
+import { toPersianNumber } from '@/utils/persian';
 
 interface Category {
   id: number;
   name: string;
   slug: string;
-  image: string;
+  image: string | null;
+  productCount: number;
 }
 
-const CategorySection: React.FC = () => {
-  const categories: Category[] = [
-    {
-      id: 1,
-      name: 'دستگاه بستنی‌ساز',
-      slug: 'ice-cream-maker',
-      image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999156/711Jw2d2LuL_jwsd9x.jpg'
-    },
-    {
-      id: 2,
-      name: 'دستگاه یخ‌ساز',
-      slug: 'ice-maker',
-      image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999174/yakhsaz-50kg-1232_adlyut.jpg'
-    },
-    {
-      id: 3,
-      name: 'فریزر صنعتی',
-      slug: 'freezer',
-      image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999204/001-min-2_ip52ev.jpg'
-    },
-    {
-      id: 4,
-      name: 'یخچال صنعتی',
-      slug: 'refrigerator',
-      image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999204/001-min-2_ip52ev.jpg'
-    },
-    {
-      id: 5,
-      name: 'آبمیوه‌گیر',
-      slug: 'juice-maker',
-      image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999218/dc2c39_kz3wpy.jpg'
-    },
-    {
-      id: 6,
-      name: 'قطعات یدکی',
-      slug: 'spare-parts',
-      image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999349/cp401-404-mobile-430in430-3_scz9sw.png'
-    },
-    {
-      id: 7,
-      name: 'لوازم جانبی',
-      slug: 'accessories',
-      image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999349/D9_81_D8_B1_DB_8C_D8_B2-_D8_AF_D8_B1_D8_A7_DB_8C_D8_B1-_D8_AF_D9_87-_DA_A9_D8_B4_D9_88-_D8_A2_D8_B1_DB_8C_D8_A7-_D8_AA_D8_AC_D9_87_DB_8C_D8_B2_D8_A7_D8_AA_kprigf.jpg'
-    },
-    {
-      id: 8,
-      name: 'تجهیزات کافی‌شاپ',
-      slug: 'cafe-equipment',
-      image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999309/D9_82_D9_87_D9_88_D9_87-_D8_B3_D8_A7_D8_B2-_DA_A9_D8_A7_D9_81_DB_8C-_D8_B4_D8_A7_D9_BE-_D8_AF_D9_88-_DA_AF_D8_B1_D9_88_D9_BE-_D9_81_D8_A7_D8_A6_D9_85_D8_A7-_D9_85_D8_AF_D9_84-Dieci-A2-Tall_i9vkgd.jpg'
-    },
-  ];
+interface CategorySectionProps {
+  categories: Category[];
+}
+
+const CategorySection: React.FC<CategorySectionProps> = ({ categories }) => {
+  // Fallback placeholder image for categories without images
+  const fallbackImage = 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999156/711Jw2d2LuL_jwsd9x.jpg';
 
   return (
     <section className="w-full bg-white py-8 md:py-12">
       <div className="max-w-[1600px] mx-auto px-4">
-        
+
         {/* اسلایدر دسته‌بندی‌ها */}
         <div className="relative">
           <Swiper
@@ -117,31 +75,35 @@ const CategorySection: React.FC = () => {
                 >
                   {/* دایره با 2 بوردر */}
                   <div className="relative mb-3">
-                    
+
                     {/* بوردر میانی (Ring دوم) */}
                     <div className="relative w-20 h-20 md:w-24 md:h-24 lg:w-30 lg:h-30 rounded-full border-3 border-sky-500 group-hover:border-sky-600 transition-all duration-300 bg-white">
-                      
+
                       {/* بوردر داخلی */}
                       <div className="absolute inset-1 rounded-full border-2 border-gray-200 transition-all duration-300 overflow-hidden">
-                        
+
                         {/* تصویر */}
                         <Image
-                          src={category.image}
+                          src={category.image || fallbackImage}
                           alt={category.name}
                           fill
-                          className="object-cover scale-65 group-hover:scale-75 transition-transform duration-300"
+                          className="object-cover bg-blue-300 group-hover:bg-stone-300 transition-transform duration-300"
                         />
                       </div>
                     </div>
 
-                    {/* Badge تعداد */}
-                    <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-6 h-6 lg:w-7 lg:h-7 rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                      12
-                    </div>
+                    {/* Badge تعداد محصولات */}
+                    {category.productCount > 0 && (
+                      <div className="absolute top-0 right-0 z-10 transform scale-0 group-hover:scale-100 transition-transform duration-300 origin-bottom-left">
+                        <span className="flex h-7 min-w-[28px] items-center justify-center rounded-full bg-gradient-to-r from-blue-300 to-blue-400 px-1.5 text-[11px] md:text-xs font-bold text-white shadow-lg ring-2 ring-white">
+                          {category.productCount > 99 ? '۹۹+' : toPersianNumber(category.productCount)}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {/* نام دسته */}
-                  <span className="text-xs md:text-sm lg:text-base font-medium text-gray-700 text-center group-hover:text-blue-600 transition-colors duration-300 line-clamp-2 px-1">
+                  <span className="text-xs md:text-sm font-medium text-gray-700 text-center group-hover:text-blue-600 transition-colors duration-300 line-clamp-2 px-1">
                     {category.name}
                   </span>
                 </Link>
@@ -152,7 +114,7 @@ const CategorySection: React.FC = () => {
           {/* دکمه‌های Navigation - فقط دسکتاپ و اگه بیش از 8 تا باشه */}
           {categories.length > 8 && (
             <>
-              <button 
+              <button
                 className="category-button-prev hidden lg:flex absolute -right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white hover:bg-blue-50 rounded-full items-center justify-center cursor-pointer shadow-lg transition-all hover:scale-110 border border-gray-200"
                 aria-label="دسته قبلی"
               >
@@ -161,7 +123,7 @@ const CategorySection: React.FC = () => {
                 </svg>
               </button>
 
-              <button 
+              <button
                 className="category-button-next hidden lg:flex absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white hover:bg-blue-50 rounded-full items-center justify-center cursor-pointer shadow-lg transition-all hover:scale-110 border border-gray-200"
                 aria-label="دسته بعدی"
               >

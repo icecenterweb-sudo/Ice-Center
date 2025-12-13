@@ -33,20 +33,20 @@ export default function DashboardView({ productCount, userCount, monthlySales, n
                 <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
                     <div>
                         <h1 className="text-3xl font-extrabold mb-2 tracking-tight">خوش آمدید، مدیر سیستم 👋</h1>
-                        <p className="text-blue-100/90 text-lg max-w-xl">
+                        <p className="text-sky-50/90 text-lg max-w-xl">
                             گزارش عملکرد امروز فروشگاه آیس سنتر ایران. وضعیت کلی سیستم پایدار است.
                         </p>
                     </div>
                     <div className="flex gap-3">
                         <button
                             onClick={() => alert('گزارش کامل در حال توسعه است')}
-                            className="bg-white/20 backdrop-blur-md hover:bg-white/30 text-white px-6 py-3 rounded-xl font-bold transition-all border border-white/10 shadow-lg"
+                            className="bg-white/20 backdrop-blur-md hover:bg-white/30 text-white px-6 py-3 rounded-xl font-bold transition-all border border-white/20 shadow-lg"
                         >
                             گزارش کامل
                         </button>
                         <button
                             onClick={() => router.push('/admin/dashboard/products/add')}
-                            className="bg-white text-blue-600 hover:bg-blue-50 px-6 py-3 rounded-xl font-bold transition-all shadow-lg flex items-center gap-2"
+                            className="bg-white text-sky-600 hover:bg-sky-50 px-6 py-3 rounded-xl font-bold transition-all shadow-lg flex items-center gap-2"
                         >
                             <Package className="w-5 h-5" />
                             محصول جدید

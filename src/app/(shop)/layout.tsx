@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./../globals.css";
 import { Toaster } from "react-hot-toast";
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
 
 const yekan = localFont({
   src: [
@@ -40,7 +42,7 @@ export const metadata: Metadata = {
   description: "فروشگاه تخصصی دستگاه بستنی‌ساز، یخ‌ساز، آبمیوه‌گیری، فریزر و یخچال صنعتی",
 };
 
-export default function RootLayout({
+export default function ShopLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -48,7 +50,11 @@ export default function RootLayout({
   return (
     <html lang="fa" dir="rtl">
       <body className={`${yekan.variable} font-yekan antialiased bg-gray-50`}>
-        {children}
+        <Header />
+        <main className="min-h-screen">
+          {children}
+        </main>
+        <Footer />
         <Toaster position="bottom-left" />
       </body>
     </html>

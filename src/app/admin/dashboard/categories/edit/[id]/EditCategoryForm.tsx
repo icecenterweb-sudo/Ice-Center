@@ -5,12 +5,14 @@ import { ArrowRight, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useFormStatus } from 'react-dom';
 import { useState } from 'react';
+import ImageUpload from '@/components/admin/ImageUpload';
 
 interface Category {
     id: number;
     name: string;
     slug: string;
     description: string | null;
+    image: string | null;
 }
 
 interface EditCategoryFormProps {
@@ -38,6 +40,7 @@ function SubmitButton() {
 export default function EditCategoryForm({ category }: EditCategoryFormProps) {
     const [name, setName] = useState(category.name);
     const [slug, setSlug] = useState(category.slug);
+    const [imageFile, setImageFile] = useState<File | null>(null);
 
     // Auto-generate slug from name
     const handleNameChange = (value: string) => {
@@ -50,7 +53,21 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
         setSlug(autoSlug);
     };
 
-    const updateCategoryWithId = updateCategory.bind(null, category.id);
+    const handleSubmit = async (formData: FormData) => {
+        // Convert image to base64 if exists
+        if (imageFile) {
+            const reader = new FileReader();
+            reader.readAsDataURL(imageFile);
+            await new Promise((resolve) => {
+                reader.onloadend = () => {
+                    formData.append('imageData', reader.result as string);
+                    resolve(null);
+                };
+            });
+        }
+
+        return updateCategory(category.id, formData);
+    };
 
     return (
         <div className="max-w-2xl mx-auto space-y-6">
@@ -69,7 +86,7 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
             </div>
 
             {/* Form */}
-            <form action={updateCategoryWithId} className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-5">
+            <form action={handleSubmit} className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-5">
                 <div>
                     <div className="flex items-center justify-between mb-2">
                         <label className="block text-sm font-medium text-gray-700">
@@ -131,6 +148,8 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
                         <span>توضیحات برای سئو و نمایش در صفحه دسته‌بندی - توصیه: 100-160 کاراکتر</span>
                     </p>
                 </div>
+
+                <ImageUpload currentImage={category.image} onImageChange={setImageFile} />
 
                 <SubmitButton />
             </form>

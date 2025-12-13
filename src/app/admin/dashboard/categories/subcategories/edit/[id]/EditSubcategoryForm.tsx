@@ -1,11 +1,29 @@
 'use client';
 
-import { createCategory } from '@/app/actions/categories';
+import { updateSubcategory } from '@/app/actions/categories';
 import { ArrowRight, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useFormStatus } from 'react-dom';
 import { useState } from 'react';
-import ImageUpload from '@/components/admin/ImageUpload';
+
+interface Category {
+    id: number;
+    name: string;
+    slug: string;
+}
+
+interface Subcategory {
+    id: number;
+    name: string;
+    slug: string;
+    description: string | null;
+    category: Category;
+}
+
+interface EditSubcategoryFormProps {
+    subcategory: Subcategory;
+    categories: Category[];
+}
 
 function SubmitButton() {
     const { pending } = useFormStatus();
@@ -13,22 +31,21 @@ function SubmitButton() {
         <button
             type="submit"
             disabled={pending}
-            className="w-full bg-gradient-to-l from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold py-4 rounded-xl shadow-lg transition-all disabled:opacity-50"
+            className="w-full bg-gradient-to-l from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg transition-all disabled:opacity-50"
         >
-            {pending ? 'در حال ذخیره...' : (
+            {pending ? 'در حال بروزرسانی...' : (
                 <>
                     <Save className="w-5 h-5 inline ml-2" />
-                    ذخیره دسته‌بندی
+                    بروزرسانی زیردسته
                 </>
             )}
         </button>
     );
 }
 
-export default function CategoryForm() {
-    const [name, setName] = useState('');
-    const [slug, setSlug] = useState('');
-    const [imageFile, setImageFile] = useState<File | null>(null);
+export default function EditSubcategoryForm({ subcategory, categories }: EditSubcategoryFormProps) {
+    const [name, setName] = useState(subcategory.name);
+    const [slug, setSlug] = useState(subcategory.slug);
 
     // Auto-generate slug from name
     const handleNameChange = (value: string) => {
@@ -41,21 +58,7 @@ export default function CategoryForm() {
         setSlug(autoSlug);
     };
 
-    const handleSubmit = async (formData: FormData) => {
-        // Convert image to base64 if exists
-        if (imageFile) {
-            const reader = new FileReader();
-            reader.readAsDataURL(imageFile);
-            await new Promise((resolve) => {
-                reader.onloadend = () => {
-                    formData.append('imageData', reader.result as string);
-                    resolve(null);
-                };
-            });
-        }
-
-        return createCategory(formData);
-    };
+    const updateSubcategoryWithId = updateSubcategory.bind(null, subcategory.id);
 
     return (
         <div className="max-w-2xl mx-auto space-y-6">
@@ -68,17 +71,17 @@ export default function CategoryForm() {
                     <ArrowRight className="w-5 h-5" />
                 </Link>
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">افزودن دسته‌بندی جدید</h1>
-                    <p className="text-gray-500 text-sm mt-1">ایجاد دسته‌بندی اصلی برای محصولات</p>
+                    <h1 className="text-2xl font-bold text-gray-900">ویرایش زیردسته</h1>
+                    <p className="text-gray-500 text-sm mt-1">ویرایش اطلاعات زیردسته "{subcategory.name}"</p>
                 </div>
             </div>
 
             {/* Form */}
-            <form action={handleSubmit} className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-5">
+            <form action={updateSubcategoryWithId} className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-5">
                 <div>
                     <div className="flex items-center justify-between mb-2">
                         <label className="block text-sm font-medium text-gray-700">
-                            نام دسته‌بندی<span className="text-red-500">*</span>
+                            نام زیردسته<span className="text-red-500">*</span>
                         </label>
                         <span className={`text-xs font-mono ${name.length > 60 ? 'text-red-500' : name.length > 40 ? 'text-orange-500' : name.length > 0 ? 'text-green-500' : 'text-gray-400'}`}>
                             {name.length}/60
@@ -114,8 +117,27 @@ export default function CategoryForm() {
                         required
                     />
                     <p className="text-xs text-gray-500 mt-1.5">
-                        آدرس URL دسته‌بندی (خودکار از نام ایجاد می‌شود، قابل ویرایش)
+                        آدرس URL زیردسته (خودکار از نام ایجاد می‌شود، قابل ویرایش)
                     </p>
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        دسته‌بندی اصلی<span className="text-red-500">*</span>
+                    </label>
+                    <select
+                        name="categoryId"
+                        defaultValue={subcategory.category.id}
+                        className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900"
+                        required
+                    >
+                        {categories.map((cat) => (
+                            <option key={cat.id} value={cat.id}>
+                                {cat.name}
+                            </option>
+                        ))}
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1.5">دسته‌بندی والد این زیردسته</p>
                 </div>
 
                 <div>
@@ -127,16 +149,15 @@ export default function CategoryForm() {
                         name="description"
                         rows={4}
                         maxLength={200}
-                        placeholder="توضیحات کوتاه درباره این دسته‌بندی..."
+                        defaultValue={subcategory.description || ''}
+                        placeholder="توضیحات کوتاه درباره این زیردسته..."
                         className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none resize-none text-gray-900"
                     />
                     <p className="text-xs text-gray-500 mt-1.5 flex items-start gap-1.5">
                         <span className="text-blue-500 mt-0.5">💡</span>
-                        <span>توضیحات برای سئو و نمایش در صفحه دسته‌بندی - توصیه: 100-160 کاراکتر</span>
+                        <span>توضیحات برای سئو و نمایش در صفحه زیردسته - توصیه: 100-160 کاراکتر</span>
                     </p>
                 </div>
-
-                <ImageUpload onImageChange={setImageFile} />
 
                 <SubmitButton />
             </form>

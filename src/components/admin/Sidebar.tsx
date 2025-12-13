@@ -48,7 +48,7 @@ export default function Sidebar() {
             </AnimatePresence>
 
             {/* Sidebar */}
-            <aside className={`w-72 bg-[#0f172a] text-white flex flex-col h-screen fixed right-0 top-0 shadow-2xl z-50 overflow-hidden transition-transform duration-300 lg:translate-x-0 ${isMobileOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
+            <aside className={`w-72 bg-slate-700 text-white flex flex-col h-screen fixed right-0 top-0 shadow-2xl z-50 overflow-hidden transition-transform duration-300 lg:translate-x-0 ${isMobileOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
                 }`}>
                 {/* Mobile Close Button */}
                 <button
@@ -59,9 +59,9 @@ export default function Sidebar() {
                 </button>
 
                 {/* Decorative Background Elements */}
-                <div className="absolute top-0 right-0 w-full h-full overflow-hidden pointer-events-none opacity-20">
-                    <div className="absolute top-[10%] -right-[10%] w-64 h-64 bg-blue-500 rounded-full blur-[100px]" />
-                    <div className="absolute bottom-[10%] -left-[10%] w-64 h-64 bg-cyan-500 rounded-full blur-[100px]" />
+                <div className="absolute top-0 right-0 w-full h-full overflow-hidden pointer-events-none opacity-10">
+                    <div className="absolute top-[10%] -right-[10%] w-64 h-64 bg-slate-600 rounded-full blur-[100px]" />
+                    <div className="absolute bottom-[10%] -left-[10%] w-64 h-64 bg-stone-600 rounded-full blur-[100px]" />
                 </div>
 
                 {/* Header / Brand */}
@@ -71,14 +71,14 @@ export default function Sidebar() {
                         animate={{ opacity: 1, y: 0 }}
                         className="flex items-center gap-4"
                     >
-                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+                        <div className="w-12 h-12 bg-gradient-to-br from-gray-700 to-gray-600 rounded-xl flex items-center justify-center shadow-lg">
                             <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                             </svg>
                         </div>
                         <div>
                             <h1 className="text-xl font-bold tracking-tight">پنل مدیریت</h1>
-                            <p className="text-xs text-blue-200/70 font-medium mt-0.5">آیس سنتر ایران</p>
+                            <p className="text-xs text-gray-400 font-medium mt-0.5">آیس سنتر ایران</p>
                         </div>
                     </motion.div>
                 </div>
@@ -96,7 +96,7 @@ export default function Sidebar() {
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: index * 0.05 }}
                                     className={`relative group flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-300 ${isActive
-                                        ? 'bg-blue-600/10 text-white'
+                                        ? 'bg-slate-700/50 text-white'
                                         : 'text-slate-400 hover:text-white hover:bg-white/5'
                                         }`}
                                 >
@@ -104,7 +104,7 @@ export default function Sidebar() {
                                     {isActive && (
                                         <motion.div
                                             layoutId="activeTab"
-                                            className="absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl shadow-lg shadow-blue-500/20"
+                                            className="absolute inset-0 bg-gradient-to-r from-sky-600 to-slate-600 rounded-xl shadow-lg"
                                             initial={false}
                                             transition={{ type: "spring", stiffness: 500, damping: 30 }}
                                         />

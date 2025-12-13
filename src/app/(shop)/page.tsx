@@ -5,16 +5,54 @@ import AmazingOfferCarousel from '@/components/home/OfferCarousel';
 
 import ProductCarousel from '@/components/home/ProductCarousel';
 import BlogCarousel from '@/components/home/BlogCarousel';
+import { prisma } from '@/lib/db';
 
 async function getProducts() {
   const res = await fetch('http://localhost:3000/api/products', {
     cache: 'no-store'
   });
-  
+
   if (!res.ok) return [];
-  
+
   const data = await res.json();
   return data.data || [];
+}
+
+async function getCategories() {
+  try {
+    const categories = await prisma.category.findMany({
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        image: true,
+        subcategories: {
+          select: {
+            _count: {
+              select: {
+                products: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: { name: 'asc' }
+    });
+
+    // Calculate total product count for each category
+    const categoriesWithCount = categories.map(category => ({
+      id: category.id,
+      name: category.name,
+      slug: category.slug,
+      image: category.image,
+      productCount: category.subcategories.reduce((total, sub) => total + sub._count.products, 0)
+    }));
+
+    return categoriesWithCount;
+  } catch (error) {
+    console.error('Failed to fetch categories:', error);
+    return [];
+  }
 }
 
 const singleBanner = [
@@ -52,6 +90,7 @@ const doubleBanner = [
 
 export default async function Home() {
   const products = await getProducts();
+  const categories = await getCategories();
 
   return (
     <>
@@ -59,13 +98,13 @@ export default async function Home() {
       <HeroSlider />
 
       {/* بخش دسته‌بندی‌ها */}
-      <CategorySection />
+      <CategorySection categories={categories} />
 
       {/* تخفیف‌های ویژه */}
       <AmazingOfferCarousel />
 
       {/* بخش بنر تکی */}
-      <BannerSection 
+      <BannerSection
         banners={singleBanner}
         heightClass="h-[130px] md:h-[250px] lg:h-[180px] xl:h-[210px]"
       />
@@ -80,7 +119,7 @@ export default async function Home() {
       <ProductCarousel title="دستگاه‌های آبمیوه‌گیری" />
 
       {/* بخش بنر دوتایی */}
-      <BannerSection 
+      <BannerSection
         banners={doubleBanner}
         heightClass="h-[130px] md:h-[250px] lg:h-[180px] xl:h-[180px]"
       />
