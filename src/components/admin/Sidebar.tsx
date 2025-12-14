@@ -48,7 +48,7 @@ export default function Sidebar() {
             </AnimatePresence>
 
             {/* Sidebar */}
-            <aside className={`w-72 bg-slate-700 text-white flex flex-col h-screen fixed right-0 top-0 shadow-2xl z-50 overflow-hidden transition-transform duration-300 lg:translate-x-0 ${isMobileOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
+            <aside className={`w-72 bg-gray-700 text-white flex flex-col h-screen fixed right-0 top-0 shadow-2xl z-50 overflow-hidden transition-transform duration-300 lg:translate-x-0 ${isMobileOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
                 }`}>
                 {/* Mobile Close Button */}
                 <button
@@ -104,7 +104,7 @@ export default function Sidebar() {
                                     {isActive && (
                                         <motion.div
                                             layoutId="activeTab"
-                                            className="absolute inset-0 bg-gradient-to-r from-sky-600 to-slate-600 rounded-xl shadow-lg"
+                                            className="absolute inset-0 bg-slate-600 rounded-xl shadow-lg"
                                             initial={false}
                                             transition={{ type: "spring", stiffness: 500, damping: 30 }}
                                         />

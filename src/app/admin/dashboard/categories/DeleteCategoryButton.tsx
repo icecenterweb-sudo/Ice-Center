@@ -3,6 +3,7 @@
 import { deleteCategory } from '@/app/actions/categories';
 import { Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 interface DeleteCategoryButtonProps {
     categoryId: number;
@@ -14,7 +15,7 @@ export default function DeleteCategoryButton({ categoryId, hasSubcategories }: D
 
     const handleDelete = async () => {
         if (hasSubcategories) {
-            alert('این دسته‌بندی دارای زیردسته است و نمی‌توان آن را حذف کرد');
+            toast.error('این دسته‌بندی دارای زیردسته است و نمی‌توان آن را حذف کرد');
             return;
         }
 
@@ -24,9 +25,10 @@ export default function DeleteCategoryButton({ categoryId, hasSubcategories }: D
 
         try {
             await deleteCategory(categoryId);
+            toast.success('دسته‌بندی با موفقیت حذف شد');
             router.refresh();
         } catch (error: any) {
-            alert(error.message || 'خطا در حذف دسته‌بندی');
+            toast.error(error.message || 'خطا در حذف دسته‌بندی');
         }
     };
 
@@ -34,6 +36,7 @@ export default function DeleteCategoryButton({ categoryId, hasSubcategories }: D
         <button
             onClick={handleDelete}
             className="p-2 hover:bg-red-100 rounded-lg transition-colors text-red-600"
+            suppressHydrationWarning
         >
             <Trash2 className="w-4 h-4" />
         </button>

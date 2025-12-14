@@ -5,6 +5,9 @@ import { ArrowRight, Save, Upload, Info } from 'lucide-react';
 import Link from 'next/link';
 import { useFormStatus } from 'react-dom';
 import { useState } from 'react';
+import MultiImageUpload from '@/components/admin/MultiImageUpload';
+import FeaturesManager from '@/components/admin/FeaturesManager';
+import SpecificationsManager from '@/components/admin/SpecificationsManager';
 
 interface Subcategory {
     id: number;
@@ -46,6 +49,42 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
     const [selectedCategory, setSelectedCategory] = useState<string>('');
     const [nameLength, setNameLength] = useState(0);
     const [descLength, setDescLength] = useState(0);
+    const [imageFiles, setImageFiles] = useState<File[]>([]);
+    const [features, setFeatures] = useState<string[]>([]);
+    const [specifications, setSpecifications] = useState<Record<string, string>>({});
+
+    // Generate SKU based on current date and time
+    const generateSKU = () => {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        return `PRD-${year}${month}${day}-${hours}${minutes}`;
+    };
+
+    const [sku, setSku] = useState(generateSKU());
+
+    const handleSubmit = async (formData: FormData) => {
+        // Convert images to base64 if exist
+        if (imageFiles.length > 0) {
+            const imageDataArray: string[] = [];
+
+            for (const file of imageFiles) {
+                const reader = new FileReader();
+                const base64 = await new Promise<string>((resolve) => {
+                    reader.onloadend = () => resolve(reader.result as string);
+                    reader.readAsDataURL(file);
+                });
+                imageDataArray.push(base64);
+            }
+
+            formData.append('imagesData', JSON.stringify(imageDataArray));
+        }
+
+        return createProduct(formData);
+    };
 
     // Group subcategories by category
     const categoriesMap = new Map<number, { name: string, subcategories: Subcategory[] }>();
@@ -77,7 +116,7 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
             <div className="flex items-center gap-4">
                 <Link
                     href="/admin/dashboard/products"
-                    className="p-2 rounded-xl bg-white text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors shadow-sm border border-gray-100"
+                    className="p-2 rounded-xl bg-gray-800 text-white hover:bg-gray-700 transition-colors shadow-sm"
                 >
                     <ArrowRight className="w-5 h-5" />
                 </Link>
@@ -87,7 +126,7 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
                 </div>
             </div>
 
-            <form action={createProduct} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <form action={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Main Info */}
                 <div className="lg:col-span-2 space-y-6">
                     <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm">
@@ -155,30 +194,42 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">کد محصول (SKU)</label>
-                                    <input
-                                        name="sku"
-                                        type="text"
-                                        placeholder="مثال: ICE-2024-001"
-                                        className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none font-mono dir-ltr text-right text-gray-900"
-                                    />
-                                    <p className="text-xs text-gray-500 mt-1.5">کد یکتا برای شناسایی محصول</p>
+                                    <div className="flex gap-2">
+                                        <input
+                                            name="sku"
+                                            type="text"
+                                            value={sku}
+                                            onChange={(e) => setSku(e.target.value)}
+                                            placeholder="مثال: PRD-20241214-1130"
+                                            className="flex-1 px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none font-mono dir-ltr text-right text-gray-900"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setSku(generateSKU())}
+                                            className="px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-colors font-bold text-sm whitespace-nowrap"
+                                            title="تولید کد جدید"
+                                        >
+                                            🔄
+                                        </button>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1.5">کد خودکار ایجاد شده - می‌توانید ویرایش کنید</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm">
-                        <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                            <Upload className="w-5 h-5 text-purple-500" />
-                            تصاویر محصول
-                        </h2>
-                        <div className="border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center hover:border-blue-400 hover:bg-blue-50/50 transition-all cursor-pointer group">
-                            <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                                <Upload className="w-8 h-8" />
-                            </div>
-                            <p className="font-bold text-gray-700">کلیک کنید یا تصویر را اینجا رها کنید</p>
-                            <p className="text-sm text-gray-400 mt-2">PNG, JPG تا حجم 5 مگابایت</p>
-                        </div>
+                    <MultiImageUpload onImagesChange={setImageFiles} maxImages={5} />
+
+                    {/* Features & Specifications */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                        <FeaturesManager
+                            initialFeatures={features}
+                            onChange={setFeatures}
+                        />
+                        <SpecificationsManager
+                            initialSpecs={specifications}
+                            onChange={setSpecifications}
+                        />
                     </div>
                 </div>
 
@@ -189,14 +240,31 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
 
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">قیمت (تومان)</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    قیمت اصلی / لیست (تومان)
+                                    <span className="text-xs text-gray-500 mr-2">(اختیاری)</span>
+                                </label>
+                                <input
+                                    name="listPrice"
+                                    type="number"
+                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-gray-100 focus:bg-white transition-all outline-none text-gray-900"
+                                    placeholder="قیمت قبل از تخفیف"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">قیمت اصلی محصول (MSRP)</p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    قیمت فروش (تومان) <span className="text-red-500">*</span>
+                                </label>
                                 <input
                                     name="price"
                                     type="number"
-                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none font-mono font-bold text-gray-900"
-                                    placeholder="0"
+                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none font-bold text-gray-900"
+                                    placeholder="قیمت نهایی برای مشتری"
                                     required
                                 />
+                                <p className="text-xs text-gray-500 mt-1">قیمتی که مشتری می‌پردازد</p>
                             </div>
 
                             <div>

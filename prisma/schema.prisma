@@ -133,12 +133,59 @@ model Product {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   
+  // Relations
+  variants      ProductVariant[]
+  
+  // Installment Support
+  installmentEnabled Boolean @default(false)
+  installmentTerms   Json?
+  
   @@index([slug])
   @@index([subcategoryId])
   @@index([brand])
   @@index([sku])
   @@index([isActive])
   @@index([featured])
+}
+
+// ----------------------------------------------------------------------
+// Product Variant Model
+// ----------------------------------------------------------------------
+
+model ProductVariant {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  // Variant Identity
+  sku       String?  @unique
+  name      String   // e.g., "14kg - Single Phase - 220V"
+  
+  // Variant-Specific Attributes
+  capacity  String?  // e.g., "14kg", "20kg", "40kg"
+  phase     Int?     // 1 or 3 (power phase)
+  voltage   String?  // e.g., "220V", "380V"
+  
+  // Pricing & Inventory (overrides Product defaults)
+  price         Float
+  listPrice     Float?
+  stock         Int             @default(0)
+  inventoryStatus InventoryStatus @default(IN_STOCK)
+  
+  // Optional Technical Specs (JSON for flexibility)
+  specifications Json?
+  
+  // Flags
+  isActive  Boolean  @default(true)
+  isDefault Boolean  @default(false) // Default variant for display
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([productId])
+  @@index([sku])
+  @@index([isActive])
 }
 
 // ----------------------------------------------------------------------
@@ -161,7 +208,7 @@ model Category {
 model Subcategory {
   id          Int       @id @default(autoincrement())
   name        String
-  slug        String    @unique
+  slug        String
   description String?   @db.Text
   
   categoryId  Int
@@ -172,6 +219,7 @@ model Subcategory {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   
+  @@unique([categoryId, slug])
   @@index([categoryId])
 }
 

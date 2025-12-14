@@ -3,6 +3,7 @@
 import { deleteSubcategory } from '@/app/actions/categories';
 import { Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 interface DeleteSubcategoryButtonProps {
     subcategoryId: number;
@@ -18,9 +19,10 @@ export default function DeleteSubcategoryButton({ subcategoryId }: DeleteSubcate
 
         try {
             await deleteSubcategory(subcategoryId);
+            toast.success('زیردسته با موفقیت حذف شد');
             router.refresh();
         } catch (error: any) {
-            alert(error.message || 'خطا در حذف زیردسته');
+            toast.error(error.message || 'خطا در حذف زیردسته');
         }
     };
 
@@ -28,6 +30,7 @@ export default function DeleteSubcategoryButton({ subcategoryId }: DeleteSubcate
         <button
             onClick={handleDelete}
             className="p-1.5 hover:bg-red-100 rounded text-red-600"
+            suppressHydrationWarning
         >
             <Trash2 className="w-3 h-3" />
         </button>

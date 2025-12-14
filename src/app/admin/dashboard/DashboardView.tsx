@@ -136,7 +136,7 @@ export default function DashboardView({ productCount, userCount, monthlySales, n
                     transition={{ delay: 0.5 }}
                     className="space-y-6"
                 >
-                    <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
+                    <div className="bg-gray-500 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500 rounded-full blur-[60px] opacity-20" />
 
                         <h3 className="text-lg font-bold mb-6 flex items-center gap-2 relative z-10">
@@ -146,7 +146,7 @@ export default function DashboardView({ productCount, userCount, monthlySales, n
 
                         <div className="space-y-4 relative z-10">
                             <div className="flex justify-between items-center">
-                                <span className="text-sm text-slate-400">فضای ذخیره‌سازی</span>
+                                <span className="text-sm text-white">فضای ذخیره‌سازی</span>
                                 <span className="text-sm font-bold text-blue-400">45%</span>
                             </div>
                             <div className="w-full bg-slate-700/50 rounded-full h-2">
@@ -154,7 +154,7 @@ export default function DashboardView({ productCount, userCount, monthlySales, n
                             </div>
 
                             <div className="flex justify-between items-center pt-2">
-                                <span className="text-sm text-slate-400">پهنای باند</span>
+                                <span className="text-sm text-white">پهنای باند</span>
                                 <span className="text-sm font-bold text-cyan-400">70%</span>
                             </div>
                             <div className="w-full bg-slate-700/50 rounded-full h-2">

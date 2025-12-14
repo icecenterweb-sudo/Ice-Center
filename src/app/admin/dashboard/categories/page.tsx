@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db';
-import { FolderTree, Plus, Edit, Trash2 } from 'lucide-react';
+import { FolderTree, Plus, Edit, Trash2, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 import DeleteCategoryButton from './DeleteCategoryButton';
 import DeleteSubcategoryButton from './DeleteSubcategoryButton';
@@ -56,14 +56,30 @@ export default async function CategoriesPage() {
                         <div key={category.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
                             {/* Category Header */}
                             <div className="p-6 bg-gradient-to-br from-blue-50 to-cyan-50 border-b border-gray-200">
-                                <div className="flex items-start justify-between">
-                                    <div className="flex-1">
-                                        <h3 className="text-lg font-bold text-gray-900 mb-1">{category.name}</h3>
+                                <div className="flex items-start gap-4">
+                                    {/* Category Image */}
+                                    {category.image ? (
+                                        <div className="w-16 h-16 rounded-lg overflow-hidden border-2 border-white shadow-sm flex-shrink-0">
+                                            <img
+                                                src={category.image}
+                                                alt={category.name}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="w-16 h-16 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                            <ImageIcon className="w-8 h-8 text-blue-400" />
+                                        </div>
+                                    )}
+
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="text-lg font-bold text-gray-900 mb-1 truncate">{category.name}</h3>
                                         {category.description && (
                                             <p className="text-sm text-gray-600 line-clamp-2">{category.description}</p>
                                         )}
                                     </div>
-                                    <div className="flex gap-1">
+
+                                    <div className="flex gap-1 flex-shrink-0">
                                         <Link
                                             href={`/admin/dashboard/categories/edit/${category.id}`}
                                             className="p-2 hover:bg-blue-100 rounded-lg transition-colors text-blue-600"
@@ -86,9 +102,19 @@ export default async function CategoriesPage() {
                             </div>
 
                             {/* Subcategories List */}
-                            {category.subcategories.length > 0 && (
-                                <div className="p-4">
-                                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-3">زیردسته‌ها</h4>
+                            <div className="p-4">
+                                <div className="flex items-center justify-between mb-3">
+                                    <h4 className="text-xs font-bold text-gray-500 uppercase">زیردسته‌ها</h4>
+                                    <Link
+                                        href={`/admin/dashboard/categories/subcategories/add?categoryId=${category.id}`}
+                                        className="flex items-center gap-1 px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-bold transition-colors"
+                                    >
+                                        <Plus className="w-3 h-3" />
+                                        افزودن زیردسته
+                                    </Link>
+                                </div>
+
+                                {category.subcategories.length > 0 ? (
                                     <div className="space-y-2">
                                         {category.subcategories.map((sub) => (
                                             <div key={sub.id} className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors group">
@@ -108,8 +134,10 @@ export default async function CategoriesPage() {
                                             </div>
                                         ))}
                                     </div>
-                                </div>
-                            )}
+                                ) : (
+                                    <p className="text-sm text-gray-400 text-center py-4">هنوز زیردسته‌ای ثبت نشده</p>
+                                )}
+                            </div>
                         </div>
                     ))}
                 </div>

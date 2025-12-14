@@ -1,17 +1,27 @@
 import Link from 'next/link';
-import { Package, Plus, Search, Filter, Eye, Edit, Trash2 } from 'lucide-react'; // Removed unused imports
+import { Package, Plus, Search, Filter, Eye, Edit } from 'lucide-react';
 import { prisma } from '@/lib/db';
+import DeleteProductButton from './DeleteProductButton';
+import { formatPersianNumber } from '@/utils/persian';
 
-// Helper for price formatting if lib doesn't exist yet
-const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fa-IR').format(amount);
-};
 
 export const dynamic = 'force-dynamic'; // Ensure we always get fresh data
 
 export default async function ProductsPage() {
-    // Fetch products
+    // Fetch products with variants
     const products = await prisma.product.findMany({
+        include: {
+            variants: {
+                select: {
+                    id: true
+                }
+            },
+            subcategory: {
+                select: {
+                    name: true
+                }
+            }
+        },
         orderBy: { createdAt: 'desc' }
     });
 
@@ -67,6 +77,7 @@ export default async function ProductsPage() {
                                 <th className="px-6 py-4 font-medium">برند / دسته‌بندی</th>
                                 <th className="px-6 py-4 font-medium">قیمت (تومان)</th>
                                 <th className="px-6 py-4 font-medium">موجودی</th>
+                                <th className="px-6 py-4 font-medium">واریانت</th>
                                 <th className="px-6 py-4 font-medium">وضعیت</th>
                                 <th className="px-6 py-4 font-medium text-left">عملیات</th>
                             </tr>
@@ -74,7 +85,7 @@ export default async function ProductsPage() {
                         <tbody className="divide-y divide-gray-50">
                             {products.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                                    <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
                                         هنوز محصولی ثبت نشده است.
                                     </td>
                                 </tr>
@@ -85,8 +96,16 @@ export default async function ProductsPage() {
                                         className="group hover:bg-blue-50/30 transition-colors"
                                     >
                                         <td className="px-6 py-4">
-                                            <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300">
-                                                <Package className="w-6 h-6" />
+                                            <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                                                {product.thumbnail ? (
+                                                    <img
+                                                        src={product.thumbnail}
+                                                        alt={product.name}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <Package className="w-6 h-6 text-gray-300" />
+                                                )}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
@@ -94,10 +113,13 @@ export default async function ProductsPage() {
                                             <div className="text-xs text-gray-400 mt-0.5">{product.sku || '---'}</div>
                                         </td>
                                         <td className="px-6 py-4 text-gray-600">
-                                            {product.brand || '---'}
+                                            <div>{product.brand || '---'}</div>
+                                            {product.subcategory && (
+                                                <div className="text-xs text-gray-400 mt-0.5">{product.subcategory.name}</div>
+                                            )}
                                         </td>
-                                        <td className="px-6 py-4 font-mono font-bold text-gray-700">
-                                            {formatCurrency(product.price)}
+                                        <td className="px-6 py-4 font-bold text-gray-700">
+                                            {formatPersianNumber(product.price)}
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-3 py-1 rounded-full text-xs font-bold ${product.stock > 5 ? 'bg-green-100 text-green-700' :
@@ -106,6 +128,15 @@ export default async function ProductsPage() {
                                                 }`}>
                                                 {product.stock} عدد
                                             </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {product.variants.length > 0 ? (
+                                                <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700">
+                                                    {product.variants.length} واریانت
+                                                </span>
+                                            ) : (
+                                                <span className="text-xs text-gray-400">---</span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
@@ -118,15 +149,24 @@ export default async function ProductsPage() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                                                <Link
+                                                    href={`/admin/dashboard/products/${product.id}`}
+                                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                    title="مشاهده جزئیات"
+                                                >
                                                     <Eye className="w-4 h-4" />
-                                                </button>
-                                                <button className="p-2 text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors">
+                                                </Link>
+                                                <Link
+                                                    href={`/admin/dashboard/products/${product.id}/edit`}
+                                                    className="p-2 text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors"
+                                                    title="ویرایش محصول"
+                                                >
                                                     <Edit className="w-4 h-4" />
-                                                </button>
-                                                <button className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
+                                                </Link>
+                                                <DeleteProductButton
+                                                    productId={product.id}
+                                                    hasVariants={product.variants.length > 0}
+                                                />
                                             </div>
                                         </td>
                                     </tr>

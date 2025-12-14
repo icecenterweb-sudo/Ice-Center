@@ -170,19 +170,196 @@ async function seedCategories() {
     console.log('\n✨ Categories and Subcategories seeding completed!\n')
 }
 
+async function seedProducts() {
+    console.log('\n🛒 Seeding Products with Variants...\n')
+
+    // Get subcategory for batch freezer (hardening machines)
+    const hardeningSubcategory = await prisma.subcategory.findUnique({
+        where: { slug: 'hardening-machines' }
+    })
+
+    // Product: Alborz Batch Freezer with 5 capacity variants
+    const productSlug = 'alborz-batch-freezer'
+    const existingProduct = await prisma.product.findUnique({
+        where: { slug: productSlug }
+    })
+
+    if (!existingProduct) {
+        await prisma.product.create({
+            data: {
+                name: 'بارسفت کن تنوری البرز',
+                slug: productSlug,
+                sku: 'ALBORZ-BF-BASE',
+                description: `اگر قصد تولید بستنی ژلاتو، بستنی سنتی یا میوه‌ای را دارید، حتماً به یک بارسفت کن با کیفیت نیاز دارید.
+
+شرکت البرز سرمایش با بیش از 20 سال تجربه در زمینه تولید تجهیزات برودتی، برند شماره ۱ بازار ایران در زمینه تولید دستگاه‌های بارسفت کن محسوب می‌شود.
+
+همانطور که میدانید، بارسفت کن دستگاه اصلی در زمینه تولید بستنی سنتی، و بستنی‌های میوه‌ای است. بنابراین اگر به قصد تولید بستنی با کیفیت و ربودن گوی سبقت از رقبا هستید، بار سفت کن البرز همان چیزی است که به آن نیاز دارید.
+
+این محصول در ظرفیت‌های 14, 20, 25, 40 و 60 کیلویی ساخته می‌شود که شما می‌توانید با توجه به میزان تولید خود، ظرفیت مناسب را انتخاب کنید.
+
+مدل 14 کیلویی با برق تکفاز سازگار است و ظرفیت‌های بالاتر نیاز به برق سه فاز دارند.`,
+                price: 0, // Will be set by variants
+                brand: 'البرز سرمایش',
+                model: 'تنوری',
+                manufacturingCountry: 'ایران',
+                condition: 'NEW',
+                powerSource: 'ELECTRIC',
+                coolingSystem: 'AIR',
+                stock: 15, // Sum of variant stocks
+                inventoryStatus: 'IN_STOCK',
+                isActive: true,
+                featured: true,
+                subcategoryId: hardeningSubcategory?.id,
+                images: [
+                    '/images/products/alborz-batch-freezer-1.jpg',
+                    '/images/products/alborz-batch-freezer-2.jpg'
+                ],
+                thumbnail: '/images/products/alborz-batch-freezer-thumb.jpg',
+                features: [
+                    'درب ورودی از بالا',
+                    'دیگ تنوری',
+                    'برد لمسی',
+                    'اینورتردار',
+                    'کمپرسور پرقدرت 7.5 اسب',
+                    '۱۸ ماه گارانتی بی‌قید و شرط',
+                    'کیفیت تولید بسیار خوب'
+                ],
+                warranty: '۱۸ ماه گارانتی بی‌قید و شرط',
+                installmentEnabled: true,
+                installmentTerms: {
+                    downPaymentPercent: 60,
+                    description: '۶۰٪ نقد الباقی ۴ فقره چک یکماه یکماه',
+                    conditions: [
+                        'پرداخت ۶۰٪ نقدی در زمان خرید',
+                        'مابقی در ۴ فقره چک یک ماهه'
+                    ]
+                },
+                metaTitle: 'بارسفت کن تنوری البرز - خرید دستگاه بارسفت کن صنعتی',
+                metaDescription: 'خرید بارسفت کن تنوری البرز با ظرفیت‌های ۱۴، ۲۰، ۲۵، ۴۰ و ۶۰ کیلوگرم. ۱۸ ماه گارانتی و امکان پرداخت اقساطی',
+                keywords: ['بارسفت کن', 'دستگاه بستنی سازی', 'بارسفت کن البرز', 'تجهیزات بستنی'],
+                variants: {
+                    create: [
+                        {
+                            name: '۱۴ کیلوگرم - تک فاز',
+                            sku: 'ALBORZ-BF-14KG-1P',
+                            capacity: '14kg',
+                            phase: 1,
+                            voltage: '220V',
+                            price: 0, // Set actual price
+                            stock: 5,
+                            inventoryStatus: 'IN_STOCK',
+                            isActive: true,
+                            isDefault: true,
+                            specifications: {
+                                powerPhase: 'تک فاز',
+                                voltage: '220V',
+                                compressor: 'کمپرسور پرقدرت 7.5 اسب',
+                                features: ['برد لمسی', 'اینورتردار', 'دیگ تنوری']
+                            }
+                        },
+                        {
+                            name: '۲۰ کیلوگرم - سه فاز',
+                            sku: 'ALBORZ-BF-20KG-3P',
+                            capacity: '20kg',
+                            phase: 3,
+                            voltage: '380V',
+                            price: 0, // Set actual price
+                            stock: 4,
+                            inventoryStatus: 'IN_STOCK',
+                            isActive: true,
+                            isDefault: false,
+                            specifications: {
+                                powerPhase: 'سه فاز',
+                                voltage: '380V',
+                                compressor: 'کمپرسور پرقدرت 7.5 اسب',
+                                features: ['برد لمسی', 'اینورتردار', 'دیگ تنوری']
+                            }
+                        },
+                        {
+                            name: '۲۵ کیلوگرم - سه فاز',
+                            sku: 'ALBORZ-BF-25KG-3P',
+                            capacity: '25kg',
+                            phase: 3,
+                            voltage: '380V',
+                            price: 0, // Set actual price
+                            stock: 3,
+                            inventoryStatus: 'IN_STOCK',
+                            isActive: true,
+                            isDefault: false,
+                            specifications: {
+                                powerPhase: 'سه فاز',
+                                voltage: '380V',
+                                compressor: 'کمپرسور پرقدرت 7.5 اسب',
+                                features: ['برد لمسی', 'اینورتردار', 'دیگ تنوری']
+                            }
+                        },
+                        {
+                            name: '۴۰ کیلوگرم - سه فاز',
+                            sku: 'ALBORZ-BF-40KG-3P',
+                            capacity: '40kg',
+                            phase: 3,
+                            voltage: '380V',
+                            price: 0, // Set actual price
+                            stock: 2,
+                            inventoryStatus: 'LOW_STOCK',
+                            isActive: true,
+                            isDefault: false,
+                            specifications: {
+                                powerPhase: 'سه فاز',
+                                voltage: '380V',
+                                compressor: 'کمپرسور پرقدرت 7.5 اسب',
+                                features: ['برد لمسی', 'اینورتردار', 'دیگ تنوری']
+                            }
+                        },
+                        {
+                            name: '۶۰ کیلوگرم - سه فاز',
+                            sku: 'ALBORZ-BF-60KG-3P',
+                            capacity: '60kg',
+                            phase: 3,
+                            voltage: '380V',
+                            price: 0, // Set actual price
+                            stock: 1,
+                            inventoryStatus: 'LOW_STOCK',
+                            isActive: true,
+                            isDefault: false,
+                            specifications: {
+                                powerPhase: 'سه فاز',
+                                voltage: '380V',
+                                compressor: 'کمپرسور پرقدرت 7.5 اسب',
+                                features: ['برد لمسی', 'اینورتردار', 'دیگ تنوری']
+                            }
+                        }
+                    ]
+                }
+            }
+        })
+        console.log('✅ Product created: بارسفت کن تنوری البرز (with 5 variants)')
+    } else {
+        console.log('ℹ️  Product already exists: بارسفت کن تنوری البرز')
+    }
+
+    console.log('\n✨ Products seeding completed!\n')
+}
+
 async function main() {
     console.log('🌱 Starting database seed...\n')
 
     await seedAdmin()
     await seedCategories()
+    await seedProducts()
 
     // Print summary
     const categoryCount = await prisma.category.count()
     const subcategoryCount = await prisma.subcategory.count()
+    const productCount = await prisma.product.count()
+    const variantCount = await prisma.productVariant.count()
 
     console.log('📊 Seed Summary:')
     console.log(`   Categories: ${categoryCount}`)
     console.log(`   Subcategories: ${subcategoryCount}`)
+    console.log(`   Products: ${productCount}`)
+    console.log(`   Product Variants: ${variantCount}`)
     console.log('\n✅ Database seed completed successfully!\n')
 }
 

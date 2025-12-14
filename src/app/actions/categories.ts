@@ -19,18 +19,39 @@ export async function createCategory(formData: FormData) {
     }
 
     try {
-        await prisma.category.create({
-            data: {
-                name,
-                slug,
-                description: description || undefined,
-                image: imageData || undefined
-            }
+        // Create category with default subcategory in a transaction
+        await prisma.$transaction(async (tx) => {
+            // Create the category
+            const category = await tx.category.create({
+                data: {
+                    name,
+                    slug,
+                    description: description || undefined,
+                    image: imageData || undefined
+                }
+            });
+
+            // Automatically create default subcategory
+            // Slug is scoped to category, so "public" can be reused across categories
+            await tx.subcategory.create({
+                data: {
+                    name: `عمومی`,  // "Public/General"
+                    slug: `public`,  // Simple, reusable (unique per category)
+                    description: `زیردسته عمومی برای ${name}`,
+                    categoryId: category.id
+                }
+            });
         });
 
         revalidatePath('/admin/dashboard/categories');
-    } catch (error) {
+    } catch (error: any) {
         console.error('Failed to create category:', error);
+
+        // Check for unique constraint violation
+        if (error.code === 'P2002') {
+            throw new Error('این اسلاگ قبلاً استفاده شده است');
+        }
+
         throw new Error('خطا در ایجاد دسته‌بندی');
     }
 
@@ -115,8 +136,14 @@ export async function createSubcategory(formData: FormData) {
         });
 
         revalidatePath('/admin/dashboard/categories');
-    } catch (error) {
+    } catch (error: any) {
         console.error('Failed to create subcategory:', error);
+
+        // Check for unique constraint violation
+        if (error.code === 'P2002') {
+            throw new Error(`این اسلاگ (${slug}) قبلاً استفاده شده است. لطفاً اسلاگ دیگری انتخاب کنید`);
+        }
+
         throw new Error('خطا در ایجاد زیردسته');
     }
 

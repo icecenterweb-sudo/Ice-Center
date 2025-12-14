@@ -80,14 +80,14 @@ const CategorySection: React.FC<CategorySectionProps> = ({ categories }) => {
                     <div className="relative w-20 h-20 md:w-24 md:h-24 lg:w-30 lg:h-30 rounded-full border-3 border-sky-500 group-hover:border-sky-600 transition-all duration-300 bg-white">
 
                       {/* بوردر داخلی */}
-                      <div className="absolute inset-1 rounded-full border-2 border-gray-200 transition-all duration-300 overflow-hidden">
+                      <div className="absolute inset-1 bg-blue-300 rounded-full border-2 border-gray-200 transition-all duration-300 overflow-hidden">
 
                         {/* تصویر */}
                         <Image
                           src={category.image || fallbackImage}
                           alt={category.name}
                           fill
-                          className="object-cover bg-blue-300 group-hover:bg-stone-300 transition-transform duration-300"
+                          className="object-cover group-hover:scale-110 transition-transform duration-300"
                         />
                       </div>
                     </div>
