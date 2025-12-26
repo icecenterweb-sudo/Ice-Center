@@ -223,7 +223,7 @@ const ProductCarousel: React.FC<ProductCarouselProps> = ({
                       className="flex flex-col h-full p-3 sm:p-4 hover:shadow-md transition-shadow duration-200"
                     >
                       {/* Top strip: time + label (only if discount) */}
-                      {discount > 0 && (
+                      {discount !== null && discount > 0 && (
                         <>
                           <div className="flex items-center justify-between mb-1">
                             <span className="text-md text-blue-500 font-bold">

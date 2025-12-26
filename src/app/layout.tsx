@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const yekan = localFont({
     src: [
@@ -50,7 +52,10 @@ export default function RootLayout({
             <body className={`${yekan.variable} font-yekan antialiased bg-gray-50`}>
                 {children}
                 <Toaster position="bottom-left" />
+                <Analytics />
+                <SpeedInsights />
             </body>
         </html>
     );
 }
+
