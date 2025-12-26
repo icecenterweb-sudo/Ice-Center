@@ -1,11 +1,49 @@
 'use client';
 
-import { Bell, Search, Menu } from 'lucide-react';
+import { Bell, Search, Menu, PanelRightClose, PanelRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 export default function Header({ adminName }: { adminName?: string }) {
+    const [isCollapsed, setIsCollapsed] = useState(false);
+
+    useEffect(() => {
+        const saved = localStorage.getItem('sidebarCollapsed');
+        if (saved) {
+            setIsCollapsed(JSON.parse(saved));
+        }
+
+        const handleStorage = () => {
+            const saved = localStorage.getItem('sidebarCollapsed');
+            if (saved) {
+                setIsCollapsed(JSON.parse(saved));
+            }
+        };
+
+        window.addEventListener('sidebarToggle', handleStorage);
+        return () => window.removeEventListener('sidebarToggle', handleStorage);
+    }, []);
+
+    const toggleSidebar = () => {
+        const newState = !isCollapsed;
+        setIsCollapsed(newState);
+        localStorage.setItem('sidebarCollapsed', JSON.stringify(newState));
+        window.dispatchEvent(new Event('sidebarToggle'));
+    };
+
     return (
         <header className="bg-white border-b border-gray-200 px-4 md:px-6 py-4 flex items-center justify-between sticky top-0 z-10 shadow-sm">
-            {/* Mobile Menu Button - will be rendered by Sidebar component */}
+            {/* Sidebar Toggle Button (Desktop) */}
+            <button
+                onClick={toggleSidebar}
+                className="hidden lg:flex items-center gap-2 p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                title={isCollapsed ? 'باز کردن منو' : 'بستن منو'}
+            >
+                {isCollapsed ? (
+                    <PanelRight className="w-5 h-5" />
+                ) : (
+                    <PanelRightClose className="w-5 h-5" />
+                )}
+            </button>
 
             {/* Search Bar */}
             <div className="flex-1 max-w-xl">

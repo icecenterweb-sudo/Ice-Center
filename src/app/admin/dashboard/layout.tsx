@@ -1,5 +1,6 @@
 import Sidebar from '@/components/admin/Sidebar';
 import Header from '@/components/admin/Header';
+import DashboardContent from '@/components/admin/DashboardContent';
 import { cookies } from 'next/headers';
 import { verifyAdminToken } from '@/lib/jwt';
 import { redirect } from 'next/navigation';
@@ -29,12 +30,12 @@ export default async function AdminDashboardLayout({
             <Sidebar />
 
             {/* Main Content */}
-            <div className="flex-1 lg:mr-72 w-full">
+            <DashboardContent>
                 <Header adminName={adminName} />
                 <main className="p-4 md:p-6">
                     {children}
                 </main>
-            </div>
+            </DashboardContent>
         </div>
     );
 }

@@ -69,6 +69,24 @@ export default function EditProductForm({ product, subcategories }: EditProductF
                     />
                 </div>
 
+                {/* Slug (URL) */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        اسلاگ (آدرس URL) <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        name="slug"
+                        defaultValue={product.slug || ''}
+                        required
+                        pattern="[a-zA-Z0-9-]+"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800 font-mono text-left"
+                        dir="ltr"
+                        placeholder="product-name-here"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">فقط حروف انگلیسی، اعداد و خط تیره مجاز است</p>
+                </div>
+
                 {/* Brand */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">

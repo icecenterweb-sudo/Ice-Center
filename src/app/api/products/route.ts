@@ -1,20 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { getProductsCached, invalidateProductsCache } from '@/lib/cache/products';
 
-export const runtime = 'nodejs'; // Prisma requires the Node.js runtime so the binary engine can run.
+export const runtime = 'nodejs';
 
-// دریافت همه محصولات
-export async function GET() {
+// GET - دریافت محصولات با کشینگ، صفحه‌بندی و جستجو
+export async function GET(request: NextRequest) {
   try {
-    const products = await prisma.product.findMany({
-      where: { isActive: true },
-      orderBy: { createdAt: 'desc' }
+    // Parse query parameters
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const limit = parseInt(searchParams.get('limit') || '20', 10);
+    const search = searchParams.get('search') || undefined;
+
+    // Get products with caching
+    const { products, total, fromCache } = await getProductsCached({
+      page,
+      limit,
+      search,
     });
+
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(total / limit);
+    const hasNextPage = page < totalPages;
+    const hasPrevPage = page > 1;
 
     return NextResponse.json({
       success: true,
-      count: products.length,
-      data: products
+      data: products,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage,
+        hasPrevPage,
+      },
+      meta: {
+        fromCache,
+      },
     });
   } catch (error) {
     console.error('خطا در دریافت محصولات:', error);
@@ -25,7 +49,7 @@ export async function GET() {
   }
 }
 
-// ساخت محصول جدید
+// POST - ساخت محصول جدید
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -34,15 +58,19 @@ export async function POST(request: NextRequest) {
       data: body
     });
 
+    // Invalidate products cache after creating new product
+    await invalidateProductsCache();
+
     return NextResponse.json({
       success: true,
       data: product
     }, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('خطا در ساخت محصول:', error);
+    const message = error instanceof Error ? error.message : 'خطا در ساخت محصول';
     return NextResponse.json({
       success: false,
-      message: error.message || 'خطا در ساخت محصول'
+      message
     }, { status: 400 });
   }
 }

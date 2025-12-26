@@ -3,7 +3,7 @@
 interface MobileActionBarProps {
     product: {
         price: number;
-        listPrice: number;
+        listPrice?: number | null;
         inventoryStatus: string;
     };
 }
@@ -19,7 +19,7 @@ export default function MobileActionBar({ product }: MobileActionBarProps) {
                 افزودن به سبد خرید
             </button>
             <div className="flex flex-col items-end">
-                {product.listPrice > product.price && (
+                {product.listPrice && product.listPrice > product.price && (
                     <span className="text-[10px] text-gray-400 line-through">
                         {formatPrice(product.listPrice)}
                     </span>

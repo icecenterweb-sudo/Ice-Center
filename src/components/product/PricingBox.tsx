@@ -4,7 +4,7 @@ interface PricingBoxProps {
     product: {
         inventoryStatus: string;
         price: number;
-        listPrice: number;
+        listPrice?: number | null;
         warranty: string;
     };
 }
@@ -64,7 +64,7 @@ export default function PricingBox({ product }: PricingBoxProps) {
             {/* Price & Button */}
             <div className="pt-4 border-t border-gray-200">
                 <div className="flex flex-col items-end mb-4">
-                    {discount > 0 && (
+                    {discount > 0 && product.listPrice && (
                         <div className="flex items-center gap-2 mb-1">
                             <span className="text-xs text-gray-400 line-through tracking-wider">{formatPrice(product.listPrice)}</span>
                             <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">%{discount}</span>

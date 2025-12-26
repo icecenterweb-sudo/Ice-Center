@@ -7,17 +7,82 @@ import ProductCarousel from '@/components/home/ProductCarousel';
 import BlogCarousel from '@/components/home/BlogCarousel';
 import { prisma } from '@/lib/db';
 
-async function getProducts() {
-  const res = await fetch('http://localhost:3000/api/products', {
-    cache: 'no-store'
-  });
+// Define product type for transformation
+type DBProduct = {
+  id: number;
+  name: string;
+  slug: string;
+  price: number;
+  listPrice: number | null;
+  thumbnail: string | null;
+};
 
-  if (!res.ok) return [];
-
-  const data = await res.json();
-  return data.data || [];
+// Transform DB products to carousel format
+function transformProducts(products: DBProduct[]) {
+  return products.map((p) => ({
+    id: p.id,
+    title: p.name,
+    image: p.thumbnail || 'https://via.placeholder.com/300x300?text=No+Image',
+    price: p.price,
+    oldPrice: p.listPrice || undefined,
+    href: `/products/${p.slug}`,
+  }));
 }
 
+// Fetch categories with their products
+async function getCategoriesWithProducts() {
+  try {
+    const categories = await prisma.category.findMany({
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        image: true,
+        subcategories: {
+          select: {
+            products: {
+              where: { isActive: true },
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                price: true,
+                listPrice: true,
+                thumbnail: true,
+              },
+              take: 12, // Limit per category
+            },
+            _count: {
+              select: { products: true }
+            }
+          }
+        }
+      },
+      orderBy: { name: 'asc' }
+    });
+
+    // Transform to flat structure with products
+    return categories.map(category => {
+      // Flatten products from all subcategories
+      const products = category.subcategories.flatMap(sub => sub.products);
+      const productCount = category.subcategories.reduce((sum, sub) => sum + sub._count.products, 0);
+
+      return {
+        id: category.id,
+        name: category.name,
+        slug: category.slug,
+        image: category.image,
+        productCount,
+        products: transformProducts(products),
+      };
+    }).filter(cat => cat.products.length > 0); // Only categories with products
+  } catch (error) {
+    console.error('Failed to fetch categories with products:', error);
+    return [];
+  }
+}
+
+// Fetch all categories for CategorySection
 async function getCategories() {
   try {
     const categories = await prisma.category.findMany({
@@ -29,9 +94,7 @@ async function getCategories() {
         subcategories: {
           select: {
             _count: {
-              select: {
-                products: true
-              }
+              select: { products: true }
             }
           }
         }
@@ -39,16 +102,13 @@ async function getCategories() {
       orderBy: { name: 'asc' }
     });
 
-    // Calculate total product count for each category
-    const categoriesWithCount = categories.map(category => ({
+    return categories.map(category => ({
       id: category.id,
       name: category.name,
       slug: category.slug,
       image: category.image,
-      productCount: category.subcategories.reduce((total, sub) => total + sub._count.products, 0)
+      productCount: category.subcategories.reduce((sum, sub) => sum + sub._count.products, 0)
     }));
-
-    return categoriesWithCount;
   } catch (error) {
     console.error('Failed to fetch categories:', error);
     return [];
@@ -71,7 +131,7 @@ const doubleBanner = [
   {
     id: 2,
     image: {
-      desktop: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1764054358/banner_SingleFullWidthBanner_yk8jye_a6284428-1eb1-497b-bcbc-d9e4f93199c8_skkgva.png', // Placeholder reuse
+      desktop: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1764054358/banner_SingleFullWidthBanner_yk8jye_a6284428-1eb1-497b-bcbc-d9e4f93199c8_skkgva.png',
       mobile: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1764054358/banner_SingleFullWidthBanner_yk8jye_a6284428-1eb1-497b-bcbc-d9e4f93199c8_skkgva.png'
     },
     link: '/ice-cream-machines',
@@ -80,7 +140,7 @@ const doubleBanner = [
   {
     id: 3,
     image: {
-      desktop: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1764054358/banner_SingleFullWidthBanner_yk8jye_a6284428-1eb1-497b-bcbc-d9e4f93199c8_skkgva.png', // Placeholder reuse
+      desktop: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1764054358/banner_SingleFullWidthBanner_yk8jye_a6284428-1eb1-497b-bcbc-d9e4f93199c8_skkgva.png',
       mobile: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1764054358/banner_SingleFullWidthBanner_yk8jye_a6284428-1eb1-497b-bcbc-d9e4f93199c8_skkgva.png'
     },
     link: '/cafe-equipment',
@@ -89,8 +149,10 @@ const doubleBanner = [
 ];
 
 export default async function Home() {
-  const products = await getProducts();
-  const categories = await getCategories();
+  const [categories, categoriesWithProducts] = await Promise.all([
+    getCategories(),
+    getCategoriesWithProducts(),
+  ]);
 
   return (
     <>
@@ -109,26 +171,24 @@ export default async function Home() {
         heightClass="h-[130px] md:h-[250px] lg:h-[180px] xl:h-[210px]"
       />
 
-      {/* اسلایدر محصولات 1 */}
-      <ProductCarousel title="پرفروش‌ترین بستنی‌سازها" />
+      {/* اسلایدرهای محصولات بر اساس دسته‌بندی */}
+      {categoriesWithProducts.map((category, index) => (
+        <div key={category.id}>
+          <ProductCarousel
+            title={category.name}
+            products={category.products}
+            viewAllHref={`/categories/${category.slug}`}
+          />
 
-      {/* اسلایدر محصولات 2 */}
-      <ProductCarousel title="تجهیزات کافی‌شاپ" />
-
-      {/* اسلایدر محصولات 3 */}
-      <ProductCarousel title="دستگاه‌های آبمیوه‌گیری" />
-
-      {/* بخش بنر دوتایی */}
-      <BannerSection
-        banners={doubleBanner}
-        heightClass="h-[130px] md:h-[250px] lg:h-[180px] xl:h-[180px]"
-      />
-
-      {/* اسلایدر محصولات 4 */}
-      <ProductCarousel title="یخچال و فریزر صنعتی" />
-
-      {/* اسلایدر محصولات 5 */}
-      <ProductCarousel title="مواد اولیه بستنی" />
+          {/* Add banner after first 2 categories */}
+          {index === 1 && (
+            <BannerSection
+              banners={doubleBanner}
+              heightClass="h-[130px] md:h-[250px] lg:h-[180px] xl:h-[180px]"
+            />
+          )}
+        </div>
+      ))}
 
       {/* اسلایدر وبلاگ */}
       <BlogCarousel />

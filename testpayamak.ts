@@ -1,4 +1,5 @@
-const https = require('https');
+import https from 'https';
+import type { IncomingMessage } from 'http';
 
 console.log('Script started');
 
@@ -20,10 +21,10 @@ const options = {
 
 console.log('Options prepared');
 
-const req = https.request(options, (res) => {
+const req = https.request(options, (res: IncomingMessage) => {
     console.log('statusCode: ' + res.statusCode);
 
-    res.on('data', (d) => {
+    res.on('data', (d: Buffer) => {
         console.log('Data received chunk');
         process.stdout.write(d);
     });
@@ -33,7 +34,7 @@ const req = https.request(options, (res) => {
     });
 });
 
-req.on('error', (error) => {
+req.on('error', (error: Error) => {
     console.error('Request Error:', error);
 });
 

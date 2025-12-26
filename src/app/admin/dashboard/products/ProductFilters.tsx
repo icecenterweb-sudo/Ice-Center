@@ -17,7 +17,11 @@ export default function ProductFilters({ onFilterChange, subcategories }: Produc
     const [subcategory, setSubcategory] = useState('');
     const [stock, setStock] = useState('');
 
-    const handleFilterChange = (newFilters: Partial<typeof filters>) => {
+    const handleFilterChange = (newFilters: Partial<{
+        search: string;
+        subcategory: string;
+        stock: string;
+    }>) => {
         const filters = {
             search: newFilters.search ?? search,
             subcategory: newFilters.subcategory ?? subcategory,

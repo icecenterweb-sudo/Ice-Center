@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     LayoutDashboard,
     Package,
@@ -12,6 +12,7 @@ import {
     ShoppingCart,
     LogOut,
     ChevronRight,
+    ChevronLeft,
     X
 } from 'lucide-react';
 
@@ -26,6 +27,35 @@ const menuItems = [
 export default function Sidebar() {
     const pathname = usePathname();
     const [isMobileOpen, setIsMobileOpen] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(false);
+
+    // Load collapsed state from localStorage
+    useEffect(() => {
+        const saved = localStorage.getItem('sidebarCollapsed');
+        if (saved) {
+            setIsCollapsed(JSON.parse(saved));
+        }
+
+        // Listen for toggle events from header
+        const handleToggle = () => {
+            const saved = localStorage.getItem('sidebarCollapsed');
+            if (saved) {
+                setIsCollapsed(JSON.parse(saved));
+            }
+        };
+
+        window.addEventListener('sidebarToggle', handleToggle);
+        return () => window.removeEventListener('sidebarToggle', handleToggle);
+    }, []);
+
+    // Save collapsed state to localStorage
+    const toggleCollapsed = () => {
+        const newState = !isCollapsed;
+        setIsCollapsed(newState);
+        localStorage.setItem('sidebarCollapsed', JSON.stringify(newState));
+        // Dispatch custom event for same-window updates
+        window.dispatchEvent(new Event('sidebarToggle'));
+    };
 
     const handleLogout = async () => {
         await fetch('/api/admin/auth/logout', { method: 'POST' });
@@ -48,7 +78,7 @@ export default function Sidebar() {
             </AnimatePresence>
 
             {/* Sidebar */}
-            <aside className={`w-72 bg-gray-700 text-white flex flex-col h-screen fixed right-0 top-0 shadow-2xl z-50 overflow-hidden transition-transform duration-300 lg:translate-x-0 ${isMobileOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
+            <aside className={`${isCollapsed ? 'w-20' : 'w-72'} bg-gray-700 text-white flex flex-col h-screen fixed right-0 top-0 shadow-2xl z-50 overflow-hidden transition-all duration-300 lg:translate-x-0 ${isMobileOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
                 }`}>
                 {/* Mobile Close Button */}
                 <button
@@ -69,17 +99,19 @@ export default function Sidebar() {
                     <motion.div
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="flex items-center gap-4"
+                        className={`flex items-center gap-4 ${isCollapsed ? 'justify-center' : ''}`}
                     >
-                        <div className="w-12 h-12 bg-gradient-to-br from-gray-700 to-gray-600 rounded-xl flex items-center justify-center shadow-lg">
+                        <div className="w-12 h-12 bg-gradient-to-br from-gray-700 to-gray-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
                             <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                             </svg>
                         </div>
-                        <div>
-                            <h1 className="text-xl font-bold tracking-tight">پنل مدیریت</h1>
-                            <p className="text-xs text-gray-400 font-medium mt-0.5">آیس سنتر ایران</p>
-                        </div>
+                        {!isCollapsed && (
+                            <div>
+                                <h1 className="text-xl font-bold tracking-tight">پنل مدیریت</h1>
+                                <p className="text-xs text-gray-400 font-medium mt-0.5">آیس سنتر ایران</p>
+                            </div>
+                        )}
                     </motion.div>
                 </div>
 
@@ -95,10 +127,11 @@ export default function Sidebar() {
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: index * 0.05 }}
-                                    className={`relative group flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-300 ${isActive
+                                    className={`relative group flex items-center ${isCollapsed ? 'justify-center' : 'gap-4'} px-4 py-3.5 rounded-xl transition-all duration-300 ${isActive
                                         ? 'bg-slate-700/50 text-white'
                                         : 'text-slate-400 hover:text-white hover:bg-white/5'
                                         }`}
+                                    title={isCollapsed ? item.label : undefined}
                                 >
                                     {/* Active Indicator & Glow */}
                                     {isActive && (
@@ -111,12 +144,15 @@ export default function Sidebar() {
                                     )}
 
                                     {/* Content */}
-                                    <div className="relative z-10 flex items-center gap-4 w-full">
-                                        <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-white transition-colors'}`} />
-                                        <span className="font-medium">{item.label}</span>
-
-                                        {isActive && (
-                                            <ChevronRight className="w-4 h-4 ml-auto opacity-70" />
+                                    <div className={`relative z-10 flex items-center ${isCollapsed ? '' : 'gap-4 w-full'}`}>
+                                        <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-white transition-colors'}`} />
+                                        {!isCollapsed && (
+                                            <>
+                                                <span className="font-medium">{item.label}</span>
+                                                {isActive && (
+                                                    <ChevronRight className="w-4 h-4 ml-auto opacity-70" />
+                                                )}
+                                            </>
                                         )}
                                     </div>
                                 </motion.div>
@@ -130,21 +166,26 @@ export default function Sidebar() {
                     <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-4 border border-slate-700/50">
                         <button
                             onClick={handleLogout}
-                            className="flex items-center gap-3 w-full text-red-400 hover:text-red-300 transition-colors group"
+                            className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} w-full text-red-400 hover:text-red-300 transition-colors group`}
+                            title={isCollapsed ? 'خروج از حساب' : undefined}
                         >
-                            <div className="p-2 bg-red-500/10 rounded-lg group-hover:bg-red-500/20 transition-colors">
+                            <div className="p-2 bg-red-500/10 rounded-lg group-hover:bg-red-500/20 transition-colors flex-shrink-0">
                                 <LogOut className="w-5 h-5" />
                             </div>
-                            <div className="text-right">
-                                <span className="block text-sm font-bold">خروج از حساب</span>
-                                <span className="text-xs text-slate-500 group-hover:text-red-400/70 transition-colors">پایان نشست کاربری</span>
-                            </div>
+                            {!isCollapsed && (
+                                <div className="text-right">
+                                    <span className="block text-sm font-bold">خروج از حساب</span>
+                                    <span className="text-xs text-slate-500 group-hover:text-red-400/70 transition-colors">پایان نشست کاربری</span>
+                                </div>
+                            )}
                         </button>
                     </div>
 
-                    <p className="text-center text-[10px] text-slate-600 mt-4 font-mono">
-                        v1.0.0 • Ice Center Admin
-                    </p>
+                    {!isCollapsed && (
+                        <p className="text-center text-[10px] text-slate-600 mt-4 font-mono">
+                            v1.0.0 • Ice Center Admin
+                        </p>
+                    )}
                 </div>
             </aside>
         </>

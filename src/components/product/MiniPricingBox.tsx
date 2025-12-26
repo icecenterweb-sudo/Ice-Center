@@ -6,7 +6,7 @@ interface MiniPricingBoxProps {
     product: {
         name: string;
         price: number;
-        listPrice: number;
+        listPrice?: number | null;
         images: string[];
         inventoryStatus: string;
     };
@@ -46,7 +46,7 @@ export default function MiniPricingBox({ product }: MiniPricingBoxProps) {
             {/* Price & Action */}
             <div>
                 <div className="flex flex-col items-end mb-3">
-                    {product.listPrice > product.price && (
+                    {product.listPrice && product.listPrice > product.price && (
                         <span className="text-xs text-gray-400 line-through tracking-wider mb-0.5">
                             {formatPrice(product.listPrice)}
                         </span>
