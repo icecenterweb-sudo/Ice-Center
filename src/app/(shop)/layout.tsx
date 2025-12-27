@@ -4,6 +4,7 @@ import "./../globals.css";
 import { Toaster } from "react-hot-toast";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import ScrollToTop from "@/components/layout/ScrollToTop";
 
 const yekan = localFont({
   src: [
@@ -50,6 +51,7 @@ export default function ShopLayout({
   return (
     <html lang="fa" dir="rtl">
       <body className={`${yekan.variable} font-yekan antialiased bg-gray-50`}>
+        <ScrollToTop />
         <Header />
         <main className="min-h-screen">
           {children}

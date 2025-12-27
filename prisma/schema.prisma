@@ -1,6 +1,3 @@
-// Prisma Schema for Ice-Center Industrial Equipment E-commerce
-// PostgreSQL Database for Ice Cream Machines and Industrial Equipment
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,10 +6,149 @@ datasource db {
   provider = "postgresql"
 }
 
+model Product {
+  id                   Int              @id @default(autoincrement())
+  name                 String
+  slug                 String           @unique
+  sku                  String?          @unique
+  description          String?
+  brand                String?
+  model                String?
+  manufacturingCountry String?
+  condition            ProductCondition @default(NEW)
+  price                Float
+  listPrice            Float?
+  stock                Int              @default(0)
+  inventoryStatus      InventoryStatus  @default(IN_STOCK)
+  isActive             Boolean          @default(true)
+  featured             Boolean          @default(false)
+  powerSource          PowerSource?     @default(ELECTRIC)
+  voltage              String?
+  phase                Int?
+  power                String?
+  powerConsumption     Float?
+  coolingSystem        CoolingSystem?
+  width                Float?
+  depth                Float?
+  height               Float?
+  weightNet            Float?
+  weightGross          Float?
+  images               String[]         @default([])
+  thumbnail            String?
+  files                String[]         @default([])
+  subcategoryId        Int?
+  tags                 String[]         @default([])
+  specifications       Json?
+  features             String[]         @default([])
+  warranty             String?
+  metaTitle            String?
+  metaDescription      String?
+  keywords             String[]         @default([])
+  rating               Float?           @default(0)
+  reviewCount          Int              @default(0)
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  installmentEnabled   Boolean          @default(false)
+  installmentTerms     Json?
+  subcategory          Subcategory?     @relation(fields: [subcategoryId], references: [id])
+  variants             ProductVariant[]
 
-// ----------------------------------------------------------------------
-// Enums for Robust Filtering
-// ----------------------------------------------------------------------
+  @@index([slug])
+  @@index([subcategoryId])
+  @@index([brand])
+  @@index([sku])
+  @@index([isActive])
+  @@index([featured])
+}
+
+model ProductVariant {
+  id              Int             @id @default(autoincrement())
+  productId       Int
+  sku             String?         @unique
+  name            String
+  capacity        String?
+  phase           Int?
+  voltage         String?
+  price           Float
+  listPrice       Float?
+  stock           Int             @default(0)
+  inventoryStatus InventoryStatus @default(IN_STOCK)
+  specifications  Json?
+  isActive        Boolean         @default(true)
+  isDefault       Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  product         Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([sku])
+  @@index([isActive])
+}
+
+model Category {
+  id            Int           @id @default(autoincrement())
+  name          String
+  slug          String        @unique
+  description   String?
+  image         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  subcategories Subcategory[]
+}
+
+model Subcategory {
+  id          Int       @id @default(autoincrement())
+  name        String
+  slug        String
+  description String?
+  categoryId  Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+  category    Category  @relation(fields: [categoryId], references: [id])
+
+  @@unique([categoryId, slug])
+  @@index([categoryId])
+}
+
+model User {
+  id        Int        @id @default(autoincrement())
+  phone     String     @unique
+  name      String?
+  status    UserStatus @default(ACTIVE)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  addresses Address[]
+
+  @@index([phone])
+}
+
+model Address {
+  id         Int      @id @default(autoincrement())
+  city       String
+  province   String?
+  address    String
+  postalCode String?
+  isDefault  Boolean  @default(false)
+  userId     Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model Admin {
+  id        Int         @id @default(autoincrement())
+  phone     String      @unique
+  name      String?
+  role      AdminRole   @default(ADMIN)
+  status    AdminStatus @default(ACTIVE)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([phone])
+}
 
 enum ProductCondition {
   NEW
@@ -40,232 +176,10 @@ enum InventoryStatus {
   DISCONTINUED
 }
 
-// ----------------------------------------------------------------------
-// Product Model
-// ----------------------------------------------------------------------
-
-model Product {
-  // 1. Identity & Classification
-  id          Int      @id @default(autoincrement())
-  name        String
-  slug        String   @unique
-  sku         String?  @unique
-  description String?  @db.Text
-  
-  // Brand & Origin (Manufacturer merged into Brand)
-  brand                String?
-  model                String?
-  manufacturingCountry String?
-  condition            ProductCondition @default(NEW)
-
-  // 2. Pricing & Commercial
-  price         Float
-  listPrice     Float?   // MSRP / Before Discount
-  // currency removed (Assumed domestic)
-  // taxRate removed (Global config)
-  
-  // 3. Inventory Status
-  stock         Int             @default(0)
-  inventoryStatus InventoryStatus @default(IN_STOCK)
-  // leadTime removed (Use description or specs)
-  
-  // Flags
-  isActive      Boolean  @default(true)
-  featured      Boolean  @default(false)
-  
-  // 4. Technical Specifications (Critical Filters ONLY)
-  // Power & Electrical
-  powerSource       PowerSource?    @default(ELECTRIC)
-  voltage           String?         // e.g. "220-240V"
-  phase             Int?            // e.g. 1 or 3
-  // frequency removed -> JSON
-  
-  power             String?         // e.g. "3.5 kW" (Display)
-  powerConsumption  Float?          // kW (Numeric for filtering)
-  
-  // Cooling & Systems
-  coolingSystem     CoolingSystem?
-  // refrigerantGas removed -> JSON
-  // compressorType removed -> JSON
-  // compressorBrand removed -> JSON
-  
-  // 5. Capacity & Performance
-  // productionCapacity removed -> JSON
-  // temperatureMin/Max removed -> JSON
-  
-  // 6. Physical Dimensions
-  width       Float?   // cm
-  depth       Float?   // cm
-  height      Float?   // cm
-  weightNet   Float?   // kg
-  weightGross Float?   // kg
-  
-  // 7. Media & Resources
-  images        String[] @default([])
-  thumbnail     String?
-  // videoUrl removed
-  files         String[] @default([]) // Manuals, Datasheets
-  
-  // 8. Organization & Metadata
-  // category removed
-  // subcategory removed
-  subcategoryId Int?
-  subcategory   Subcategory? @relation(fields: [subcategoryId], references: [id])
-
-  tags          String[] @default([])
-  
-  // Flexible Specs (Container for ALL removed niche fields)
-  specifications Json?   
-  features      String[] @default([])
-  
-  warranty      String?
-
-  // SEO
-  metaTitle       String?
-  metaDescription String?  @db.Text
-  keywords        String[] @default([])
-  
-  // Ratings
-  rating        Float?   @default(0)
-  reviewCount   Int      @default(0)
-  
-  // Timestamps
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
-  // Relations
-  variants      ProductVariant[]
-  
-  // Installment Support
-  installmentEnabled Boolean @default(false)
-  installmentTerms   Json?
-  
-  @@index([slug])
-  @@index([subcategoryId])
-  @@index([brand])
-  @@index([sku])
-  @@index([isActive])
-  @@index([featured])
-}
-
-// ----------------------------------------------------------------------
-// Product Variant Model
-// ----------------------------------------------------------------------
-
-model ProductVariant {
-  id        Int      @id @default(autoincrement())
-  productId Int
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  
-  // Variant Identity
-  sku       String?  @unique
-  name      String   // e.g., "14kg - Single Phase - 220V"
-  
-  // Variant-Specific Attributes
-  capacity  String?  // e.g., "14kg", "20kg", "40kg"
-  phase     Int?     // 1 or 3 (power phase)
-  voltage   String?  // e.g., "220V", "380V"
-  
-  // Pricing & Inventory (overrides Product defaults)
-  price         Float
-  listPrice     Float?
-  stock         Int             @default(0)
-  inventoryStatus InventoryStatus @default(IN_STOCK)
-  
-  // Optional Technical Specs (JSON for flexibility)
-  specifications Json?
-  
-  // Flags
-  isActive  Boolean  @default(true)
-  isDefault Boolean  @default(false) // Default variant for display
-  
-  // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  @@index([productId])
-  @@index([sku])
-  @@index([isActive])
-}
-
-// ----------------------------------------------------------------------
-// Category & Subcategory Models
-// ----------------------------------------------------------------------
-
-model Category {
-  id            Int           @id @default(autoincrement())
-  name          String
-  slug          String        @unique
-  description   String?       @db.Text
-  image         String?
-  
-  subcategories Subcategory[]
-  
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-}
-
-model Subcategory {
-  id          Int       @id @default(autoincrement())
-  name        String
-  slug        String
-  description String?   @db.Text
-  
-  categoryId  Int
-  category    Category  @relation(fields: [categoryId], references: [id])
-  
-  products    Product[]
-  
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  
-  @@unique([categoryId, slug])
-  @@index([categoryId])
-}
-
-// ----------------------------------------------------------------------
-// User & Customer Models
-// ----------------------------------------------------------------------
-
 enum UserStatus {
   ACTIVE
   BLOCKED
 }
-
-model User {
-  id        Int        @id @default(autoincrement())
-  phone     String     @unique
-  name      String?
-  status    UserStatus @default(ACTIVE)
-  
-  addresses Address[]
-  
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-
-  @@index([phone])
-}
-
-model Address {
-  id         Int      @id @default(autoincrement())
-  city       String
-  province   String?
-  address    String   @db.Text
-  postalCode String?
-  isDefault  Boolean  @default(false)
-  
-  userId     Int
-  user       User     @relation(fields: [userId], references: [id])
-  
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@index([userId])
-}
-
-// ----------------------------------------------------------------------
-// Admin & Internal Models
-// ----------------------------------------------------------------------
 
 enum AdminRole {
   ADMIN
@@ -275,17 +189,4 @@ enum AdminRole {
 enum AdminStatus {
   ACTIVE
   BLOCKED
-}
-
-model Admin {
-  id        Int         @id @default(autoincrement())
-  phone     String      @unique
-  name      String?
-  role      AdminRole   @default(ADMIN)
-  status    AdminStatus @default(ACTIVE)
-  
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-
-  @@index([phone])
 }

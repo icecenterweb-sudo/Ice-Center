@@ -1,31 +1,15 @@
 import { notFound } from 'next/navigation';
-import prisma from '@/lib/db';
 import ProductClient from './ProductClient';
+import { getProductBySlug } from '@/lib/prisma/queries-product';
+import { generateProductPageJsonLd } from '@/lib/seo/product-jsonld';
 
 type PageProps = {
     params: Promise<{ slug: string }>;
 };
 
-// Fetch product by slug from database
-async function getProductBySlug(slug: string) {
-    try {
-        const product = await prisma.product.findUnique({
-            where: { slug },
-            include: {
-                subcategory: {
-                    include: {
-                        category: true
-                    }
-                }
-            }
-        });
+export const runtime = 'nodejs';
+export const revalidate = 60; // Revalidate every 60 seconds
 
-        return product;
-    } catch (error) {
-        console.error('Error fetching product:', error);
-        return null;
-    }
-}
 
 export default async function ProductPage({ params }: PageProps) {
     const { slug } = await params;
@@ -89,6 +73,7 @@ export default async function ProductPage({ params }: PageProps) {
 
     // Get category info for breadcrumb
     const categoryName = product.subcategory?.category?.name || 'محصولات';
+    const categorySlug = product.subcategory?.category?.slug;
     const subcategoryName = product.subcategory?.name || '';
 
     // Transform DB product to component-friendly format
@@ -116,5 +101,35 @@ export default async function ProductPage({ params }: PageProps) {
         sku: product.sku,
     };
 
-    return <ProductClient product={productData} />;
+    // Generate JSON-LD structured data
+    const jsonLd = generateProductPageJsonLd({
+        product: {
+            name: product.name,
+            slug: product.slug,
+            description: product.description || '',
+            price: product.price,
+            listPrice: product.listPrice,
+            images: product.images,
+            sku: product.sku,
+            brand: product.brand || 'آیس سنتر',
+            warranty: product.warranty || 'گارانتی آیس سنتر',
+            rating: product.rating || 0,
+            reviewCount: product.reviewCount || 0,
+            inventoryStatus: product.inventoryStatus,
+            categoryName,
+            subcategoryName,
+        },
+        categorySlug,
+    });
+
+    return (
+        <>
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+            />
+            <ProductClient product={productData} />
+        </>
+    );
 }
+

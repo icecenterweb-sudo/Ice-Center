@@ -1,0 +1,34 @@
+# Git Commands for Today's Session
+# Run these commands in order
+
+# 1. Check status to see all changes
+git status
+
+# 2. Stage all changes
+git add .
+
+# 3. Commit with descriptive message
+git commit -m "feat: Folder refactoring + SEO + Shimmer skeletons
+
+- Refactored categories folder structure:
+  - Created lib/prisma/queries-category.ts and queries-product.ts
+  - Created lib/seo/jsonld.ts and product-jsonld.ts
+  - Created lib/utils/formatters.ts
+  - Created components/category/Filters/* (modular filter components)
+  
+- Added JSON-LD SEO structured data:
+  - BreadcrumbList + CollectionPage for categories pages
+  - Product + Breadcrumb schema for product pages
+  
+- Added shimmer skeleton loading:
+  - Homepage loading.tsx
+  - Categories index loading.tsx
+  - Category detail [slug]/loading.tsx
+  - Product detail [slug]/loading.tsx
+  
+- Added ScrollToTop component to fix navigation scroll bug
+- Added revalidate=60 caching for all pages
+- Created documentation files (categories, products)"
+
+# 4. Push to remote
+git push origin main
