@@ -5,6 +5,7 @@ import { Toaster } from "react-hot-toast";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import ScrollToTop from "@/components/layout/ScrollToTop";
+import Analytics from "@/components/analytics/GoogleAnalytics";
 
 const yekan = localFont({
   src: [
@@ -58,6 +59,7 @@ export default function ShopLayout({
         </main>
         <Footer />
         <Toaster position="bottom-left" />
+        <Analytics />
       </body>
     </html>
   );

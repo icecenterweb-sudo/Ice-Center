@@ -222,20 +222,25 @@ const ProductCarousel: React.FC<ProductCarouselProps> = ({
                       href={product.href || '#'}
                       className="flex flex-col h-full p-3 sm:p-4 hover:shadow-md transition-shadow duration-200"
                     >
-                      {/* Top strip: time + label (only if discount) */}
-                      {discount !== null && discount > 0 && (
-                        <>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-md text-blue-500 font-bold">
-                              تک‌تخفیف
-                            </span>
-                            <span className="text-md text-blue-500 font-bold">
-                              {product.timeLabel || countdown}
-                            </span>
-                          </div>
-                          <div className="h-[2px] w-full bg-blue-400 mb-2" />
-                        </>
-                      )}
+                      {/* Top strip: Reserved space for time + label (consistent height) */}
+                      <div className="h-[36px] mb-1">
+                        {discount !== null && discount > 0 ? (
+                          <>
+                            <div className="flex items-center justify-between">
+                              <span className="text-md text-blue-500 font-bold">
+                                تک‌تخفیف
+                              </span>
+                              <span className="text-md text-blue-500 font-bold">
+                                {product.timeLabel || countdown}
+                              </span>
+                            </div>
+                            <div className="h-[2px] w-full bg-blue-400 mt-1" />
+                          </>
+                        ) : (
+                          /* Empty placeholder to maintain consistent height */
+                          <div className="h-full" />
+                        )}
+                      </div>
 
                       {/* Image */}
                       <div className="relative w-full h-[150px] sm:h-[170px] mb-3">
