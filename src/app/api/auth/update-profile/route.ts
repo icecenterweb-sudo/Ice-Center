@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Prepare update data
-        const updateData: { firstName?: string; lastName?: string } = {}
+        const updateData: { firstName?: string | null; lastName?: string | null } = {}
 
         if (firstName !== undefined) {
             // Trim and validate
