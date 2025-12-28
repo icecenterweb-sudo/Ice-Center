@@ -51,7 +51,7 @@ export default function RootLayout({
         <html lang="fa" dir="rtl">
             <body className={`${yekan.variable} font-yekan antialiased bg-gray-50`}>
                 {children}
-                <Toaster position="bottom-left" />
+                <Toaster position="bottom-center" />
                 <Analytics />
                 <SpeedInsights />
             </body>

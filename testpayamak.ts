@@ -47,3 +47,6 @@ req.write(data);
 console.log('Ending request...');
 req.end();
 console.log('Request ended, waiting for response...');
+
+// response willbe like
+// {"code":"4999","status":"ارسال موفق بود"}

@@ -3,6 +3,17 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
 
+  // React Compiler - Auto-memoizes components, reduces re-renders
+  reactCompiler: true,
+
+  // Experimental optimizations
+  experimental: {
+    // Better tree-shaking for icon libraries
+    optimizePackageImports: ['lucide-react', '@solar-icons/react'],
+    // Faster dev builds with file system caching
+    turbopackFileSystemCacheForDev: true,
+  },
+
   images: {
     remotePatterns: [
       {
@@ -19,6 +30,7 @@ const nextConfig: NextConfig = {
       }
     ],
   },
+
 
   // Cache headers for better performance with Vercel + ArvanCloud CDN
   async headers() {

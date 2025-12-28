@@ -179,7 +179,7 @@ export default function HomeLoading() {
                         #e5e7eb 80px
                     );
                     background-size: 200px 100%;
-                    animation: shimmer 1.5s infinite linear;
+                    animation: shimmer 2.5s infinite linear;
                 }
             `}</style>
     </div>

@@ -112,15 +112,30 @@ model Subcategory {
 }
 
 model User {
-  id        Int        @id @default(autoincrement())
-  phone     String     @unique
-  name      String?
-  status    UserStatus @default(ACTIVE)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  addresses Address[]
+  id         Int        @id @default(autoincrement())
+  phone      String     @unique
+  firstName  String?
+  lastName   String?
+  isVerified Boolean    @default(false)
+  status     UserStatus @default(ACTIVE)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  addresses  Address[]
 
   @@index([phone])
+}
+
+model OtpRequest {
+  id        Int      @id @default(autoincrement())
+  phone     String
+  code      String
+  expiresAt DateTime
+  verified  Boolean  @default(false)
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([phone])
+  @@index([expiresAt])
 }
 
 model Address {

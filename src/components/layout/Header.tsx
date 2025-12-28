@@ -3,11 +3,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { motion, useScroll, useMotionValueEvent } from 'framer-motion';
-import { 
-  Search, 
-  User, 
-  ShoppingCart, 
-  Menu, 
+import {
+  Search,
+  User,
+  ShoppingCart,
+  Menu,
   Phone,
   Snowflake,
   IceCream,
@@ -16,6 +16,7 @@ import {
   Award,
   X
 } from 'lucide-react';
+import UserButton from '@/components/auth/UserButton';
 
 const Header: React.FC = () => {
   const [cartCount] = useState(0);
@@ -30,13 +31,13 @@ const Header: React.FC = () => {
   useMotionValueEvent(scrollY, "change", (latest) => {
     const previous = scrollY.getPrevious() ?? 0;
     const delta = latest - previous;
-    
+
     // Don't hide if menu/search is open
     if (isMenuOpen || isSearchOpen) {
       setHidden(false);
       return;
     }
-    
+
     // Skip tiny jitters and while we let the animation settle
     if (suppressRef.current) return;
     if (Math.abs(delta) < 3) return;
@@ -71,10 +72,10 @@ const Header: React.FC = () => {
     <>
       <div className="w-full bg-white shadow-sm sticky top-0 z-50">
         <header className="max-w-[1600px] mx-auto px-4 py-4">
-          
+
           {/* بخش بالا: لوگو، سرچ، اکشن‌ها - همیشه نمایش داده می‌شود */}
           <div className="flex justify-between items-center mb-0 lg:mb-5">
-            
+
             {/* موبایل/تبلت: لوگو سمت راست */}
             <div className="flex items-center lg:hidden">
               <Link href="/" className="flex items-center gap-2">
@@ -100,8 +101,8 @@ const Header: React.FC = () => {
 
               {/* جستجو */}
               <div className="flex items-center bg-[#f0f0f1] rounded-lg px-4 h-12 w-full max-w-[600px]">
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   placeholder="جستجو در محصولات: بستنی‌ساز، یخ‌ساز، فریزر و..."
                   className="w-full bg-transparent border-none outline-none text-gray-700 placeholder-gray-400 text-sm ml-2"
                 />
@@ -114,16 +115,16 @@ const Header: React.FC = () => {
             {/* موبایل/تبلت: دکمه جستجو و سبد خرید */}
             <div className="flex items-center gap-2 lg:hidden">
               {/* دکمه جستجو */}
-              <button 
+              <button
                 onClick={() => setIsSearchOpen(!isSearchOpen)}
                 className="flex items-center justify-center w-10 h-10 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 <Search size={20} />
               </button>
-              
+
               {/* دکمه سبد خرید */}
-              <Link 
-                href="/cart" 
+              <Link
+                href="/cart"
                 className="relative flex items-center justify-center w-10 h-10 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 <ShoppingCart size={20} />
@@ -137,17 +138,12 @@ const Header: React.FC = () => {
 
             {/* دسکتاپ: ورود و سبد خرید */}
             <div className="hidden lg:flex items-center gap-4">
-              {/* دکمه ورود */}
-              <Link 
-                href="/login" 
-                className="flex items-center justify-center w-11 h-11 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                <User size={20} />
-              </Link>
-              
+              {/* دکمه ورود / حساب کاربری */}
+              <UserButton />
+
               {/* دکمه سبد خرید */}
-              <Link 
-                href="/cart" 
+              <Link
+                href="/cart"
                 className="relative flex items-center justify-center w-11 h-11 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 <ShoppingCart size={20} />
@@ -162,20 +158,20 @@ const Header: React.FC = () => {
 
           {/* باکس جستجو موبایل (وقتی باز میشه) */}
           {isSearchOpen && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               className="lg:hidden mt-3 pb-3"
             >
               <div className="flex items-center bg-[#f0f0f1] rounded-lg px-4 h-12 w-full">
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   placeholder="جستجو در محصولات..."
                   className="w-full bg-transparent border-none outline-none text-gray-700 placeholder-gray-400 text-sm ml-2"
                   autoFocus
                 />
-                <button 
+                <button
                   onClick={() => setIsSearchOpen(false)}
                   className="text-gray-500 hover:text-gray-800 transition"
                 >
@@ -186,7 +182,7 @@ const Header: React.FC = () => {
           )}
 
           {/* بخش پایین: منوی ناوبری - فقط دسکتاپ - این قسمت پنهان/نمایش می‌شود */}
-          <motion.div 
+          <motion.div
             variants={{
               visible: { height: "auto", opacity: 1 },
               hidden: { height: 0, opacity: 0 },
@@ -195,13 +191,13 @@ const Header: React.FC = () => {
             transition={{ duration: 0.3, ease: "easeInOut" }}
             className="hidden lg:flex justify-between items-center overflow-hidden"
           >
-            
+
             {/* منوی اصلی */}
             <nav>
               <ul className="flex items-center gap-6 text-sm text-gray-700 font-medium">
-                
+
                 {/* دسته‌بندی محصولات */}
-                <li 
+                <li
                   className="flex items-center cursor-pointer hover:text-blue-600 group transition"
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
                 >
@@ -253,8 +249,8 @@ const Header: React.FC = () => {
             </nav>
 
             {/* تماس با ما */}
-            <Link 
-              href="/contact" 
+            <Link
+              href="/contact"
               className="flex items-center gap-2 text-sm font-bold text-gray-700 hover:text-blue-600 cursor-pointer transition"
             >
               <Phone size={18} />
@@ -279,15 +275,15 @@ const Header: React.FC = () => {
 
       {/* منوی کشویی موبایل */}
       {isMenuOpen && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-[60]" 
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-[60]"
           onClick={() => setIsMenuOpen(false)}
         >
-          <motion.div 
+          <motion.div
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
@@ -298,7 +294,7 @@ const Header: React.FC = () => {
             {/* هدر منو */}
             <div className="flex justify-between items-center mb-6 pb-4 border-b">
               <h3 className="text-lg font-bold text-gray-800">منوی اصلی</h3>
-              <button 
+              <button
                 onClick={() => setIsMenuOpen(false)}
                 className="text-gray-500 hover:text-gray-800"
               >
@@ -309,10 +305,10 @@ const Header: React.FC = () => {
             {/* آیتم‌های منو */}
             <nav>
               <ul className="space-y-4">
-                
+
                 <li>
-                  <Link 
-                    href="/category/ice-cream" 
+                  <Link
+                    href="/category/ice-cream"
                     className="flex items-center gap-3 text-gray-700 hover:text-blue-600 transition py-2"
                     onClick={() => setIsMenuOpen(false)}
                   >
@@ -322,8 +318,8 @@ const Header: React.FC = () => {
                 </li>
 
                 <li>
-                  <Link 
-                    href="/category/ice-maker" 
+                  <Link
+                    href="/category/ice-maker"
                     className="flex items-center gap-3 text-gray-700 hover:text-blue-600 transition py-2"
                     onClick={() => setIsMenuOpen(false)}
                   >
@@ -333,8 +329,8 @@ const Header: React.FC = () => {
                 </li>
 
                 <li>
-                  <Link 
-                    href="/category/freezer" 
+                  <Link
+                    href="/category/freezer"
                     className="flex items-center gap-3 text-gray-700 hover:text-blue-600 transition py-2"
                     onClick={() => setIsMenuOpen(false)}
                   >
@@ -344,8 +340,8 @@ const Header: React.FC = () => {
                 </li>
 
                 <li className="border-t pt-4">
-                  <Link 
-                    href="/corporate" 
+                  <Link
+                    href="/corporate"
                     className="flex items-center gap-3 text-gray-700 hover:text-blue-600 transition py-2"
                     onClick={() => setIsMenuOpen(false)}
                   >
@@ -355,8 +351,8 @@ const Header: React.FC = () => {
                 </li>
 
                 <li>
-                  <Link 
-                    href="/warranty" 
+                  <Link
+                    href="/warranty"
                     className="flex items-center gap-3 text-gray-700 hover:text-blue-600 transition py-2"
                     onClick={() => setIsMenuOpen(false)}
                   >
@@ -366,8 +362,8 @@ const Header: React.FC = () => {
                 </li>
 
                 <li>
-                  <Link 
-                    href="/contact" 
+                  <Link
+                    href="/contact"
                     className="flex items-center gap-3 text-gray-700 hover:text-blue-600 transition py-2"
                     onClick={() => setIsMenuOpen(false)}
                   >
@@ -377,8 +373,8 @@ const Header: React.FC = () => {
                 </li>
 
                 <li className="border-t pt-4">
-                  <Link 
-                    href="/login" 
+                  <Link
+                    href="/auth"
                     className="flex items-center gap-3 text-gray-700 hover:text-blue-600 transition py-2"
                     onClick={() => setIsMenuOpen(false)}
                   >

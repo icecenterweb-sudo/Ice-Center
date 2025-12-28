@@ -70,7 +70,7 @@ const CategorySection: React.FC<CategorySectionProps> = ({ categories }) => {
             {categories.map((category) => (
               <SwiperSlide key={category.id}>
                 <Link
-                  href={`/category/${category.slug}`}
+                  href={`/categories/${category.slug}`}
                   className="group flex flex-col items-center"
                 >
                   {/* دایره با 2 بوردر */}
