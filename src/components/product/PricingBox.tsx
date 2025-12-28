@@ -1,11 +1,19 @@
+'use client';
+
 import { CheckCircle2, Phone, Shield } from 'lucide-react';
+import AddToCartButton from '@/components/cart/AddToCartButton';
 
 interface PricingBoxProps {
     product: {
+        id: number;
+        slug: string;
+        name: string;
         inventoryStatus: string;
         price: number;
         listPrice?: number | null;
         warranty: string;
+        thumbnail?: string | null;
+        stock: number;
     };
 }
 
@@ -21,14 +29,24 @@ export default function PricingBox({ product }: PricingBoxProps) {
     const isInStock = product.inventoryStatus === 'IN_STOCK';
     const inventoryLabel = isInStock ? 'موجود در انبار' : 'ناموجود';
 
+    // Build cart product object
+    const cartProduct = {
+        id: product.id,
+        name: product.name,
+        slug: product.slug,
+        price: product.price,
+        listPrice: product.listPrice || null,
+        thumbnail: product.thumbnail || null,
+        stock: product.stock,
+    };
+
     return (
         <div className="bg-gray-50/50 rounded-lg border border-gray-200 p-4 space-y-4">
 
             {/* Seller Info */}
             <div className="bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
-                <div className="flex justify-between items-center mb-2">
+                <div className="mb-2">
                     <span className="font-bold text-gray-800 text-sm">فروشنده</span>
-                    <span className="text-blue-500 text-xs font-medium cursor-pointer">4 فروشنده دیگر</span>
                 </div>
                 <div className="flex items-center gap-2 mb-2">
                     <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center text-gray-400">
@@ -76,9 +94,13 @@ export default function PricingBox({ product }: PricingBoxProps) {
                     </div>
                 </div>
 
-                <button className={`w-full font-bold py-3 rounded-lg transition-colors shadow-md text-sm mb-2 ${isInStock ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}>
-                    {isInStock ? 'افزودن به سبد خرید' : 'ناموجود'}
-                </button>
+                {isInStock ? (
+                    <AddToCartButton product={cartProduct} className="mb-2" />
+                ) : (
+                    <button className="w-full bg-gray-300 text-gray-500 cursor-not-allowed font-bold py-3 rounded-lg text-sm mb-2">
+                        ناموجود
+                    </button>
+                )}
                 <button className="w-full bg-white border border-gray-300 hover:border-gray-400 text-gray-700 font-semibold py-2.5 rounded-lg transition-colors text-sm">
                     مشاوره رایگان خرید
                 </button>
@@ -86,3 +108,4 @@ export default function PricingBox({ product }: PricingBoxProps) {
         </div>
     );
 }
+

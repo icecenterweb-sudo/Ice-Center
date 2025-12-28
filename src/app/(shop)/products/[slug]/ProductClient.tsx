@@ -20,6 +20,8 @@ type Specification = {
 
 type ProductClientProps = {
     product: {
+        id: number;
+        slug: string;
         name: string;
         nameEnglish: string;
         brand: string;
@@ -31,6 +33,7 @@ type ProductClientProps = {
         rating: number;
         reviewCount: number;
         images: string[];
+        thumbnail?: string | null;
         warranty: string;
         seller: string;
         description: string;

@@ -17,9 +17,11 @@ import {
   X
 } from 'lucide-react';
 import UserButton from '@/components/auth/UserButton';
+import { useCart } from '@/context/CartContext';
+import { toPersianDigits } from '@/lib/numbers';
 
 const Header: React.FC = () => {
-  const [cartCount] = useState(0);
+  const { itemCount, openCart } = useCart();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
@@ -123,17 +125,22 @@ const Header: React.FC = () => {
               </button>
 
               {/* دکمه سبد خرید */}
-              <Link
-                href="/cart"
+              <button
+                onClick={openCart}
                 className="relative flex items-center justify-center w-10 h-10 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 <ShoppingCart size={20} />
-                {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full font-bold">
-                    {cartCount}
-                  </span>
+                {itemCount > 0 && (
+                  <motion.span
+                    key={itemCount}
+                    initial={{ scale: 0.5 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full font-bold"
+                  >
+                    {toPersianDigits(itemCount > 99 ? 99 : itemCount)}
+                  </motion.span>
                 )}
-              </Link>
+              </button>
             </div>
 
             {/* دسکتاپ: ورود و سبد خرید */}
@@ -142,17 +149,22 @@ const Header: React.FC = () => {
               <UserButton />
 
               {/* دکمه سبد خرید */}
-              <Link
-                href="/cart"
+              <button
+                onClick={openCart}
                 className="relative flex items-center justify-center w-11 h-11 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 <ShoppingCart size={20} />
-                {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full font-bold">
-                    {cartCount}
-                  </span>
+                {itemCount > 0 && (
+                  <motion.span
+                    key={itemCount}
+                    initial={{ scale: 0.5 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full font-bold"
+                  >
+                    {toPersianDigits(itemCount > 99 ? 99 : itemCount)}
+                  </motion.span>
                 )}
-              </Link>
+              </button>
             </div>
           </div>
 

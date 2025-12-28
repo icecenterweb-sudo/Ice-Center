@@ -78,6 +78,8 @@ export default async function ProductPage({ params }: PageProps) {
 
     // Transform DB product to component-friendly format
     const productData = {
+        id: product.id,
+        slug: product.slug,
         name: product.name,
         nameEnglish: product.model ? `${product.brand || ''} ${product.model}`.trim() : '',
         brand: product.brand || 'آیس سنتر',
@@ -91,6 +93,7 @@ export default async function ProductPage({ params }: PageProps) {
         images: product.images.length > 0
             ? product.images
             : ['https://via.placeholder.com/500x500?text=No+Image'],
+        thumbnail: product.thumbnail || (product.images.length > 0 ? product.images[0] : null),
         warranty: product.warranty || 'گارانتی آیس سنتر',
         seller: 'فروشنده: آیس سنتر ایران',
         description: product.description || '',

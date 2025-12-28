@@ -15,7 +15,7 @@ export default function MobileActionBar({ product }: MobileActionBarProps) {
 
     return (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 lg:hidden z-50 flex items-center justify-between shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-            <button className="flex-1 bg-red-500 text-white font-bold py-3 rounded-lg text-sm ml-4 shadow-md">
+            <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg text-sm ml-4 shadow-md">
                 افزودن به سبد خرید
             </button>
             <div className="flex flex-col items-end">

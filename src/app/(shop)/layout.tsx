@@ -3,6 +3,8 @@ import Footer from "@/components/layout/Footer";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 import Analytics from "@/components/analytics/GoogleAnalytics";
 import AuthWrapper from "@/components/auth/AuthWrapper";
+import { CartProvider } from "@/context/CartContext";
+import CartDrawer from "@/components/cart/CartDrawer";
 
 export default function ShopLayout({
   children,
@@ -11,13 +13,16 @@ export default function ShopLayout({
 }) {
   return (
     <AuthWrapper>
-      <ScrollToTop />
-      <Header />
-      <main className="min-h-screen">
-        {children}
-      </main>
-      <Footer />
-      <Analytics />
+      <CartProvider>
+        <ScrollToTop />
+        <Header />
+        <main className="min-h-screen">
+          {children}
+        </main>
+        <Footer />
+        <CartDrawer />
+        <Analytics />
+      </CartProvider>
     </AuthWrapper>
   );
 }

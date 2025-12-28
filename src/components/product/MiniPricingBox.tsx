@@ -57,7 +57,7 @@ export default function MiniPricingBox({ product }: MiniPricingBoxProps) {
                     </div>
                 </div>
 
-                <button className={`w-full font-bold py-2.5 rounded-lg transition-colors shadow-sm text-sm ${isInStock ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}>
+                <button className={`w-full font-bold py-2.5 rounded-lg transition-colors shadow-sm text-sm ${isInStock ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}>
                     {isInStock ? 'افزودن به سبد' : 'ناموجود'}
                 </button>
             </div>
