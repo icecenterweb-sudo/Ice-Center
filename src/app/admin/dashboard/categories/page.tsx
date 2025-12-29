@@ -27,7 +27,7 @@ export default async function CategoriesPage() {
                 </div>
                 <Link
                     href="/admin/dashboard/categories/add"
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold shadow-lg transition-colors"
+                    className="flex items-center gap-2 bg-ocean hover:bg-royal text-white px-6 py-3 rounded-lg font-bold shadow-lg transition-colors"
                 >
                     <Plus className="w-5 h-5" />
                     افزودن دسته‌بندی
@@ -44,7 +44,7 @@ export default async function CategoriesPage() {
                     <p className="text-gray-600 mb-6">برای شروع، اولین دسته‌بندی خود را ایجاد کنید</p>
                     <Link
                         href="/admin/dashboard/categories/add"
-                        className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold transition-colors"
+                        className="inline-flex items-center gap-2 bg-ocean hover:bg-royal text-white px-6 py-3 rounded-lg font-bold transition-colors"
                     >
                         <Plus className="w-5 h-5" />
                         افزودن دسته‌بندی جدید
@@ -82,7 +82,7 @@ export default async function CategoriesPage() {
                                     <div className="flex gap-1 flex-shrink-0">
                                         <Link
                                             href={`/admin/dashboard/categories/edit/${category.id}`}
-                                            className="p-2 hover:bg-blue-100 rounded-lg transition-colors text-blue-600"
+                                            className="p-2 hover:bg-frost rounded-lg transition-colors text-ocean"
                                         >
                                             <Edit className="w-4 h-4" />
                                         </Link>
@@ -125,7 +125,7 @@ export default async function CategoriesPage() {
                                                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <Link
                                                         href={`/admin/dashboard/categories/subcategories/edit/${sub.id}`}
-                                                        className="p-1.5 hover:bg-blue-100 rounded text-blue-600"
+                                                        className="p-1.5 hover:bg-frost rounded text-ocean"
                                                     >
                                                         <Edit className="w-3 h-3" />
                                                     </Link>

@@ -250,7 +250,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                                         <button
                                             type="submit"
                                             disabled={loading || cooldown > 0 || phone.length < 10}
-                                            className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="w-full bg-gradient-to-r from-ocean to-sky-breeze hover:from-royal hover:to-ocean text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             {loading ? (
                                                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -327,7 +327,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                                         <button
                                             type="submit"
                                             disabled={loading || otp.length !== 4}
-                                            className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="w-full bg-gradient-to-r from-ocean to-sky-breeze hover:from-royal hover:to-ocean text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             {loading ? (
                                                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

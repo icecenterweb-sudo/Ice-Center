@@ -1,14 +1,19 @@
 'use client';
 
 import Image from 'next/image';
+import AddToCartButton from '@/components/cart/AddToCartButton';
 
 interface MiniPricingBoxProps {
     product: {
+        id: number;
+        slug: string;
         name: string;
         price: number;
         listPrice?: number | null;
         images: string[];
         inventoryStatus: string;
+        thumbnail?: string | null;
+        stock: number;
     };
 }
 
@@ -19,6 +24,17 @@ export default function MiniPricingBox({ product }: MiniPricingBoxProps) {
 
     const isInStock = product.inventoryStatus === 'IN_STOCK';
     const inventoryLabel = isInStock ? 'موجود' : 'ناموجود';
+
+    // Build cart product object
+    const cartProduct = {
+        id: product.id,
+        name: product.name,
+        slug: product.slug,
+        price: product.price,
+        listPrice: product.listPrice || null,
+        thumbnail: product.thumbnail || product.images[0] || null,
+        stock: product.stock,
+    };
 
     return (
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-3">
@@ -57,10 +73,15 @@ export default function MiniPricingBox({ product }: MiniPricingBoxProps) {
                     </div>
                 </div>
 
-                <button className={`w-full font-bold py-2.5 rounded-lg transition-colors shadow-sm text-sm ${isInStock ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}>
-                    {isInStock ? 'افزودن به سبد' : 'ناموجود'}
-                </button>
+                {isInStock ? (
+                    <AddToCartButton product={cartProduct} variant="small" className="w-full py-2.5" />
+                ) : (
+                    <button className="w-full bg-gray-300 text-gray-500 cursor-not-allowed font-bold py-2.5 rounded-lg text-sm">
+                        ناموجود
+                    </button>
+                )}
             </div>
         </div>
     );
 }
+

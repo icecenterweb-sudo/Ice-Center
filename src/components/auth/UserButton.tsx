@@ -73,7 +73,7 @@ export default function UserButton() {
                 className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all"
             >
                 {/* Avatar */}
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                <div className="w-7 h-7 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
                     {getInitial()}
                 </div>
                 <ChevronDown

@@ -14,7 +14,7 @@ interface StatsCardProps {
 }
 
 const colorMap = {
-    blue: { bg: 'from-blue-500 to-blue-600', shadow: 'shadow-blue-500/30', light: 'bg-blue-50 text-blue-600' },
+    blue: { bg: 'from-ocean to-royal', shadow: 'shadow-ocean/30', light: 'bg-frost text-ocean' },
     purple: { bg: 'from-purple-500 to-purple-600', shadow: 'shadow-purple-500/30', light: 'bg-purple-50 text-purple-600' },
     cyan: { bg: 'from-cyan-500 to-cyan-600', shadow: 'shadow-cyan-500/30', light: 'bg-cyan-50 text-cyan-600' },
     orange: { bg: 'from-orange-500 to-orange-600', shadow: 'shadow-orange-500/30', light: 'bg-orange-50 text-orange-600' },

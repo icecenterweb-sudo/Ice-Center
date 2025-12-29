@@ -5,9 +5,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 import useEmblaCarousel from 'embla-carousel-react';
 import Autoplay from 'embla-carousel-autoplay';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Percent } from 'lucide-react';
 import DiscountBadge from '../ui/DiscountBadge';
-  
+import { toPersianDigits } from '@/lib/numbers';
+
 // --- Mock Data ---
 const products = [
   {
@@ -101,8 +102,19 @@ const AmazingOfferCarousel = () => {
 
   const formatTime = (num: number) => num.toString().padStart(2, '0');
 
-  // --- Embla Carousel Setup ---
-  const [emblaRef, emblaApi] = useEmblaCarousel(
+  // --- Embla Carousel Setup for Mobile ---
+  const [mobileEmblaRef, mobileEmblaApi] = useEmblaCarousel(
+    {
+      align: 'start',
+      direction: 'rtl',
+      slidesToScroll: 1,
+      containScroll: 'trimSnaps',
+      dragFree: true,
+    }
+  );
+
+  // --- Embla Carousel Setup for Desktop ---
+  const [desktopEmblaRef, desktopEmblaApi] = useEmblaCarousel(
     {
       align: 'start',
       direction: 'rtl',
@@ -114,150 +126,299 @@ const AmazingOfferCarousel = () => {
 
   const [canScrollPrev, setCanScrollPrev] = useState(false);
   const [canScrollNext, setCanScrollNext] = useState(false);
+  const [mobileCanScrollPrev, setMobileCanScrollPrev] = useState(false);
+  const [mobileCanScrollNext, setMobileCanScrollNext] = useState(false);
 
   const scrollPrev = useCallback(() => {
-    if (emblaApi) emblaApi.scrollPrev();
-  }, [emblaApi]);
+    if (desktopEmblaApi) desktopEmblaApi.scrollPrev();
+  }, [desktopEmblaApi]);
 
   const scrollNext = useCallback(() => {
-    if (emblaApi) emblaApi.scrollNext();
-  }, [emblaApi]);
+    if (desktopEmblaApi) desktopEmblaApi.scrollNext();
+  }, [desktopEmblaApi]);
+
+  const mobileScrollPrev = useCallback(() => {
+    if (mobileEmblaApi) mobileEmblaApi.scrollPrev();
+  }, [mobileEmblaApi]);
+
+  const mobileScrollNext = useCallback(() => {
+    if (mobileEmblaApi) mobileEmblaApi.scrollNext();
+  }, [mobileEmblaApi]);
 
   const onSelect = useCallback(() => {
-    if (!emblaApi) return;
-    setCanScrollPrev(emblaApi.canScrollPrev());
-    setCanScrollNext(emblaApi.canScrollNext());
-  }, [emblaApi]);
+    if (!desktopEmblaApi) return;
+    setCanScrollPrev(desktopEmblaApi.canScrollPrev());
+    setCanScrollNext(desktopEmblaApi.canScrollNext());
+  }, [desktopEmblaApi]);
+
+  const onMobileSelect = useCallback(() => {
+    if (!mobileEmblaApi) return;
+    setMobileCanScrollPrev(mobileEmblaApi.canScrollPrev());
+    setMobileCanScrollNext(mobileEmblaApi.canScrollNext());
+  }, [mobileEmblaApi]);
 
   useEffect(() => {
-    if (!emblaApi) return;
+    if (!desktopEmblaApi) return;
     onSelect();
-    emblaApi.on('select', onSelect);
-    emblaApi.on('reInit', onSelect);
-  }, [emblaApi, onSelect]);
+    desktopEmblaApi.on('select', onSelect);
+    desktopEmblaApi.on('reInit', onSelect);
+  }, [desktopEmblaApi, onSelect]);
+
+  useEffect(() => {
+    if (!mobileEmblaApi) return;
+    onMobileSelect();
+    mobileEmblaApi.on('select', onMobileSelect);
+    mobileEmblaApi.on('reInit', onMobileSelect);
+  }, [mobileEmblaApi, onMobileSelect]);
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto mt-2 mb-4 px-4 font-yekan" dir="rtl">
-      
-      <div className="bg-gradient-to-l from-sky-500 to-sky-600 rounded-3xl py-4 px-2 pr-0 flex h-[300px] relative overflow-hidden shadow-xl">
-        
-        {/* --- Right Side: Banner & Timer --- */}
-        <div className="w-[160px] sm:w-[190px] flex flex-col items-center justify-center text-white shrink-0 z-10 relative">
-          
+    <div className="w-full max-w-[1600px] mx-auto my-1 md:my-2 lg:my-12 select-none font-yekan" dir="rtl">
+
+      {/* Mobile/Tablet: Vertical layout - Timer on top, carousel below */}
+      <div className="lg:hidden border-y border-gray-200 bg-sky-breeze">
+        {/* Header with title and timer */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
           {/* Title */}
-          <div className="text-center mb-4">
-            <h3 className="text-lg font-extrabold leading-snug">پیشنهاد</h3>
-            <h3 className="text-lg font-extrabold leading-snug">شگفت</h3>
-            <h3 className="text-lg font-extrabold leading-snug">انگیز!</h3>
+          <div className="flex items-center gap-2">
+            <Percent className="w-5 h-5 text-white-500 font-extrabold" />
+            <span className="text-base md:text-lg font-extrabold text-white">شگفت‌انگیز</span>
           </div>
 
           {/* Timer */}
-          <div className="flex gap-1 mb-4" dir="ltr">
-            <div className="bg-white text-sky-600 w-8 h-8 rounded flex items-center justify-center font-bold text-sm shadow-md">
-              {formatTime(time.seconds)}
+          <div className="flex items-center gap-1" dir="ltr">
+            <div className="bg-gray-100 text-black w-7 h-7 md:w-8 md:h-8 rounded flex items-center justify-center font-bold text-xs md:text-sm">
+              {toPersianDigits(formatTime(time.hours))}
             </div>
-            <span className="text-white font-bold self-center">:</span>
-            <div className="bg-white text-sky-600 w-8 h-8 rounded flex items-center justify-center font-bold text-sm shadow-md">
-              {formatTime(time.minutes)}
+            <span className="text-white font-bold">:</span>
+            <div className="bg-gray-100 text-black w-7 h-7 md:w-8 md:h-8 rounded flex items-center justify-center font-bold text-xs md:text-sm">
+              {toPersianDigits(formatTime(time.minutes))}
             </div>
-            <span className="text-white font-bold self-center">:</span>
-            <div className="bg-white text-sky-600 w-8 h-8 rounded flex items-center justify-center font-bold text-sm shadow-md">
-              {formatTime(time.hours)}
-            </div>
-          </div>
-
-          {/* Icon */}
-          <div className="mb-4">
-            <div className="w-20 h-20 bg-white/30 rounded-full flex items-center justify-center">
-              <Image 
-                src="https://res.cloudinary.com/dxooxiqcz/image/upload/v1764050064/pngtree-snowflake-on-blue-ice-icon-vector-png-image_6699545_fknw7o.png" 
-                alt="Offer Icon" 
-                width={95} 
-                height={95} 
-                className="object-contain"
-              />
+            <span className="text-white font-bold">:</span>
+            <div className="bg-gray-100 text-black w-7 h-7 md:w-8 md:h-8 rounded flex items-center justify-center font-bold text-xs md:text-sm">
+              {toPersianDigits(formatTime(time.seconds))}
             </div>
           </div>
 
-          {/* See All Link */}
-          <Link href="/offers" className="flex items-center text-sm font-medium hover:text-gray-200 transition-colors">
-            مشاهده همه
-            <ChevronLeft size={16} className="mr-1" />
+          {/* View All */}
+          <Link href="/offers" className="flex items-center text-xs md:text-sm text-white">
+            <span>همه</span>
+            <ChevronLeft className="w-4 h-4" />
           </Link>
         </div>
 
-        {/* --- Left Side: Embla Carousel --- */}
-        <div className="flex-1 overflow-hidden rounded-xl bg-sky-600 relative">
-          
-          {/* Embla Container */}
-          <div className="overflow-hidden h-full" ref={emblaRef}>
-            <div className="flex h-full gap-2">
-              {products.map((product) => (
-                <div 
-                  key={product.id} 
-                  className="flex-[0_0_170px] sm:flex-[0_0_200px] bg-white first:rounded-r-xl last:rounded-l-xl"
+        {/* Carousel */}
+        <div className="relative px-2 py-3">
+          <div className="overflow-hidden" ref={mobileEmblaRef}>
+            <div className="flex gap-2">
+              {products.map((product, index) => (
+                <div
+                  key={product.id}
+                  className={`
+                    relative flex-shrink-0 min-w-0
+                    flex-[0_0_46%]
+                    md:flex-[0_0_28.57%]
+                    bg-white
+                    ${index === 0 ? 'rounded-r-xl' : ''}
+                    ${index === products.length - 1 ? 'rounded-l-xl' : ''}
+                  `}
                 >
-                  <Link href={`/product/${product.id}`} className="flex flex-col h-full p-4 hover:shadow-lg transition-shadow duration-200">
-                    
-                    {/* Image */}
-                    <div className="relative w-full h-[140px] mb-4">
-                      <Image 
-                        src={product.image} 
-                        alt={product.title} 
-                        fill 
-                        className="object-contain"
-                      />
-                    </div>
+                  {/* Vertical Divider */}
+                  {index !== products.length - 1 && (
+                    <div className="absolute top-8 left-0 w-[0.75px] h-[88%] bg-gray-200 ml-[1px]" />
+                  )}
 
-                    {/* Title */}
-                    <h3 className="text-[13px] text-gray-800 font-normal leading-6 line-clamp-2 mb-auto h-[48px]">
-                      {product.title}
-                    </h3>
-
-                    {/* Price Section */}
-                    <div className="mt-3">
-                      {/* Row 1: Old Price & Badge */}
-                      <div className="flex items-center justify-between mb-1">
-                        <DiscountBadge discount={product.discount} />
-                        <del className="text-gray-400 text-xs font-light">
-                          {product.oldPrice.toLocaleString('fa-IR')}
-                        </del>
+                  <Link href={`/product/${product.id}`} className="block group h-full">
+                    <div className="relative p-2 md:p-3 flex flex-col h-full hover:shadow-lg transition-shadow">
+                      {/* Image */}
+                      <div className="relative w-full aspect-square mb-2">
+                        <Image
+                          src={product.image}
+                          alt={product.title}
+                          fill
+                          draggable="false"
+                          loading="lazy"
+                          className="object-contain rounded-lg group-hover:scale-105 transition-transform duration-300"
+                        />
                       </div>
 
-                      {/* Row 2: Current Price */}
-                      <div className="flex items-center justify-end gap-1">
-                        <span className="text-gray-900 font-bold font-yekan text-[16px] sm:text-[18px]">
-                          {product.price.toLocaleString('fa-IR')}
-                        </span>
-                        <span className="text-gray-600 text-[12px]">تومان</span>
+                      {/* Title */}
+                      <h3 className="text-xs leading-5 text-right font-normal text-black h-10 line-clamp-2 mb-2">
+                        {product.title}
+                      </h3>
+
+                      {/* Price Section */}
+                      <div className="w-full mt-auto text-left">
+                        <div className="flex items-center justify-end gap-2 mb-1">
+                          <DiscountBadge discount={product.discount} />
+                          <del className="text-gray-400 text-[10px]">
+                            {product.oldPrice.toLocaleString('fa-IR')}
+                          </del>
+                        </div>
+                        <p className="text-sm font-bold text-black flex items-center justify-end">
+                          <span>{product.price.toLocaleString('fa-IR')}</span>
+                          <span className="text-[10px] font-medium mr-1">تومان</span>
+                        </p>
                       </div>
                     </div>
-                    
                   </Link>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* --- Navigation Buttons --- */}
-          <button 
-            onClick={scrollPrev}
-            disabled={!canScrollPrev}
-            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-md text-gray-500 hover:text-gray-900 transition-all disabled:opacity-0 disabled:cursor-default"
-            aria-label="قبلی"
+          {/* Mobile Nav buttons */}
+          <button
+            onClick={mobileScrollPrev}
+            disabled={!mobileCanScrollPrev}
+            className="absolute top-1/2 -translate-y-1/2 left-1 bg-white/90 rounded-full shadow-md p-1.5 hover:bg-gray-100 transition-colors z-20 disabled:opacity-30 disabled:cursor-not-allowed"
+            aria-label="محصول بعدی"
           >
-            <ChevronLeft size={24} />
+            <ChevronLeft className="w-4 h-4 text-ocean" />
           </button>
-
-          <button 
-            onClick={scrollNext}
-            disabled={!canScrollNext}
-            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-md text-gray-500 hover:text-gray-900 transition-all disabled:opacity-0 disabled:cursor-default"
-            aria-label="بعدی"
+          <button
+            onClick={mobileScrollNext}
+            disabled={!mobileCanScrollNext}
+            className="absolute top-1/2 -translate-y-1/2 right-1 bg-white/90 rounded-full shadow-md p-1.5 hover:bg-gray-100 transition-colors z-20 disabled:opacity-30 disabled:cursor-not-allowed"
+            aria-label="محصول قبلی"
           >
-            <ChevronRight size={24} />
+            <ChevronRight className="w-4 h-4 text-ocean" />
           </button>
+        </div>
+      </div>
 
+      {/* Desktop: Horizontal layout with sidebar */}
+      <div className="hidden lg:block lg:mx-8">
+        <div className="bg-gradient-to-l from-ocean to-royal rounded-2xl py-4 px-2 pr-0 flex h-[320px] relative overflow-hidden shadow-xl border border-ocean/50">
+
+          {/* --- Right Side: Banner & Timer --- */}
+          <div className="w-[180px] xl:w-[200px] flex flex-col items-center justify-center text-white shrink-0 z-10 relative">
+
+            {/* Title */}
+            <div className="text-center mb-4">
+              <h3 className="text-xl font-extrabold leading-snug">پیشنهاد</h3>
+              <h3 className="text-xl font-extrabold leading-snug">شگفت</h3>
+              <h3 className="text-xl font-extrabold leading-snug">انگیز!</h3>
+            </div>
+
+            {/* Timer */}
+            <div className="flex gap-1.5 mb-4" dir="ltr">
+              <div className="bg-white text-ocean w-9 h-9 rounded-lg flex items-center justify-center font-bold text-base shadow-md">
+                {formatTime(time.seconds)}
+              </div>
+              <span className="text-white font-bold self-center text-lg">:</span>
+              <div className="bg-white text-ocean w-9 h-9 rounded-lg flex items-center justify-center font-bold text-base shadow-md">
+                {formatTime(time.minutes)}
+              </div>
+              <span className="text-white font-bold self-center text-lg">:</span>
+              <div className="bg-white text-ocean w-9 h-9 rounded-lg flex items-center justify-center font-bold text-base shadow-md">
+                {formatTime(time.hours)}
+              </div>
+            </div>
+
+            {/* Icon */}
+            <div className="mb-4">
+              <div className="w-20 h-20 bg-white/30 rounded-full flex items-center justify-center">
+                <Image
+                  src="https://res.cloudinary.com/dxooxiqcz/image/upload/v1764050064/pngtree-snowflake-on-blue-ice-icon-vector-png-image_6699545_fknw7o.png"
+                  alt="Offer Icon"
+                  width={95}
+                  height={95}
+                  className="object-contain"
+                />
+              </div>
+            </div>
+
+            {/* See All Link */}
+            <Link href="/offers" className="flex items-center text-sm font-medium hover:text-gray-200 transition-colors">
+              مشاهده همه
+              <ChevronLeft size={16} className="mr-1" />
+            </Link>
+          </div>
+
+          {/* --- Left Side: Embla Carousel --- */}
+          <div className="flex-1 overflow-hidden rounded-xl bg-sky-600 relative">
+
+            {/* Embla Container */}
+            <div className="overflow-hidden h-full" ref={desktopEmblaRef}>
+              <div className="flex h-full gap-0">
+                {products.map((product, index) => (
+                  <div
+                    key={product.id}
+                    className="
+                      relative flex-shrink-0 min-w-0
+                      flex-[0_0_25%]
+                      xl:flex-[0_0_20%]
+                      2xl:flex-[0_0_16.666%]
+                      bg-white first:rounded-r-xl last:rounded-l-xl
+                    "
+                  >
+                    {/* Vertical Divider */}
+                    {index !== products.length - 1 && (
+                      <div className="absolute top-8 left-0 w-[0.75px] h-[88%] bg-gray-200" />
+                    )}
+
+                    <Link href={`/product/${product.id}`} className="flex flex-col h-full p-4 hover:shadow-lg transition-shadow duration-200 group">
+
+                      {/* Image */}
+                      <div className="relative w-full h-[140px] mb-3">
+                        <Image
+                          src={product.image}
+                          alt={product.title}
+                          fill
+                          className="object-contain group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+
+                      {/* Title */}
+                      <h3 className="text-sm text-gray-800 font-medium leading-6 line-clamp-2 mb-auto h-12">
+                        {product.title}
+                      </h3>
+
+                      {/* Price Section */}
+                      <div className="mt-3">
+                        {/* Row 1: Old Price & Badge */}
+                        <div className="flex items-center justify-between mb-1">
+                          <DiscountBadge discount={product.discount} />
+                          <del className="text-gray-400 text-xs font-light">
+                            {product.oldPrice.toLocaleString('fa-IR')}
+                          </del>
+                        </div>
+
+                        {/* Row 2: Current Price */}
+                        <div className="flex items-center justify-end gap-1">
+                          <span className="text-gray-900 font-bold font-yekan text-lg">
+                            {product.price.toLocaleString('fa-IR')}
+                          </span>
+                          <span className="text-gray-600 text-xs">تومان</span>
+                        </div>
+                      </div>
+
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* --- Desktop Navigation Buttons --- */}
+            <button
+              onClick={scrollPrev}
+              disabled={!canScrollPrev}
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-md text-gray-500 hover:text-gray-900 transition-all disabled:opacity-0 disabled:cursor-default"
+              aria-label="قبلی"
+            >
+              <ChevronLeft size={24} />
+            </button>
+
+            <button
+              onClick={scrollNext}
+              disabled={!canScrollNext}
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-md text-gray-500 hover:text-gray-900 transition-all disabled:opacity-0 disabled:cursor-default"
+              aria-label="بعدی"
+            >
+              <ChevronRight size={24} />
+            </button>
+
+          </div>
         </div>
       </div>
     </div>

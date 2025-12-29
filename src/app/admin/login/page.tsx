@@ -44,7 +44,7 @@ export default function AdminLoginPage() {
         <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-4 relative overflow-hidden">
             {/* Background Ambience */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-                <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-blue-500/20 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2" />
+                <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-ocean/20 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2" />
                 <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-cyan-500/20 rounded-full blur-[120px] translate-x-1/2 translate-y-1/2" />
             </div>
 
@@ -58,7 +58,7 @@ export default function AdminLoginPage() {
                     <motion.div
                         initial={{ y: -20 }}
                         animate={{ y: 0 }}
-                        className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-2xl mb-6 shadow-2xl shadow-blue-500/30"
+                        className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-ocean to-sky-breeze rounded-2xl mb-6 shadow-2xl shadow-ocean/30"
                     >
                         <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -78,7 +78,7 @@ export default function AdminLoginPage() {
                                     value={phone}
                                     onChange={(e) => setPhone(e.target.value)}
                                     placeholder="0912xxxxxxx"
-                                    className="w-full bg-slate-900/50 border border-slate-700 text-white rounded-xl px-4 py-3.5 pl-10 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono dir-ltr placeholder:text-slate-600"
+                                    className="w-full bg-slate-900/50 border border-slate-700 text-white rounded-xl px-4 py-3.5 pl-10 focus:outline-none focus:border-ocean focus:ring-1 focus:ring-ocean transition-all font-mono dir-ltr placeholder:text-slate-600"
                                     required
                                 />
                                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
@@ -93,7 +93,7 @@ export default function AdminLoginPage() {
                                     value={otp}
                                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
                                     placeholder="----"
-                                    className="w-full bg-slate-900/50 border border-slate-700 text-white rounded-xl px-4 py-3.5 pl-10 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono text-center tracking-[1em] placeholder:tracking-normal placeholder:text-slate-600"
+                                    className="w-full bg-slate-900/50 border border-slate-700 text-white rounded-xl px-4 py-3.5 pl-10 focus:outline-none focus:border-ocean focus:ring-1 focus:ring-ocean transition-all font-mono text-center tracking-[1em] placeholder:tracking-normal placeholder:text-slate-600"
                                     required
                                     maxLength={4}
                                 />
@@ -118,7 +118,7 @@ export default function AdminLoginPage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full bg-gradient-to-r from-ocean to-sky-breeze hover:from-royal hover:to-ocean text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-ocean/25 flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {loading ? (
                                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

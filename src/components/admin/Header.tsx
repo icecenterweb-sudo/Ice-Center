@@ -52,7 +52,7 @@ export default function Header({ adminName }: { adminName?: string }) {
                     <input
                         type="text"
                         placeholder="جستجو..."
-                        className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all outline-none text-sm md:text-base"
+                        className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:border-ocean focus:ring-2 focus:ring-frost transition-all outline-none text-sm md:text-base"
                     />
                 </div>
             </div>
@@ -71,7 +71,7 @@ export default function Header({ adminName }: { adminName?: string }) {
                         <p className="text-sm font-bold text-gray-800">{adminName || 'مدیر سیستم'}</p>
                         <p className="text-xs text-gray-500">ادمین</p>
                     </div>
-                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold shadow-lg text-sm md:text-base">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-ocean to-sky-breeze flex items-center justify-center text-white font-bold shadow-lg text-sm md:text-base">
                         {adminName?.[0] || 'A'}
                     </div>
                 </div>

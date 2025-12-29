@@ -175,151 +175,146 @@ const ProductCarousel: React.FC<ProductCarouselProps> = ({
   };
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto mt-4 px-4 font-yekan" dir="rtl">
-      <div className="border border-gray-300 rounded-3xl p-4 sm:p-5 relative overflow-hidden">
+    <div className="w-full max-w-[1600px] mx-auto my-1 md:my-2 lg:my-12 select-none font-yekan" dir="rtl">
+      <div className="border-y lg:border border-gray-400 lg:border-gray-300 lg:rounded-2xl lg:mx-8 py-4 lg:py-0">
         {/* Header */}
-        <div className="flex items-center justify-between mb-3 sm:mb-4">
-          <h2 className="text-base sm:text-lg font-bold text-gray-800">
-            {title}
-          </h2>
-
-          <Link
-            href={viewAllHref}
-            className="flex items-center gap-1 text-[13px] text-sky-600 hover:text-sky-700"
-          >
-            نمایش همه
-            <ChevronLeft size={16} />
-          </Link>
-        </div>
-
-        {/* Carousel */}
-        <div className="relative">
-          <div className="overflow-hidden" ref={emblaRef}>
-            <div className="flex touch-pan-y">
-              {products.map((product, index) => {
-                const discount = getDiscount(product);
-
-                return (
-                  <div
-                    key={product.id}
-                    className="
-                      flex-[0_0_50%]
-                      min-w-0
-                      sm:flex-[0_0_33.333%]
-                      md:flex-[0_0_25%]
-                      lg:flex-[0_0_20%]
-                      xl:flex-[0_0_16.666667%]
-                      relative
-                      overflow-visible
-                    "
-                  >
-                    {/* Vertical Divider */}
-                    {index !== products.length - 1 && (
-                      <span className="absolute left-0 top-1/2 -translate-y-1/2 h-[75%] w-[1px] bg-gray-300 block z-10" />
-                    )}
-
-                    <Link
-                      href={product.href || '#'}
-                      className="flex flex-col h-full p-3 sm:p-4 hover:shadow-md transition-shadow duration-200"
-                    >
-                      {/* Top strip: Reserved space for time + label (consistent height) */}
-                      <div className="h-[36px] mb-1">
-                        {discount !== null && discount > 0 ? (
-                          <>
-                            <div className="flex items-center justify-between">
-                              <span className="text-md text-blue-500 font-bold">
-                                تک‌تخفیف
-                              </span>
-                              <span className="text-md text-blue-500 font-bold">
-                                {product.timeLabel || countdown}
-                              </span>
-                            </div>
-                            <div className="h-[2px] w-full bg-blue-400 mt-1" />
-                          </>
-                        ) : (
-                          /* Empty placeholder to maintain consistent height */
-                          <div className="h-full" />
-                        )}
-                      </div>
-
-                      {/* Image */}
-                      <div className="relative w-full h-[150px] sm:h-[170px] mb-3">
-                        <Image
-                          src={product.image}
-                          alt={product.title}
-                          fill
-                          className="object-contain"
-                        />
-                      </div>
-
-                      {/* Title */}
-                      <h3 className="text-[13px] sm:text-[14px] text-gray-800 font-normal leading-6 line-clamp-2 mb-auto min-h-[44px]">
-                        {product.title}
-                      </h3>
-
-                      {/* Price section */}
-                      <div className="mt-3">
-                        <div className="flex items-center justify-between mb-1">
-                          {discount !== null && (
-                            <DiscountBadge discount={discount} />
-                          )}
-                          {product.oldPrice && (
-                            <del className="text-gray-400 text-xs">
-                              {product.oldPrice.toLocaleString('fa-IR')}
-                            </del>
-                          )}
-                        </div>
-
-                        <div className="flex items-center justify-end gap-1">
-                          <span className="text-gray-900 font-bold font-yekan text-[16px] sm:text-[18px]">
-                            {product.price.toLocaleString('fa-IR')}
-                          </span>
-                          <span className="text-gray-600 text-[12px]">
-                            تومان
-                          </span>
-                        </div>
-                      </div>
-                    </Link>
-                  </div>
-                );
-              })}
-            </div>
+        <div className="px-4 md:px-8 lg:px-12 lg:py-4">
+          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-x-2 md:my-3 lg:my-4 mb-2 md:mb-4 lg:mb-6 mt-2 md:mt-3 lg:mt-4 md:flex md:justify-between">
+            <h2 className="text-[13px] md:text-xs lg:text-lg font-semibold text-black order-1">
+              {title}
+            </h2>
+            <div className="bg-gray-200 w-full md:hidden" />
+            <Link
+              href={viewAllHref}
+              className="text-[11px] md:text-xs lg:text-[14px] text-ocean hover:text-royal flex items-center order-2 font-semibold"
+            >
+              <span>نمایش همه</span>
+              <ChevronLeft className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-4 lg:h-4 mr-1" />
+            </Link>
           </div>
 
-          {/* Navigation buttons */}
-          <button
-            onClick={scrollPrev}
-            disabled={!canScrollPrev}
-            className="
-              hidden sm:flex
-              absolute left-2 top-1/2 -translate-y-1/2 z-20
-              w-9 h-9 bg-white border border-gray-200 rounded-full
-              items-center justify-center shadow-md text-gray-500
-              hover:text-gray-900 hover:bg-gray-50
-              disabled:opacity-0 disabled:cursor-default
-              transition-all
-            "
-            aria-label="قبلی"
-          >
-            <ChevronLeft size={22} />
-          </button>
+        {/* Carousel */}
+          <div className="relative">
+            <div className="overflow-hidden" ref={emblaRef}>
+              <div className="flex touch-pan-y">
+                {products.map((product, index) => {
+                  const discount = getDiscount(product);
 
-          <button
-            onClick={scrollNext}
-            disabled={!canScrollNext}
-            className="
-              hidden sm:flex
-              absolute right-2 top-1/2 -translate-y-1/2 z-20
-              w-9 h-9 bg-white border border-gray-200 rounded-full
-              items-center justify-center shadow-md text-gray-500
-              hover:text-gray-900 hover:bg-gray-50
-              disabled:opacity-0 disabled:cursor-default
-              transition-all
-            "
-            aria-label="بعدی"
-          >
-            <ChevronRight size={22} />
-          </button>
+                  return (
+                    <div
+                      key={product.id}
+                      className="
+                      relative flex-shrink-0 min-w-0
+                      flex-[0_0_46%]
+                      md:flex-[0_0_28.57%]
+                      lg:flex-[0_0_25%]
+                      xl:flex-[0_0_20%]
+                      2xl:flex-[0_0_16.666%]
+                    "
+                    >
+                      {/* Vertical Divider */}
+                      {index !== products.length - 1 && (
+                        <div className="absolute top-8 left-0 w-[0.75px] h-[88%] bg-gray-300 ml-[1px]" />
+                      )}
+                      <Link
+                        href={product.href || '#'}
+                        className="block group h-full">
+                        <div className="relative p-2 md:p-3 lg:p-4 flex flex-col h-full hover:shadow-lg transition-shadow">
+                          {/* Top strip: Reserved space for time + label (consistent height) */}
+                          <div className="h-[24px] md:h-[32px] lg:h-[36px] mb-0.5 md:mb-1">
+                            {discount !== null && discount > 0 ? (
+                              <>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[11px] md:text-xs lg:text-sm text-ocean font-bold">
+                                    تک‌تخفیف
+                                  </span>
+                                  <span className="text-[11px] md:text-xs lg:text-sm text-ocean font-bold">
+                                    {product.timeLabel || countdown}
+                                  </span>
+                                </div>
+                                <div className="h-[3px] md:h-[2px] w-full bg-ocean" />
+                              </>
+                            ) : (
+                              /* Empty placeholder to maintain consistent height */
+                              <div className="h-full" />
+                            )}
+                          </div>
+                          {/* Image */}
+                          <div className="relative w-full aspect-square mb-2 md:mb-2.5 lg:mb-3">
+                            <Image
+                              src={product.image}
+                              alt={product.title}
+                              fill
+                              draggable="false"
+                              loading="lazy"
+                              className="object-contain rounded-lg group-hover:scale-105 transition-transform duration-300"
+                            />
+                          </div>
+                          {/* Title */}
+                          <h3 className="text-[12px] md:text-xs lg:text-sm my-1 md:my-2 lg:my-0 leading-4 md:leading-5 lg:leading-7 text-right font-semibold text-black h-8 md:h-10 lg:h-14 line-clamp-2">
+                            {product.title}
+                          </h3>
+                          {/* Price section */}
+                          <div className="w-full mt-2 md:mt-4 lg:mt-5 mb-0.5 md:mb-1 text-left">
+                            {product.oldPrice && (
+                              <div className="flex items-center justify-end gap-2 mb-1">
+                                {discount !== null && (
+                                  <DiscountBadge discount={discount} />
+                                )}
+                                <del className="text-gray-400 text-xs">
+                                  {product.oldPrice.toLocaleString('fa-IR')}
+                                </del>
+                              </div>
+                            )}
+                            <p className="text-sm md:text-base lg:text-lg font-bold text-black flex items-center justify-end">
+                              <span>{product.price.toLocaleString('fa-IR')}</span>
+                              <span className="text-[10px] md:text-xs font-medium mr-1">تومان</span>
+                            </p>
+                          </div>
+                        </div>
+                      </Link>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Mobile Navigation buttons */}
+            <button
+              onClick={scrollPrev}
+              disabled={!canScrollPrev}
+              className="absolute top-1/2 -translate-y-1/2 left-2 lg:hidden bg-white rounded-full shadow-md p-1.5 hover:bg-gray-100 transition-colors z-20 disabled:opacity-30 disabled:cursor-not-allowed"
+              aria-label="محصول بعدی"
+            >
+              <ChevronLeft className="w-[18px] h-[18px] md:w-5 md:h-5 text-ocean" />
+            </button>
+            <button
+              onClick={scrollNext}
+              disabled={!canScrollNext}
+              className="absolute top-1/2 -translate-y-1/2 right-2 lg:hidden bg-white rounded-full shadow-md p-1.5 hover:bg-gray-100 transition-colors z-20 disabled:opacity-30 disabled:cursor-not-allowed"
+              aria-label="محصول قبلی"
+            >
+              <ChevronRight className="w-[18px] h-[18px] md:w-5 md:h-5 text-ocean" />
+            </button>
+
+            {/* Desktop Navigation buttons */}
+            <button
+              onClick={scrollPrev}
+              disabled={!canScrollPrev}
+              className="absolute top-1/2 -translate-y-1/2 -left-4 w-8 h-8 lg:w-9 lg:h-9 bg-white rounded-full shadow-md items-center justify-center hidden lg:flex hover:bg-gray-100 transition-all z-20 opacity-70 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
+              aria-label="محصول بعدی"
+            >
+              <ChevronLeft className="w-[22px] h-[22px] lg:w-6 lg:h-6 text-ocean" />
+            </button>
+            <button
+              onClick={scrollNext}
+              disabled={!canScrollNext}
+              className="absolute top-1/2 -translate-y-1/2 -right-4 w-8 h-8 lg:w-9 lg:h-9 bg-white rounded-full shadow-md items-center justify-center hidden lg:flex hover:bg-gray-100 transition-all z-20 opacity-70 hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
+              aria-label="محصول قبلی"
+            >
+              <ChevronRight className="w-[22px] h-[22px] lg:w-6 lg:h-6 text-ocean" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -35,7 +35,7 @@ export default async function ProductsPage() {
                 </div>
                 <Link
                     href="/admin/dashboard/products/add"
-                    className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all transform hover:scale-105"
+                    className="flex items-center gap-2 bg-gradient-to-r from-ocean to-sky-breeze hover:from-royal hover:to-ocean text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-ocean/20 transition-all transform hover:scale-105"
                 >
                     <Plus className="w-5 h-5" />
                     افزودن محصول جدید
@@ -151,7 +151,7 @@ export default async function ProductsPage() {
                                             <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <Link
                                                     href={`/admin/dashboard/products/${product.id}`}
-                                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                    className="p-2 text-gray-400 hover:text-ocean hover:bg-frost rounded-lg transition-colors"
                                                     title="مشاهده جزئیات"
                                                 >
                                                     <Eye className="w-4 h-4" />
