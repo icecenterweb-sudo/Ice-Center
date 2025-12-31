@@ -10,6 +10,7 @@ import {
     FolderTree,
     Users,
     ShoppingCart,
+    FileText,
     LogOut,
     ChevronRight,
     ChevronLeft,
@@ -20,6 +21,7 @@ const menuItems = [
     { icon: LayoutDashboard, label: 'داشبورد', href: '/admin/dashboard' },
     { icon: Package, label: 'محصولات', href: '/admin/dashboard/products' },
     { icon: FolderTree, label: 'دسته‌بندی‌ها', href: '/admin/dashboard/categories' },
+    { icon: FileText, label: 'بلاگ', href: '/admin/dashboard/blog' },
     { icon: Users, label: 'کاربران', href: '/admin/dashboard/users' },
     { icon: ShoppingCart, label: 'سفارشات', href: '/admin/dashboard/orders' },
 ];

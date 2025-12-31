@@ -1,0 +1,1363 @@
+================================================================================
+OFFER SYSTEM ARCHITECTURE REVIEW
+E-commerce Platform - Dynamic Offer & Carousel System
+Reviewed by: Gemini 2.0 Flash Experimental
+Date: 2025-12-31
+================================================================================
+
+EXECUTIVE SUMMARY
+-----------------
+Your proposed Offer model (Version B) is a solid foundation, but there are 
+several architectural improvements and considerations that will make it more 
+robust, scalable, and future-proof. This document provides detailed feedback 
+across schema design, discount logic, admin UX, carousel algorithms, campaign 
+support, and technical optimizations.
+
+
+================================================================================
+1. SCHEMA DESIGN & FUTURE-PROOFING
+================================================================================
+
+CURRENT SCHEMA ANALYSIS
+-----------------------
+Your proposed schema is good for basic use cases, but has limitations:
+
+✅ STRENGTHS:
+- Clear separation of concerns (Product vs Offer)
+- Temporal validity (startDate, endDate)
+- Priority system for conflict resolution
+- Cascade delete maintains referential integrity
+
+⚠️ LIMITATIONS:
+- Single product per offer (can't do "Buy 2 Get 1")
+- No quantity-based discounts
+- No user segmentation (VIP, first-time buyers, etc.)
+- No usage limits (first 100 customers)
+- No minimum purchase requirements
+- Discount value stored as Float (precision issues for currency)
+
+RECOMMENDED ENHANCED SCHEMA
+---------------------------
+
+model Offer {
+  id                Int       @id @default(autoincrement())
+  
+  // Basic Info
+  name              String    // "Yalda Night Special", "Flash Deal"
+  description       String?
+  internalNotes     String?   // Admin-only notes
+  
+  // Discount Configuration
+  discountType      DiscountType
+  discountValue     Decimal   @db.Decimal(10, 2)  // Use Decimal for precision
+  
+  // Applicability Rules
+  applicationType   ApplicationType @default(SINGLE_PRODUCT)
+  minQuantity       Int       @default(1)
+  maxQuantity       Int?      // null = unlimited
+  minPurchaseAmount Decimal?  @db.Decimal(10, 2)
+  
+  // Temporal Validity
+  startDate         DateTime  @default(now())
+  endDate           DateTime
+  timezone          String    @default("Asia/Tehran")
+  
+  // Usage Limits
+  maxTotalUses      Int?      // Total times offer can be used
+  maxUsesPerUser    Int?      @default(1)
+  currentUseCount   Int       @default(0)
+  
+  // Targeting & Segmentation
+  userSegments      UserSegment[] // NEW: relation to user segments
+  requiresAuth      Boolean   @default(false)
+  
+  // Display & Prioritization
+  isActive          Boolean   @default(true)
+  isFeatured        Boolean   @default(false)  // For homepage carousel
+  priority          Int       @default(0)
+  displayOrder      Int?      // Manual ordering override
+  
+  // UI Presentation
+  badgeText         String?   // "70% OFF", "Limited Time"
+  badgeColor        String?   // Hex color for badge
+  thumbnailUrl      String?   // Custom offer image
+  
+  // Relations
+  campaignId        Int?
+  campaign          Campaign? @relation(fields: [campaignId], references: [id])
+  
+  products          OfferProduct[]  // CHANGED: Many-to-many relation
+  categories        OfferCategory[] // NEW: Apply to entire categories
+  
+  // Audit
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  createdBy         Int?
+  creator           User?     @relation(fields: [createdBy], references: [id])
+  
+  @@index([isActive, isFeatured, startDate, endDate])
+  @@index([campaignId])
+  @@index([startDate, endDate])
+}
+
+// Junction table for many-to-many Product-Offer relationship
+model OfferProduct {
+  id        Int      @id @default(autoincrement())
+  offerId   Int
+  offer     Offer    @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  // Product-specific overrides
+  customDiscountValue Decimal? @db.Decimal(10, 2)
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([offerId, productId])
+  @@index([productId])
+  @@index([offerId])
+}
+
+// NEW: Apply offers to entire categories
+model OfferCategory {
+  id         Int      @id @default(autoincrement())
+  offerId    Int
+  offer      Offer    @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  categoryId Int
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  
+  @@unique([offerId, categoryId])
+  @@index([categoryId])
+}
+
+// NEW: User segmentation for targeted offers
+model UserSegment {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique // "VIP", "FirstTime", "Returning"
+  description String?
+  
+  // Criteria (can be evaluated programmatically)
+  minOrderCount    Int?
+  minTotalSpent    Decimal? @db.Decimal(10, 2)
+  hasEmailVerified Boolean?
+  
+  offers      Offer[]
+  users       User[]   // Many-to-many with users
+  
+  createdAt   DateTime @default(now())
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  BUY_X_GET_Y      // e.g., Buy 2 Get 1 Free
+  FREE_SHIPPING
+}
+
+enum ApplicationType {
+  SINGLE_PRODUCT
+  PRODUCT_BUNDLE
+  CATEGORY_WIDE
+  CART_TOTAL
+}
+
+// NEW: Campaign model for grouping offers
+model Campaign {
+  id          Int      @id @default(autoincrement())
+  name        String   // "Yalda 2025", "Black Friday"
+  slug        String   @unique
+  description String?
+  
+  startDate   DateTime
+  endDate     DateTime
+  
+  isActive    Boolean  @default(true)
+  
+  // Landing page customization
+  bannerUrl   String?
+  themeColor  String?
+  
+  offers      Offer[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([isActive, startDate, endDate])
+}
+
+
+KEY IMPROVEMENTS EXPLAINED
+--------------------------
+
+1. DECIMAL INSTEAD OF FLOAT
+   - Prevents precision errors in financial calculations
+   - Critical for currency operations
+
+2. MANY-TO-MANY PRODUCT RELATIONS
+   - Allows bundle deals ("Buy Phone + Case, get 20% off both")
+   - Reduces duplicate offers for same discount across products
+   - Product-specific override values for flexibility
+
+3. CATEGORY-WIDE OFFERS
+   - Apply 15% off to entire "Smartphones" category
+   - Easier management than individual product offers
+   - Scales better for large catalogs
+
+4. USER SEGMENTATION
+   - Target VIP customers with exclusive offers
+   - First-time buyer discounts
+   - Returning customer rewards
+   - Increases conversion rates
+
+5. USAGE LIMITS
+   - "First 100 customers get 50% off"
+   - Prevents abuse
+   - Creates urgency
+
+6. CAMPAIGN GROUPING
+   - Organize offers by events (Yalda, Black Friday)
+   - Easier analytics and reporting
+   - Bulk enable/disable seasonal offers
+
+7. AUDIT TRAIL
+   - Track who created offers
+   - Essential for accountability in teams
+
+8. RICHER UI METADATA
+   - Custom badge text and colors
+   - Custom thumbnails for carousel
+   - Better visual presentation
+
+
+================================================================================
+2. DISCOUNT LOGIC: WHERE TO STORE PRICING DATA?
+================================================================================
+
+OPTION A: Store Calculated Prices in Offer
+-------------------------------------------
+Structure:
+  Offer {
+    originalPrice    Decimal
+    discountedPrice  Decimal
+    discountAmount   Decimal
+  }
+
+PROS:
+✅ Fast reads - no calculation needed
+✅ Historical accuracy - prices frozen at offer creation
+✅ Simpler frontend logic
+
+CONS:
+❌ Data duplication
+❌ Staleness risk - product price changes make offer prices wrong
+❌ More storage space
+❌ Harder to update bulk prices
+
+
+OPTION B: Store Only Discount Rules (RECOMMENDED)
+--------------------------------------------------
+Structure:
+  Offer {
+    discountType   DiscountType
+    discountValue  Decimal
+  }
+  
+Calculate price at runtime:
+  effectivePrice = product.price - (
+    discountType === 'PERCENTAGE' 
+      ? product.price * (discountValue / 100)
+      : discountValue
+  )
+
+PROS:
+✅ Single source of truth for prices
+✅ Automatic adaptation to product price changes
+✅ Minimal storage
+✅ Easier bulk updates
+✅ Less data inconsistency risk
+
+CONS:
+❌ Computation cost (minimal with indexing/caching)
+❌ Need proper transaction handling
+
+
+OPTION C: HYBRID APPROACH (BEST OF BOTH WORLDS)
+------------------------------------------------
+Structure:
+  Offer {
+    discountType         DiscountType
+    discountValue        Decimal
+    
+    // Snapshot at creation (optional, for display)
+    snapshotOriginalPrice  Decimal?
+    snapshotDiscountAmount Decimal?
+    
+    // Computed at runtime
+    get effectivePrice() { ... }
+  }
+
+STRATEGY:
+1. Store discount RULES (type + value) - authoritative
+2. Optionally snapshot prices at offer creation for reference
+3. Always compute final price at runtime using current product price
+4. Use snapshots only for admin analytics ("How much discount did we give?")
+
+PROS:
+✅ Best of both worlds
+✅ Historical data for reporting
+✅ Current prices for checkout
+✅ Flexibility
+
+RECOMMENDATION:
+Use Option B (rule-based) for most cases. Add Option C (hybrid) only if you
+need detailed financial reporting or want to show "original offer price" even
+after product price changes.
+
+
+================================================================================
+3. ADMIN UX IDEAS FOR OFFER MANAGEMENT
+================================================================================
+
+DASHBOARD OVERVIEW
+------------------
+1. Offer Status Cards
+   - Active Offers: 12
+   - Scheduled: 5
+   - Expired (Last 7 days): 8
+   - Total Savings Given: $12,450
+
+2. Quick Actions
+   - [+ Create Offer]
+   - [+ Create Campaign]
+   - [Bulk Edit]
+   - [Import from CSV]
+
+3. Calendar View
+   - Visual timeline of all offers
+   - Drag-to-reschedule
+   - Overlapping offer warnings
+
+
+OFFER LIST VIEW
+---------------
+Table Columns:
+- Thumbnail preview
+- Offer Name
+- Discount (e.g., "20% OFF")
+- Products/Categories (expandable list)
+- Start Date → End Date
+- Status (Active/Scheduled/Expired badge)
+- Uses (45/100)
+- Actions (Edit/Duplicate/Delete)
+
+Filters:
+- Status (Active, Scheduled, Expired, All)
+- Campaign (dropdown)
+- Discount Type
+- Date Range
+- Created By (for teams)
+
+Sorting:
+- Priority (default)
+- Start Date
+- End Date
+- Use Count
+- Discount Amount
+
+
+OFFER CREATION FORM (WIZARD STYLE)
+-----------------------------------
+
+STEP 1: Basic Info
+- Name (required)
+- Description
+- Internal Notes (admin-only)
+
+STEP 2: Discount Configuration
+- Type: [●Percentage ○Fixed Amount ○Buy X Get Y]
+- Value: [___] %
+- Min Quantity: [1]
+- Min Purchase Amount: $[___] (optional)
+
+STEP 3: Products/Categories
+Two modes:
+  [●Specific Products] [○Entire Categories]
+  
+  If Products:
+    - Search bar with autocomplete
+    - Selected products list
+    - Bulk import (CSV/Excel)
+  
+  If Categories:
+    - Tree view of category hierarchy
+    - Multi-select checkboxes
+
+STEP 4: Scheduling
+- Start: [Date Picker] [Time Picker]
+- End:   [Date Picker] [Time Picker]
+- Timezone: [Asia/Tehran ▼]
+
+STEP 5: Limits & Targeting (Optional)
+- Max Total Uses: [____] (blank = unlimited)
+- Max Uses Per User: [1]
+- User Segments: [☑VIP ☐FirstTime ☐Returning]
+- Requires Login: [☐]
+
+STEP 6: Display Settings
+- Show in Homepage Carousel: [☑]
+- Priority: [0-100 slider]
+- Badge Text: [e.g., "70% OFF"]
+- Badge Color: [Color Picker]
+- Thumbnail: [Upload Image]
+
+STEP 7: Review & Publish
+- Summary preview
+- Affected products count preview
+- Estimated discount amount (if calculable)
+- [Save as Draft] [Publish]
+
+
+SMART FEATURES
+--------------
+
+1. CONFLICT DETECTION
+   - Warn if overlapping offers exist for same products
+   - Suggest priority adjustments
+   - "Product X already has an offer from Jan 1-10. Proceed anyway?"
+
+2. PERFORMANCE FORECAST
+   - "Based on similar past offers, estimated redemptions: 150-200"
+   - "Estimated revenue impact: -$2,500 (but +40% conversion)"
+
+3. DUPLICATE & MODIFY
+   - One-click duplicate last year's Yalda offer
+   - Auto-adjust dates to this year
+
+4. BULK OPERATIONS
+   - Select multiple offers → Extend end date by 7 days
+   - Select campaign → Disable all offers
+
+5. TEMPLATES
+   - "Flash Sale Template" (24hr, high priority, featured)
+   - "Category Discount Template" (category-wide, 7 days)
+   - Save custom templates
+
+6. AUTO-DEACTIVATION
+   - Cron job checks expired offers daily
+   - Auto-disable and notify admin
+   - Option: "Auto-extend if performing well"
+
+
+PERMISSIONS & ROLES
+-------------------
+- Admin: Full access
+- Marketing Manager: Create/edit/delete offers
+- Marketing Specialist: Create/edit offers (approval required)
+- Viewer: Read-only access to analytics
+
+
+MOBILE ADMIN APP SUPPORT
+-------------------------
+- Push notification when offer is about to expire
+- Quick enable/disable toggle
+- Performance dashboard on-the-go
+
+
+================================================================================
+4. CAROUSEL SELECTION ALGORITHM
+================================================================================
+
+GOAL: Show the most relevant, high-performing offers to maximize conversions.
+
+
+MULTI-FACTOR SCORING ALGORITHM
+-------------------------------
+
+function selectOffersForCarousel(userId?: number, limit = 10) {
+  const now = new Date();
+  
+  // Base query: Active, valid, featured offers
+  let offers = await prisma.offer.findMany({
+    where: {
+      isActive: true,
+      isFeatured: true,
+      startDate: { lte: now },
+      endDate: { gte: now },
+      OR: [
+        { maxTotalUses: null },
+        { currentUseCount: { lt: maxTotalUses } }
+      ]
+    },
+    include: {
+      products: {
+        include: {
+          product: {
+            include: { category: true }
+          }
+        }
+      },
+      campaign: true,
+      userSegments: true
+    }
+  });
+  
+  // Calculate score for each offer
+  const scoredOffers = offers.map(offer => {
+    let score = 0;
+    
+    // 1. PRIORITY WEIGHT (30%)
+    score += offer.priority * 0.3;
+    
+    // 2. DISCOUNT ATTRACTIVENESS (25%)
+    const avgDiscount = calculateAverageDiscount(offer);
+    score += (avgDiscount / 100) * 25;
+    
+    // 3. URGENCY FACTOR (20%)
+    const hoursRemaining = (offer.endDate - now) / (1000 * 60 * 60);
+    if (hoursRemaining < 24) score += 20;
+    else if (hoursRemaining < 72) score += 15;
+    else if (hoursRemaining < 168) score += 10;
+    
+    // 4. STOCK AVAILABILITY (15%)
+    const inStockProducts = offer.products.filter(
+      p => p.product.stock > 0
+    ).length;
+    const stockRatio = inStockProducts / offer.products.length;
+    score += stockRatio * 15;
+    
+    // 5. USER PERSONALIZATION (10%)
+    if (userId) {
+      const userSegmentMatch = checkUserSegmentMatch(userId, offer);
+      if (userSegmentMatch) score += 10;
+      
+      const userCategoryAffinity = checkCategoryAffinity(userId, offer);
+      score += userCategoryAffinity * 5;
+    }
+    
+    // 6. REDEMPTION RATE (Bonus)
+    // If offer has been used 50%+ of max, it's popular - boost it
+    if (offer.maxTotalUses) {
+      const redemptionRate = offer.currentUseCount / offer.maxTotalUses;
+      if (redemptionRate > 0.5) score += 5;
+    }
+    
+    // 7. MANUAL OVERRIDE
+    if (offer.displayOrder !== null) {
+      score = 1000 - offer.displayOrder; // Higher displayOrder = lower score
+    }
+    
+    return { ...offer, score };
+  });
+  
+  // Sort by score descending
+  scoredOffers.sort((a, b) => b.score - a.score);
+  
+  // Diversity filter: Don't show 3+ offers from same category
+  const diversified = diversifyByCategory(scoredOffers, 2);
+  
+  // Return top N
+  return diversified.slice(0, limit);
+}
+
+
+ADVANCED STRATEGIES
+-------------------
+
+1. A/B TESTING
+   - Randomly assign users to test groups
+   - Show different offer orderings
+   - Measure click-through and conversion rates
+   - Optimize algorithm based on data
+
+2. TIME-OF-DAY OPTIMIZATION
+   - Show different offers based on user's local time
+   - Morning: Coffee makers, breakfast items
+   - Evening: Entertainment products
+   - Night: Late-night deals
+
+3. BEHAVIOR-BASED RANKING
+   - Track which categories user browses most
+   - Recently viewed products
+   - Cart abandonment → Show related offers
+
+4. INVENTORY-AWARE
+   - Deprioritize offers for low-stock products
+   - Boost offers for overstocked items (clearance)
+
+5. SEASONAL CONTEXT
+   - During Yalda: Boost Yalda campaign offers
+   - Detect holidays automatically
+   - Weather-based (hot day → AC offers)
+
+6. ANTI-FATIGUE
+   - Don't show same offer to same user repeatedly
+   - Track impressions per user
+   - Rotate offers after 3 views without click
+
+
+FALLBACK STRATEGY
+-----------------
+If no featured offers exist:
+1. Show recently added offers
+2. Show highest-discount offers
+3. Show best-selling products with any offer
+4. Show campaign offers (even if not featured)
+
+
+CACHING STRATEGY FOR CAROUSEL
+------------------------------
+Since carousel is homepage, optimize heavily:
+
+// Cache for 5 minutes, vary by auth status
+export const revalidate = 300; // 5 mins
+
+// Static props with ISR
+export async function generateStaticParams() {
+  return [
+    { segment: 'guest' },
+    { segment: 'authenticated' }
+  ];
+}
+
+// Edge caching with Vercel/Arvan
+export const dynamic = 'force-static';
+
+// Client-side: Prefetch on mouseover
+<OfferCard onMouseEnter={() => prefetch(offerUrl)} />
+
+
+================================================================================
+5. CAMPAIGN SUPPORT: NOW OR LATER?
+================================================================================
+
+RECOMMENDATION: Implement NOW (Lightweight Version)
+---------------------------------------------------
+
+WHY NOW?
+--------
+✅ Yalda is coming - you need this soon
+✅ Minimal additional complexity
+✅ Huge organizational benefit
+✅ Easy to expand later
+
+HOW TO IMPLEMENT CAMPAIGNS
+---------------------------
+
+PHASE 1 (MVP - Do Now):
+-----------------------
+model Campaign {
+  id          Int      @id @default(autoincrement())
+  name        String
+  slug        String   @unique
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean  @default(true)
+  offers      Offer[]
+  createdAt   DateTime @default(now())
+}
+
+// Add to Offer model:
+model Offer {
+  // ...existing fields
+  campaignId  Int?
+  campaign    Campaign? @relation(fields: [campaignId], references: [id])
+}
+
+ADMIN UX:
+- Simple campaign CRUD
+- Assign offers to campaign via dropdown
+- Campaign detail page shows all offers
+- Bulk enable/disable campaign offers
+
+FRONTEND:
+- Campaign landing page: /campaigns/yalda-2025
+- Shows all campaign offers in grid
+- Custom banner/theme per campaign
+
+
+PHASE 2 (Enhanced - Do Later):
+-------------------------------
+Add these features over time:
+
+1. CAMPAIGN ANALYTICS
+   - Total sales from campaign
+   - Conversion rate
+   - Most popular offers
+   - Revenue impact
+
+2. CAMPAIGN TEMPLATES
+   - "Black Friday Template" with preset offers
+   - Clone last year's campaign
+
+3. MULTI-REGION CAMPAIGNS
+   - Different start/end dates per region
+   - Localized content
+
+4. GAMIFICATION
+   - "Collect 3 offers to unlock mystery discount"
+   - Spin-the-wheel during campaign
+   - Scratch cards
+
+5. EMAIL INTEGRATION
+   - Auto-send campaign announcements
+   - Offer reminders before expiry
+
+6. SOCIAL SHARING
+   - "Share this Yalda offer to get extra 5% off"
+   - Referral tracking per campaign
+
+
+MIGRATION STRATEGY
+------------------
+Since campaignId is optional (Int?), you can:
+1. Deploy campaign model now
+2. Existing offers continue working (campaignId = null)
+3. Gradually assign offers to campaigns
+4. No breaking changes
+
+
+================================================================================
+6. TECHNICAL OPTIMIZATIONS
+================================================================================
+
+INDEXING STRATEGY
+-----------------
+
+Critical Indexes (Add These):
+
+// Offer model
+@@index([isActive, isFeatured, startDate, endDate])  
+// Fast carousel queries
+
+@@index([isActive, endDate])                          
+// Fast expiry checks
+
+@@index([campaignId, isActive])                       
+// Campaign page queries
+
+@@index([productId])                                  
+// (if using direct relation)
+
+// OfferProduct junction
+@@index([productId])
+@@index([offerId])
+
+// Product model (if not exists)
+@@index([categoryId])
+@@index([stock])  // For stock-aware algorithms
+
+
+COMPOUND INDEX RATIONALE:
+- Prisma uses leftmost prefix matching
+- [isActive, isFeatured, startDate, endDate] allows queries like:
+  WHERE isActive = true AND isFeatured = true (uses index)
+  WHERE isActive = true (uses index)
+  WHERE isFeatured = true (doesn't use index - not leftmost)
+
+
+QUERY OPTIMIZATION
+------------------
+
+1. AVOID N+1 QUERIES
+
+BAD:
+const offers = await prisma.offer.findMany();
+for (const offer of offers) {
+  const products = await prisma.offerProduct.findMany({
+    where: { offerId: offer.id }
+  }); // N+1 queries!
+}
+
+GOOD:
+const offers = await prisma.offer.findMany({
+  include: {
+    products: {
+      include: { product: true }
+    }
+  }
+}); // Single query with joins
+
+
+2. USE SELECT TO LIMIT FIELDS
+
+BAD:
+const offers = await prisma.offer.findMany(); 
+// Returns all fields including large text fields
+
+GOOD:
+const offers = await prisma.offer.findMany({
+  select: {
+    id: true,
+    name: true,
+    discountType: true,
+    discountValue: true,
+    products: {
+      select: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            images: true
+          }
+        }
+      }
+    }
+  }
+});
+
+
+3. PAGINATION FOR LARGE DATASETS
+
+// Cursor-based (best for real-time data)
+const offers = await prisma.offer.findMany({
+  take: 20,
+  skip: 1,
+  cursor: { id: lastOfferId },
+  orderBy: { id: 'asc' }
+});
+
+// Offset-based (simpler, for small datasets)
+const offers = await prisma.offer.findMany({
+  take: 20,
+  skip: page * 20
+});
+
+
+CACHING STRATEGY
+----------------
+
+1. REDIS CACHING FOR CAROUSEL
+
+import { Redis } from '@upstash/redis';
+
+async function getCarouselOffers() {
+  const cacheKey = 'homepage:carousel:offers';
+  
+  // Try cache first
+  const cached = await redis.get(cacheKey);
+  if (cached) return cached;
+  
+  // Cache miss - fetch from DB
+  const offers = await selectOffersForCarousel();
+  
+  // Cache for 5 minutes
+  await redis.set(cacheKey, offers, { ex: 300 });
+  
+  return offers;
+}
+
+
+2. NEXT.JS ISR (INCREMENTAL STATIC REGENERATION)
+
+// app/page.tsx
+export const revalidate = 300; // 5 minutes
+
+export default async function HomePage() {
+  const offers = await getCarouselOffers();
+  return <OffCarousel offers={offers} />;
+}
+
+
+3. CDN CACHING (ARVANCLOUD)
+
+// next.config.js
+async headers() {
+  return [
+    {
+      source: '/api/offers/carousel',
+      headers: [
+        {
+          key: 'Cache-Control',
+          value: 'public, s-maxage=300, stale-while-revalidate=600'
+        }
+      ]
+    }
+  ];
+}
+
+
+4. CACHE INVALIDATION STRATEGY
+
+When offer is created/updated/deleted:
+
+async function invalidateOfferCache(offerId: number) {
+  // Clear specific offer cache
+  await redis.del(`offer:${offerId}`);
+  
+  // Clear carousel cache (affects homepage)
+  await redis.del('homepage:carousel:offers');
+  
+  // Clear product cache if offer affects it
+  const offer = await prisma.offer.findUnique({
+    where: { id: offerId },
+    include: { products: true }
+  });
+  
+  for (const { productId } of offer.products) {
+    await redis.del(`product:${productId}`);
+  }
+  
+  // Trigger ISR revalidation
+  await fetch('/api/revalidate?path=/', {
+    headers: { 'x-revalidate-secret': process.env.REVALIDATE_SECRET }
+  });
+}
+
+
+CDN OPTIMIZATION (ARVANCLOUD)
+-----------------------------
+
+1. STATIC ASSET CACHING
+   - Offer thumbnails: Cache for 1 year (immutable)
+   - Use hash-based filenames: offer-thumb-abc123.jpg
+
+2. API ROUTE CACHING
+   - GET /api/offers/carousel
+     Cache-Control: public, s-maxage=300
+   
+   - GET /api/offers/[id]
+     Cache-Control: public, s-maxage=3600
+
+3. PURGE ON UPDATE
+   - When offer updated, purge CDN cache via Arvan API
+   
+   await fetch('https://napi.arvancloud.ir/cdn/4.0/domains/DOMAIN/caching', {
+     method: 'DELETE',
+     headers: {
+       'Authorization': `Bearer ${ARVAN_API_KEY}`,
+       'Content-Type': 'application/json'
+     },
+     body: JSON.stringify({
+       purge: 'all' // or specific URLs
+     })
+   });
+
+
+HANDLING EXPIRED OFFERS
+------------------------
+
+STRATEGY 1: CRON JOB (RECOMMENDED)
+
+// Using node-cron or Vercel Cron Jobs
+// cron.ts
+import cron from 'node-cron';
+
+// Run every hour
+cron.schedule('0 * * * *', async () => {
+  const now = new Date();
+  
+  // Deactivate expired offers
+  const result = await prisma.offer.updateMany({
+    where: {
+      isActive: true,
+      endDate: { lt: now }
+    },
+    data: {
+      isActive: false
+    }
+  });
+  
+  console.log(`Deactivated ${result.count} expired offers`);
+  
+  // Invalidate caches
+  await redis.del('homepage:carousel:offers');
+});
+
+
+// Vercel Cron (in vercel.json)
+{
+  "crons": [
+    {
+      "path": "/api/cron/deactivate-offers",
+      "schedule": "0 * * * *"
+    }
+  ]
+}
+
+// api/cron/deactivate-offers/route.ts
+export async function GET(request: Request) {
+  // Verify cron secret
+  const authHeader = request.headers.get('authorization');
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+  
+  // Deactivate logic here...
+  
+  return Response.json({ success: true });
+}
+
+
+STRATEGY 2: QUERY-TIME FILTERING (SIMPLER)
+
+// Always filter by date in queries
+const offers = await prisma.offer.findMany({
+  where: {
+    isActive: true,
+    startDate: { lte: new Date() },
+    endDate: { gte: new Date() }
+  }
+});
+
+// Pros: No cron needed, always accurate
+// Cons: Slightly slower queries, "expired" offers still marked active in DB
+
+
+STRATEGY 3: HYBRID (BEST)
+
+- Use query-time filtering for accuracy
+- Use cron job for housekeeping (cleanup old data, stats)
+- Prevents DB bloat
+- Best of both worlds
+
+
+SERVER-SIDE RENDERING (SSR) CONSIDERATIONS
+-------------------------------------------
+
+1. STATIC GENERATION WITH ISR (BEST FOR HOMEPAGE)
+
+export const revalidate = 300; // 5 mins
+
+export default async function HomePage() {
+  const offers = await getCarouselOffers();
+  return <OffCarousel offers={offers} />;
+}
+
+PROS:
+✅ Fast - served from edge
+✅ SEO-friendly
+✅ Low DB load
+
+CONS:
+❌ 5-min delay for updates (acceptable for most use cases)
+
+
+2. SERVER COMPONENT (FOR REAL-TIME)
+
+export const dynamic = 'force-dynamic';
+
+export default async function CampaignPage({ params }) {
+  const offers = await getOffersForCampaign(params.slug);
+  return <OfferGrid offers={offers} />;
+}
+
+PROS:
+✅ Always fresh data
+✅ Server-side logic
+✅ Better security (API keys hidden)
+
+CONS:
+❌ Slower - DB query per request
+❌ Higher DB load
+
+
+3. CLIENT-SIDE FETCHING (FOR INTERACTIVITY)
+
+'use client';
+
+export default function OfferFilters() {
+  const [offers, setOffers] = useState([]);
+  
+  useEffect(() => {
+    fetch('/api/offers?' + filters)
+      .then(res => res.json())
+      .then(setOffers);
+  }, [filters]);
+  
+  return <OfferGrid offers={offers} />;
+}
+
+PROS:
+✅ Interactive
+✅ Client-side filtering
+✅ No page reload
+
+CONS:
+❌ Not SEO-friendly
+❌ Slower initial load
+
+
+RECOMMENDATION FOR YOUR USE CASE:
+
+- Homepage Carousel: ISR (5-min revalidation)
+- Campaign Pages: Server Components (fresh data)
+- Offer Filters: Client-side (interactivity)
+- Product Pages: ISR with on-demand revalidation
+
+
+================================================================================
+7. ADDITIONAL CONSIDERATIONS
+================================================================================
+
+DATA MIGRATION PLAN
+-------------------
+
+If you have existing products with real discounts:
+
+1. Create a migration script to convert them to offers:
+
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+async function migrateDiscountsToOffers() {
+  const discountedProducts = await prisma.product.findMany({
+    where: {
+      listPrice: { not: null },
+      price: { lt: prisma.product.fields.listPrice }
+    }
+  });
+  
+  for (const product of discountedProducts) {
+    const discountAmount = product.listPrice - product.price;
+    const discountPercentage = (discountAmount / product.listPrice) * 100;
+    
+    await prisma.offer.create({
+      data: {
+        name: `Existing discount - ${product.name}`,
+        discountType: 'PERCENTAGE',
+        discountValue: discountPercentage,
+        startDate: new Date('2024-01-01'), // retroactive
+        endDate: new Date('2026-12-31'), // far future
+        isActive: true,
+        isFeatured: false,
+        products: {
+          create: {
+            productId: product.id
+          }
+        }
+      }
+    });
+  }
+}
+
+2. Optional: Reset product.listPrice after migration
+   (so offers become single source of truth)
+
+
+ANALYTICS & REPORTING
+----------------------
+
+Track these metrics:
+
+1. OFFER PERFORMANCE
+   - Views (impressions)
+   - Clicks (CTR)
+   - Redemptions (conversion rate)
+   - Revenue impact
+   - Average order value with/without offer
+
+2. CAMPAIGN PERFORMANCE
+   - Total sales per campaign
+   - Best-performing offer in campaign
+   - Customer acquisition cost
+
+3. USER BEHAVIOR
+   - Offer abandonment rate
+   - Time to redemption
+   - Repeat usage
+
+Implementation:
+- Add OfferImpression and OfferClick models
+- Track in Redis for performance
+- Batch insert to DB daily
+- Use analytics tools (Google Analytics, Mixpanel)
+
+
+FRAUD PREVENTION
+----------------
+
+1. RATE LIMITING
+   - Max 5 offer redemptions per user per hour
+   - Prevents bulk account abuse
+
+2. UNIQUE COUPON CODES
+   - For high-value offers, generate unique codes
+   - One-time use per code
+
+3. DEVICE FINGERPRINTING
+   - Detect multiple accounts from same device
+   - Flag suspicious activity
+
+4. VELOCITY CHECKS
+   - Alert if offer used 100 times in 10 minutes
+   - Auto-pause suspicious offers
+
+
+ACCESSIBILITY (A11Y)
+--------------------
+
+Ensure offer UI is accessible:
+
+1. Semantic HTML
+   <article aria-label="Special offer: 70% off smartphones">
+
+2. Color Contrast
+   - Badge text has 4.5:1 contrast ratio
+   - Don't rely solely on color (use icons + text)
+
+3. Keyboard Navigation
+   - All carousel controls keyboard-accessible
+   - Focus indicators visible
+
+4. Screen Reader Support
+   - Announce expiry time: "Expires in 2 days"
+   - Describe discount: "20% off, final price 80 dollars"
+
+
+INTERNATIONALIZATION (i18n)
+----------------------------
+
+If you plan to expand:
+
+model Offer {
+  // ...existing fields
+  
+  nameTranslations        Json?  // { en: "...", fa: "...", ar: "..." }
+  descriptionTranslations Json?
+}
+
+Or use separate translation table:
+
+model OfferTranslation {
+  id          Int    @id @default(autoincrement())
+  offerId     Int
+  offer       Offer  @relation(fields: [offerId], references: [id])
+  locale      String // "en", "fa", "ar"
+  name        String
+  description String?
+  
+  @@unique([offerId, locale])
+}
+
+
+TESTING STRATEGY
+----------------
+
+1. UNIT TESTS
+   - Discount calculation logic
+   - Offer selection algorithm
+   - Date validation
+
+2. INTEGRATION TESTS
+   - Offer CRUD operations
+   - Cascade deletes work correctly
+   - Cache invalidation triggers
+
+3. E2E TESTS
+   - User sees active offers on homepage
+   - User cannot redeem expired offer
+   - Offer usage count increments
+
+4. PERFORMANCE TESTS
+   - Carousel query < 100ms
+   - Can handle 1000 concurrent users
+   - DB indexes are being used (EXPLAIN)
+
+
+SECURITY CHECKLIST
+------------------
+
+✅ Validate all offer inputs (prevent negative discounts)
+✅ Check offer is active before applying
+✅ Verify endDate >= startDate
+✅ Prevent SQL injection (Prisma handles this)
+✅ Rate limit offer creation API
+✅ RBAC for admin routes
+✅ Audit log for offer changes
+✅ Don't expose internal IDs (use slugs)
+
+
+================================================================================
+FINAL RECOMMENDATIONS
+================================================================================
+
+PRIORITY 1 (DO NOW):
+-------------------
+✅ Switch from Float to Decimal for prices
+✅ Add many-to-many OfferProduct relation
+✅ Implement basic Campaign model
+✅ Add critical indexes
+✅ Set up Redis caching for carousel
+✅ Implement query-time expiry filtering
+✅ Create admin UI with wizard form
+
+
+PRIORITY 2 (DO SOON):
+--------------------
+✅ Add user segmentation
+✅ Implement usage limits
+✅ Add category-wide offers
+✅ Set up cron job for cleanup
+✅ Implement scoring algorithm for carousel
+✅ Add offer analytics tracking
+✅ Set up CDN cache invalidation
+
+
+PRIORITY 3 (DO LATER):
+---------------------
+✅ Advanced targeting (behavior-based)
+✅ A/B testing framework
+✅ Campaign templates
+✅ Email integration
+✅ Gamification
+✅ Multi-region support
+
+
+POTENTIAL PITFALLS TO AVOID
+----------------------------
+
+❌ Don't use Float for money - precision errors will hurt you
+❌ Don't forget to invalidate caches when offers change
+❌ Don't allow overlapping offers without priority handling
+❌ Don't skip indexes - queries will be slow at scale
+❌ Don't store computed prices - calculate at runtime
+❌ Don't expose all offers on homepage - use smart selection
+❌ Don't forget timezone handling (Tehran time!)
+❌ Don't skip audit logs - you'll regret it
+❌ Don't over-engineer v1 - start simple, iterate
+
+
+================================================================================
+CONCLUSION
+================================================================================
+
+Your initial Offer model is a good start, but the enhanced schema I've proposed
+will give you much more flexibility and scalability. The key improvements are:
+
+1. Many-to-many product relations (bundle deals)
+2. Category-wide offers (easier management)
+3. User segmentation (targeted marketing)
+4. Campaign grouping (seasonal sales)
+5. Usage limits (scarcity & fraud prevention)
+6. Rich UI metadata (better presentation)
+7. Decimal precision (financial accuracy)
+
+The carousel algorithm should prioritize based on:
+- Manual priority settings
+- Discount attractiveness
+- Urgency (time-sensitive)
+- Stock availability
+- User personalization
+- Redemption popularity
+
+For campaigns, implement the MVP now (simple grouping + landing pages), then
+expand with analytics and automation later.
+
+On the technical side:
+- Use ISR for homepage carousel (5-min revalidation)
+- Add compound indexes for common queries
+- Cache aggressively with Redis + CDN
+- Filter expired offers at query time
+- Use cron jobs for cleanup, not real-time checks
+
+This architecture will scale to tens of thousands of products and hundreds of
+concurrent offers without performance issues.
+
+Good luck with your implementation! 🚀
+
+
+================================================================================
+END OF DOCUMENT
+================================================================================

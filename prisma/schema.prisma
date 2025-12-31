@@ -121,8 +121,9 @@ model User {
   status     UserStatus @default(ACTIVE)
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
-  addresses  Address[]
-  cartItems  CartItem[]
+  addresses    Address[]
+  cartItems    CartItem[]
+  blogComments BlogComment[]
 
   @@index([phone])
 }
@@ -178,6 +179,7 @@ model Admin {
   status    AdminStatus @default(ACTIVE)
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
+  blogPosts BlogPost[]
 
   @@index([phone])
 }
@@ -222,3 +224,106 @@ enum AdminStatus {
   ACTIVE
   BLOCKED
 }
+
+// Blog System
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  SCHEDULED
+}
+
+model BlogPost {
+  id             Int           @id @default(autoincrement())
+  title          String        @db.VarChar(200)
+  slug           String        @unique
+  summary        String?       @db.VarChar(160)
+  coverImage     String?
+  thumbnail      String?
+  content        Json          // Tiptap block data
+  
+  // SEO
+  seoTitle       String?       @db.VarChar(60)
+  seoDescription String?       @db.VarChar(160)
+  keywords       String[]      @default([])
+  
+  // Publishing
+  status         PostStatus    @default(DRAFT)
+  publishedAt    DateTime?
+  
+  // Relations
+  categoryId     Int?
+  category       BlogCategory? @relation(fields: [categoryId], references: [id])
+  tags           BlogTag[]
+  authorId       Int?
+  author         Admin?        @relation(fields: [authorId], references: [id])
+  
+  comments       BlogComment[]
+  
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([slug])
+  @@index([status])
+  @@index([categoryId])
+  @@index([publishedAt])
+}
+
+model BlogCategory {
+  id          Int        @id @default(autoincrement())
+  name        String
+  slug        String     @unique
+  description String?
+  image       String?
+  posts       BlogPost[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([slug])
+}
+
+model BlogTag {
+  id    Int        @id @default(autoincrement())
+  name  String
+  slug  String     @unique
+  posts BlogPost[]
+
+  @@index([slug])
+}
+
+// Blog Comments/Reviews
+model BlogComment {
+  id        Int           @id @default(autoincrement())
+  postId    Int
+  post      BlogPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  // Optional user relation (for logged-in users)
+  userId    Int?
+  user      User?         @relation(fields: [userId], references: [id])
+  
+  // For guest comments
+  authorName  String?
+  authorEmail String?
+  
+  content   String        @db.Text
+  status    CommentStatus @default(PENDING)
+  
+  // Threaded replies
+  parentId  Int?
+  parent    BlogComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   BlogComment[] @relation("CommentReplies")
+  
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([postId])
+  @@index([userId])
+  @@index([status])
+  @@index([parentId])
+}
+
+enum CommentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+

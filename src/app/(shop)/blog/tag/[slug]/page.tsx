@@ -1,0 +1,152 @@
+import { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import Link from 'next/link';
+import { ChevronLeft, Tag } from 'lucide-react';
+import BlogCard from '@/components/blog/BlogCard';
+import { getPublishedPosts, getBlogTagBySlug, getBlogTags } from '@/lib/blog/queries';
+
+interface BlogTag {
+    id: number;
+    name: string;
+    slug: string;
+    _count?: { posts: number };
+}
+
+interface BlogPostItem {
+    id: number;
+    title: string;
+    slug: string;
+    thumbnail: string | null;
+    coverImage: string | null;
+    summary: string | null;
+    publishedAt: Date | null;
+    category: { id: number; name: string; slug: string } | null;
+}
+
+interface Props {
+    params: Promise<{ slug: string }>;
+    searchParams: Promise<{ page?: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+    const { slug } = await params;
+    const tag = await getBlogTagBySlug(slug);
+
+    if (!tag) {
+        return { title: 'برچسب یافت نشد' };
+    }
+
+    return {
+        title: `#${tag.name} | وبلاگ آیس سنتر`,
+        description: `مقالات با برچسب ${tag.name}`,
+    };
+}
+
+export default async function BlogTagPage({ params, searchParams }: Props) {
+    const { slug } = await params;
+    const search = await searchParams;
+    const page = parseInt(search.page || '1', 10);
+
+    const [tag, { posts, pagination }, tags] = await Promise.all([
+        getBlogTagBySlug(slug),
+        getPublishedPosts({ page, limit: 12, tagSlug: slug }),
+        getBlogTags(),
+    ]);
+
+    if (!tag) {
+        notFound();
+    }
+
+    return (
+        <div className="w-full max-w-[1600px] mx-auto px-4 lg:px-8 py-8 font-yekan" dir="rtl">
+            {/* Breadcrumb */}
+            <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
+                <Link href="/" className="hover:text-ocean">صفحه اصلی</Link>
+                <ChevronLeft className="w-4 h-4" />
+                <Link href="/blog" className="hover:text-ocean">وبلاگ</Link>
+                <ChevronLeft className="w-4 h-4" />
+                <span className="text-gray-800 flex items-center gap-1">
+                    <Tag className="w-4 h-4" />
+                    #{tag.name}
+                </span>
+            </nav>
+
+            {/* Header */}
+            <div className="mb-8">
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-2">
+                    <Tag className="w-7 h-7 text-ocean" />
+                    #{tag.name}
+                </h1>
+                <p className="text-gray-500 mt-2">
+                    {tag._count?.posts || 0} مقاله با این برچسب
+                </p>
+            </div>
+
+            {/* Tags Filter */}
+            <div className="flex flex-wrap gap-2 mb-8">
+                <Link
+                    href="/blog"
+                    className="px-4 py-2 rounded-xl text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                >
+                    همه مطالب
+                </Link>
+                {tags.slice(0, 10).map((t: BlogTag) => (
+                    <Link
+                        key={t.id}
+                        href={`/blog/tag/${t.slug}`}
+                        className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${t.slug === slug
+                            ? 'bg-ocean text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            }`}
+                    >
+                        #{t.name}
+                    </Link>
+                ))}
+            </div>
+
+            {/* Posts Grid */}
+            {posts.length > 0 ? (
+                <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {posts.map((post: BlogPostItem) => (
+                            <BlogCard
+                                key={post.id}
+                                title={post.title}
+                                slug={post.slug}
+                                thumbnail={post.thumbnail}
+                                coverImage={post.coverImage}
+                                summary={post.summary}
+                                publishedAt={post.publishedAt}
+                                category={post.category}
+                            />
+                        ))}
+                    </div>
+
+                    {/* Pagination */}
+                    {pagination.totalPages > 1 && (
+                        <div className="flex justify-center gap-2 mt-10">
+                            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(
+                                (p) => (
+                                    <Link
+                                        key={p}
+                                        href={`/blog/tag/${slug}?page=${p}`}
+                                        className={`w-10 h-10 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${p === pagination.page
+                                            ? 'bg-ocean text-white'
+                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                            }`}
+                                    >
+                                        {p.toLocaleString('fa-IR')}
+                                    </Link>
+                                )
+                            )}
+                        </div>
+                    )}
+                </>
+            ) : (
+                <div className="text-center py-20">
+                    <p className="text-gray-500 text-lg">هنوز پستی با این برچسب منتشر نشده است.</p>
+                </div>
+            )}
+        </div>
+    );
+}

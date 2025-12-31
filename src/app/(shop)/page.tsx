@@ -6,6 +6,7 @@ import AmazingOfferCarousel from '@/components/home/OfferCarousel';
 import ProductCarousel from '@/components/home/ProductCarousel';
 import BlogCarousel from '@/components/home/BlogCarousel';
 import { prisma } from '@/lib/db';
+import { getRecentPosts } from '@/lib/blog/queries';
 
 // Define product type for transformation
 type DBProduct = {
@@ -149,9 +150,10 @@ const doubleBanner = [
 ];
 
 export default async function Home() {
-  const [categories, categoriesWithProducts] = await Promise.all([
+  const [categories, categoriesWithProducts, blogPosts] = await Promise.all([
     getCategories(),
     getCategoriesWithProducts(),
+    getRecentPosts(6),
   ]);
 
   return (
@@ -165,6 +167,15 @@ export default async function Home() {
       {/* تخفیف‌های ویژه */}
       <AmazingOfferCarousel />
 
+      {/* اسلایدر جدیدترین محصولات */}
+      {categoriesWithProducts.length > 0 && (
+        <ProductCarousel
+          title="جدیدترین محصولات"
+          products={categoriesWithProducts.flatMap(cat => cat.products).slice(0, 12)}
+          viewAllHref="/products"
+        />
+      )}
+
       {/* بخش بنر تکی */}
       <BannerSection
         banners={singleBanner}
@@ -172,7 +183,7 @@ export default async function Home() {
       />
 
       {/* اسلایدرهای محصولات بر اساس دسته‌بندی */}
-      {categoriesWithProducts.map((category, index) => (
+      {categoriesWithProducts.map((category: { id: number; name: string; slug: string; products: { id: number; title: string; image: string; price: number; oldPrice?: number; href: string }[] }, index: number) => (
         <div key={category.id}>
           <ProductCarousel
             title={category.name}
@@ -191,7 +202,7 @@ export default async function Home() {
       ))}
 
       {/* اسلایدر وبلاگ */}
-      <BlogCarousel />
+      <BlogCarousel posts={blogPosts} />
     </>
   );
 }

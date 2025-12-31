@@ -1,7 +1,7 @@
 'use client';
 
 import StatsCard from '@/components/admin/StatsCard';
-import { Package, Users, FolderTree, ShoppingCart, TrendingUp, Clock, AlertCircle } from 'lucide-react';
+import { Package, Users, ShoppingCart, TrendingUp, Clock, AlertCircle, FileText, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { toPersianNumber, formatPersianNumber } from '@/utils/persian';
@@ -11,9 +11,11 @@ interface DashboardViewProps {
     userCount: number;
     monthlySales: number;
     newOrdersCount: number;
+    blogPostCount: number;
+    pendingComments: number;
 }
 
-export default function DashboardView({ productCount, userCount, monthlySales, newOrdersCount }: DashboardViewProps) {
+export default function DashboardView({ productCount, userCount, monthlySales, newOrdersCount, blogPostCount, pendingComments }: DashboardViewProps) {
     const router = useRouter();
 
     return (
@@ -56,7 +58,7 @@ export default function DashboardView({ productCount, userCount, monthlySales, n
             </motion.div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
                 <StatsCard
                     icon={Package}
                     title="محصولات فعال"
@@ -92,6 +94,24 @@ export default function DashboardView({ productCount, userCount, monthlySales, n
                     trendUp
                     color="orange"
                     index={3}
+                />
+                <StatsCard
+                    icon={FileText}
+                    title="پست‌های بلاگ"
+                    value={toPersianNumber(blogPostCount)}
+                    trend={blogPostCount > 0 ? "منتشر شده" : ""}
+                    trendUp
+                    color="green"
+                    index={4}
+                />
+                <StatsCard
+                    icon={MessageCircle}
+                    title="نظرات در انتظار"
+                    value={toPersianNumber(pendingComments)}
+                    trend={pendingComments > 0 ? "در انتظار تایید" : ""}
+                    trendUp={false}
+                    color="yellow"
+                    index={5}
                 />
             </div>
 

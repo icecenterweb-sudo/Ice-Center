@@ -17,10 +17,10 @@ export default function AdminProductsPage() {
 
   const deleteProduct = async (id: string, name: string) => {
     if (!confirm(`آیا از حذف "${name}" مطمئن هستید؟`)) return;
-    
+
     const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
     const data = await res.json();
-    
+
     if (data.success) {
       alert('محصول حذف شد');
       fetchProducts();
@@ -42,8 +42,8 @@ export default function AdminProductsPage() {
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">مدیریت محصولات</h1>
-          
-          <Link 
+
+          <Link
             href="/admin/products/new"
             className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700"
           >
@@ -55,50 +55,49 @@ export default function AdminProductsPage() {
           <table className="w-full">
             <thead className="bg-gray-100">
               <tr>
-                <th className="px-6 py-3 text-right">تصویر</th>
-                <th className="px-6 py-3 text-right">نام</th>
-                <th className="px-6 py-3 text-right">قیمت</th>
-                <th className="px-6 py-3 text-right">موجودی</th>
-                <th className="px-6 py-3 text-right">دسته</th>
-                <th className="px-6 py-3 text-right">وضعیت</th>
-                <th className="px-6 py-3 text-center">عملیات</th>
+                <th className="px-4 py-3 text-right w-20">تصویر</th>
+                <th className="px-4 py-3 text-right">نام</th>
+                <th className="px-4 py-3 text-right w-32">قیمت</th>
+                <th className="px-4 py-3 text-right w-20">موجودی</th>
+                <th className="px-4 py-3 text-right w-24">دسته</th>
+                <th className="px-4 py-3 text-right w-20">وضعیت</th>
+                <th className="px-4 py-3 text-center w-32">عملیات</th>
               </tr>
             </thead>
             <tbody>
               {products.map((product: any) => (
                 <tr key={product._id} className="border-t hover:bg-gray-50">
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-3">
                     {product.images && product.images.length > 0 ? (
-                      <img 
-                        src={product.images[0]} 
+                      <img
+                        src={product.images[0]}
                         alt={product.name}
-                        className="w-16 h-16 object-cover rounded"
+                        className="w-12 h-12 object-cover rounded"
                       />
                     ) : (
-                      <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center">
+                      <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
                         <span className="text-gray-400">📦</span>
                       </div>
                     )}
                   </td>
-                  <td className="px-6 py-4 font-medium">{product.name}</td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-3 font-medium">{product.name}</td>
+                  <td className="px-4 py-3">
                     {product.price.toLocaleString('fa-IR')} تومان
                   </td>
-                  <td className="px-6 py-4">{product.stock}</td>
-                  <td className="px-6 py-4">{product.category || '-'}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded text-sm ${
-                      product.isActive 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
+                  <td className="px-4 py-3">{product.stock}</td>
+                  <td className="px-4 py-3">{product.category || '-'}</td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-1 rounded text-sm ${product.isActive
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-red-100 text-red-800'
+                      }`}>
                       {product.isActive ? 'فعال' : 'غیرفعال'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-center">
+                  <td className="px-4 py-3 text-center space-x-2 space-x-reverse">
                     <Link
                       href={`/admin/products/${product._id}`}
-                      className="text-blue-600 hover:underline ml-4"
+                      className="text-blue-600 hover:underline"
                     >
                       ویرایش
                     </Link>

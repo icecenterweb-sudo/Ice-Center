@@ -8,7 +8,7 @@ export default function EditProductPage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
-  
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -32,7 +32,7 @@ export default function EditProductPage() {
   const fetchProduct = async () => {
     const res = await fetch(`/api/products/${id}`);
     const data = await res.json();
-    
+
     if (data.success) {
       const p = data.data;
       setFormData({
@@ -64,24 +64,32 @@ export default function EditProductPage() {
     setUploading(true);
     const uploadedUrls: string[] = [];
 
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const formDataUpload = new FormData();
       formDataUpload.append('file', file);
+      formDataUpload.append('upload_preset', uploadPreset || 'ice-center');
 
       try {
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          body: formDataUpload,
-        });
+        // Direct upload to Cloudinary (unsigned)
+        const res = await fetch(
+          `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+          {
+            method: 'POST',
+            body: formDataUpload,
+          }
+        );
         const data = await res.json();
-        
-        if (data.success) {
-          uploadedUrls.push(data.url);
+
+        if (data.secure_url) {
+          uploadedUrls.push(data.secure_url);
         } else {
-          alert(`خطا در آپلود ${file.name}: ${data.message}`);
+          alert(`خطا در آپلود ${file.name}: ${data.error?.message || 'Unknown error'}`);
         }
-      } catch (error) {
+      } catch {
         alert(`خطا در آپلود ${file.name}`);
       }
     }
@@ -135,7 +143,7 @@ export default function EditProductPage() {
       <div className="max-w-2xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">ویرایش محصول</h1>
-          <Link 
+          <Link
             href="/admin/products"
             className="text-blue-600 hover:underline"
           >
@@ -144,7 +152,7 @@ export default function EditProductPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6 space-y-4">
-          
+
           <div>
             <label className="block font-bold mb-2">نام دستگاه *</label>
             <input
@@ -290,7 +298,7 @@ export default function EditProductPage() {
             >
               {saving ? 'در حال ذخیره...' : uploading ? 'صبر کنید...' : '✓ ذخیره تغییرات'}
             </button>
-            
+
             <Link
               href="/admin/products"
               className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg hover:bg-gray-300 text-center flex items-center justify-center"

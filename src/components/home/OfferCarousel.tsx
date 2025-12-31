@@ -175,7 +175,7 @@ const AmazingOfferCarousel = () => {
     <div className="w-full max-w-[1600px] mx-auto my-1 md:my-2 lg:my-12 select-none font-yekan" dir="rtl">
 
       {/* Mobile/Tablet: Vertical layout - Timer on top, carousel below */}
-      <div className="lg:hidden border-y border-gray-200 bg-sky-breeze">
+      <div className="lg:hidden border-y border-gray-200 bg-gradient-to-l from-ocean to-royal">
         {/* Header with title and timer */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
           {/* Title */}
@@ -186,15 +186,15 @@ const AmazingOfferCarousel = () => {
 
           {/* Timer */}
           <div className="flex items-center gap-1" dir="ltr">
-            <div className="bg-gray-100 text-black w-7 h-7 md:w-8 md:h-8 rounded flex items-center justify-center font-bold text-xs md:text-sm">
+            <div className="bg-white text-ocean w-7 h-7 md:w-8 md:h-8 rounded flex items-center justify-center font-bold text-xs md:text-sm">
               {toPersianDigits(formatTime(time.hours))}
             </div>
             <span className="text-white font-bold">:</span>
-            <div className="bg-gray-100 text-black w-7 h-7 md:w-8 md:h-8 rounded flex items-center justify-center font-bold text-xs md:text-sm">
+            <div className="bg-white text-ocean w-7 h-7 md:w-8 md:h-8 rounded flex items-center justify-center font-bold text-xs md:text-sm">
               {toPersianDigits(formatTime(time.minutes))}
             </div>
             <span className="text-white font-bold">:</span>
-            <div className="bg-gray-100 text-black w-7 h-7 md:w-8 md:h-8 rounded flex items-center justify-center font-bold text-xs md:text-sm">
+            <div className="bg-white text-ocean w-7 h-7 md:w-8 md:h-8 rounded flex items-center justify-center font-bold text-xs md:text-sm">
               {toPersianDigits(formatTime(time.seconds))}
             </div>
           </div>
@@ -295,9 +295,8 @@ const AmazingOfferCarousel = () => {
 
             {/* Title */}
             <div className="text-center mb-4">
-              <h3 className="text-xl font-extrabold leading-snug">پیشنهاد</h3>
-              <h3 className="text-xl font-extrabold leading-snug">شگفت</h3>
-              <h3 className="text-xl font-extrabold leading-snug">انگیز!</h3>
+              <h3 className="text-xl font-extrabold leading-snug">پیشــــ٪ـــــنهاد</h3>
+              <h3 className="text-xl font-extrabold leading-snug">شگــفت انگیز!</h3>
             </div>
 
             {/* Timer */}

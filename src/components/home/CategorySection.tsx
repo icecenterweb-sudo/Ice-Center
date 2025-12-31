@@ -81,7 +81,7 @@ const CategorySection: React.FC<CategorySectionProps> = ({ categories }) => {
                     {/* Circle with border */}
                     <div className="relative mb-2 md:mb-3">
                       {/* Outer border ring */}
-                      <div className="relative w-[76px] h-[76px] md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-full border-2 md:border-3 border-ocean group-hover:border-royal transition-all duration-300 bg-white">
+                      <div className="relative w-[76px] h-[76px] md:w-20 md:h-20 lg:w-24 lg:h-24 xl:w-30 xl:h-30 2xl:w-34 2xl:h-34 rounded-full border-2 md:border-3 border-ocean group-hover:border-royal transition-all duration-300 bg-white">
                         {/* Inner border */}
                         <div className="absolute inset-1 bg-frost rounded-full border border-gray-200 transition-all duration-300 overflow-hidden">
                           {/* Image */}

@@ -71,15 +71,15 @@ export default async function ProductsPage() {
                 <div className="overflow-x-auto">
                     <table className="w-full text-right">
                         <thead>
-                            <tr className="bg-gray-50/50 border-b border-gray-100 text-gray-500 text-sm">
-                                <th className="px-6 py-4 font-medium">تصویر</th>
-                                <th className="px-6 py-4 font-medium">نام محصول</th>
-                                <th className="px-6 py-4 font-medium">برند / دسته‌بندی</th>
-                                <th className="px-6 py-4 font-medium">قیمت (تومان)</th>
-                                <th className="px-6 py-4 font-medium">موجودی</th>
-                                <th className="px-6 py-4 font-medium">واریانت</th>
-                                <th className="px-6 py-4 font-medium">وضعیت</th>
-                                <th className="px-6 py-4 font-medium text-left">عملیات</th>
+                            <tr className="bg-gray-50/50 border-b border-gray-100 text-gray-500 text-xs">
+                                <th className="px-3 py-3 font-medium w-14">تصویر</th>
+                                <th className="px-3 py-3 font-medium max-w-[160px]">نام محصول</th>
+                                <th className="px-3 py-3 font-medium w-34">برند / دسته</th>
+                                <th className="px-3 py-3 font-medium w-34 whitespace-nowrap">قیمت (تومان)</th>
+                                <th className="px-3 py-3 font-medium w-22">موجودی</th>
+                                <th className="px-3 py-3 font-medium w-22">واریانت</th>
+                                <th className="px-3 py-3 font-medium w-18">وضعیت</th>
+                                <th className="px-3 py-3 font-medium w-24 text-left">عملیات</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
@@ -95,8 +95,8 @@ export default async function ProductsPage() {
                                         key={product.id}
                                         className="group hover:bg-blue-50/30 transition-colors"
                                     >
-                                        <td className="px-6 py-4">
-                                            <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                                        <td className="px-3 py-3">
+                                            <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
                                                 {product.thumbnail ? (
                                                     <img
                                                         src={product.thumbnail}
@@ -104,61 +104,61 @@ export default async function ProductsPage() {
                                                         className="w-full h-full object-cover"
                                                     />
                                                 ) : (
-                                                    <Package className="w-6 h-6 text-gray-300" />
+                                                    <Package className="w-5 h-5 text-gray-300" />
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="font-bold text-gray-800">{product.name}</div>
+                                        <td className="px-3 py-3">
+                                            <div className="font-bold text-gray-800 text-sm">{product.name}</div>
                                             <div className="text-xs text-gray-400 mt-0.5">{product.sku || '---'}</div>
                                         </td>
-                                        <td className="px-6 py-4 text-gray-600">
+                                        <td className="px-3 py-3 text-gray-600 text-sm">
                                             <div>{product.brand || '---'}</div>
                                             {product.subcategory && (
                                                 <div className="text-xs text-gray-400 mt-0.5">{product.subcategory.name}</div>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4 font-bold text-gray-700">
+                                        <td className="px-3 py-3 font-bold text-gray-700 text-sm whitespace-nowrap">
                                             {formatPersianNumber(product.price)}
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${product.stock > 5 ? 'bg-green-100 text-green-700' :
+                                        <td className="px-3 py-3">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${product.stock > 5 ? 'bg-green-100 text-green-700' :
                                                 product.stock > 0 ? 'bg-orange-100 text-orange-700' :
                                                     'bg-red-100 text-red-700'
                                                 }`}>
                                                 {product.stock} عدد
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-3 py-3">
                                             {product.variants.length > 0 ? (
-                                                <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700">
+                                                <span className="px-2 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700">
                                                     {product.variants.length} واریانت
                                                 </span>
                                             ) : (
                                                 <span className="text-xs text-gray-400">---</span>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
+                                        <td className="px-3 py-3">
+                                            <div className="flex items-center gap-1">
                                                 <span className={`inline-flex w-2 h-2 rounded-full ${product.isActive ? 'bg-green-500' : 'bg-gray-400'
                                                     }`}></span>
-                                                <span className="text-sm text-gray-600">
+                                                <span className="text-xs text-gray-600">
                                                     {product.isActive ? 'فعال' : 'غیرفعال'}
                                                 </span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <td className="px-3 py-3">
+                                            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <Link
                                                     href={`/admin/dashboard/products/${product.id}`}
-                                                    className="p-2 text-gray-400 hover:text-ocean hover:bg-frost rounded-lg transition-colors"
+                                                    className="p-1.5 text-gray-400 hover:text-ocean hover:bg-frost rounded-lg transition-colors"
                                                     title="مشاهده جزئیات"
                                                 >
                                                     <Eye className="w-4 h-4" />
                                                 </Link>
                                                 <Link
                                                     href={`/admin/dashboard/products/${product.id}/edit`}
-                                                    className="p-2 text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors"
+                                                    className="p-1.5 text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors"
                                                     title="ویرایش محصول"
                                                 >
                                                     <Edit className="w-4 h-4" />
