@@ -13,6 +13,7 @@ export type CachedProduct = {
     listPrice: number | null
     thumbnail: string | null
     inventoryStatus: string
+    hasActiveOffer: boolean
 }
 
 // Cache key generator
@@ -74,6 +75,7 @@ export async function getProductsCached(options: {
                     listPrice: true,
                     thumbnail: true,
                     inventoryStatus: true,
+                    hasActiveOffer: true,
                 },
             }),
             prisma.product.count({ where }),
@@ -104,6 +106,7 @@ export async function getProductsCached(options: {
                     listPrice: true,
                     thumbnail: true,
                     inventoryStatus: true,
+                    hasActiveOffer: true,
                 },
             }),
             prisma.product.count({ where: { isActive: true } }),

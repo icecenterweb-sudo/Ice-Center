@@ -2,11 +2,12 @@ import BannerSection from '@/components/home/BannerSection';
 import CategorySection from '@/components/home/CategorySection';
 import HeroSlider from '@/components/home/HeroSlider';
 import AmazingOfferCarousel from '@/components/home/OfferCarousel';
-
 import ProductCarousel from '@/components/home/ProductCarousel';
 import BlogCarousel from '@/components/home/BlogCarousel';
 import { prisma } from '@/lib/db';
 import { getRecentPosts } from '@/lib/blog/queries';
+import { getCarouselOffers } from '@/lib/offers';
+import { getSingleBanners, getDoubleBanners } from '@/lib/banners';
 
 // Define product type for transformation
 type DBProduct = {
@@ -16,23 +17,53 @@ type DBProduct = {
   price: number;
   listPrice: number | null;
   thumbnail: string | null;
+  hasActiveOffer?: boolean;
+  offerProducts?: Array<{
+    customDiscountValue: number | null;
+    offer: { discountType: string; discountValue: number };
+  }>;
 };
 
-// Transform DB products to carousel format
+// Transform DB products to carousel format with offer-based pricing
 function transformProducts(products: DBProduct[]) {
-  return products.map((p) => ({
-    id: p.id,
-    title: p.name,
-    image: p.thumbnail || 'https://via.placeholder.com/300x300?text=No+Image',
-    price: p.price,
-    oldPrice: p.listPrice || undefined,
-    href: `/products/${p.slug}`,
-  }));
+  const now = new Date();
+  return products.map((p) => {
+    // Calculate effective price from offers
+    let effectivePrice = p.price;
+    let originalPrice = p.listPrice || p.price;
+    let hasDiscount = false;
+
+    const activeOffer = p.offerProducts?.[0]?.offer;
+    if (activeOffer) {
+      const discountValue = p.offerProducts![0].customDiscountValue ?? activeOffer.discountValue;
+      if (activeOffer.discountType === 'PERCENTAGE') {
+        effectivePrice = originalPrice * (1 - discountValue / 100);
+      } else {
+        effectivePrice = originalPrice - discountValue;
+      }
+      hasDiscount = true;
+    } else if (p.listPrice && p.listPrice > p.price) {
+      // Legacy discount
+      effectivePrice = p.price;
+      originalPrice = p.listPrice;
+      hasDiscount = true;
+    }
+
+    return {
+      id: p.id,
+      title: p.name,
+      image: p.thumbnail || 'https://via.placeholder.com/300x300?text=No+Image',
+      price: Math.round(effectivePrice),
+      oldPrice: hasDiscount ? originalPrice : undefined,
+      href: `/products/${p.slug}`,
+    };
+  });
 }
 
-// Fetch categories with their products
+// Fetch categories with their products (including offer data)
 async function getCategoriesWithProducts() {
   try {
+    const now = new Date();
     const categories = await prisma.category.findMany({
       select: {
         id: true,
@@ -50,8 +81,28 @@ async function getCategoriesWithProducts() {
                 price: true,
                 listPrice: true,
                 thumbnail: true,
+                hasActiveOffer: true,
+                offerProducts: {
+                  where: {
+                    offer: {
+                      isActive: true,
+                      startDate: { lte: now },
+                      endDate: { gt: now },
+                    }
+                  },
+                  select: {
+                    customDiscountValue: true,
+                    offer: {
+                      select: {
+                        discountType: true,
+                        discountValue: true,
+                      }
+                    }
+                  },
+                  take: 1
+                }
               },
-              take: 12, // Limit per category
+              take: 12,
             },
             _count: {
               select: { products: true }
@@ -116,56 +167,56 @@ async function getCategories() {
   }
 }
 
-const singleBanner = [
-  {
-    id: 1,
-    image: {
-      desktop: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1764054358/banner_SingleFullWidthBanner_yk8jye_a6284428-1eb1-497b-bcbc-d9e4f93199c8_skkgva.png',
-      mobile: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1764054358/banner_SingleFullWidthBanner_yk8jye_a6284428-1eb1-497b-bcbc-d9e4f93199c8_skkgva.png'
-    },
-    link: '/special-offer',
-    alt: 'Special Offer Banner'
-  }
-];
+// Fetch active slides for hero slider
+async function getSlides() {
+  try {
+    const slides = await prisma.slide.findMany({
+      where: { isActive: true },
+      include: {
+        product: { select: { id: true, slug: true } },
+        category: { select: { id: true, slug: true } },
+      },
+      orderBy: { order: 'asc' },
+    });
 
-const doubleBanner = [
-  {
-    id: 2,
-    image: {
-      desktop: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1764054358/banner_SingleFullWidthBanner_yk8jye_a6284428-1eb1-497b-bcbc-d9e4f93199c8_skkgva.png',
-      mobile: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1764054358/banner_SingleFullWidthBanner_yk8jye_a6284428-1eb1-497b-bcbc-d9e4f93199c8_skkgva.png'
-    },
-    link: '/ice-cream-machines',
-    alt: 'Ice Cream Machines'
-  },
-  {
-    id: 3,
-    image: {
-      desktop: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1764054358/banner_SingleFullWidthBanner_yk8jye_a6284428-1eb1-497b-bcbc-d9e4f93199c8_skkgva.png',
-      mobile: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1764054358/banner_SingleFullWidthBanner_yk8jye_a6284428-1eb1-497b-bcbc-d9e4f93199c8_skkgva.png'
-    },
-    link: '/cafe-equipment',
-    alt: 'Cafe Equipment'
+    return slides.map(slide => ({
+      id: slide.id,
+      desktopImage: slide.desktopImage,
+      mobileImage: slide.mobileImage,
+      alt: slide.alt,
+      link: slide.link ||
+        (slide.product ? `/products/${slide.product.slug}` : null) ||
+        (slide.category ? `/categories/${slide.category.slug}` : '#'),
+    }));
+  } catch (error) {
+    console.error('Failed to fetch slides:', error);
+    return [];
   }
-];
+}
+
+
 
 export default async function Home() {
-  const [categories, categoriesWithProducts, blogPosts] = await Promise.all([
+  const [categories, categoriesWithProducts, blogPosts, offerItems, slides, singleBanners, doubleBanners] = await Promise.all([
     getCategories(),
     getCategoriesWithProducts(),
     getRecentPosts(6),
+    getCarouselOffers(12),
+    getSlides(),
+    getSingleBanners(),
+    getDoubleBanners(),
   ]);
 
   return (
     <>
       {/* اسلایدر اصلی */}
-      <HeroSlider />
+      <HeroSlider slides={slides} />
 
       {/* بخش دسته‌بندی‌ها */}
       <CategorySection categories={categories} />
 
       {/* تخفیف‌های ویژه */}
-      <AmazingOfferCarousel />
+      <AmazingOfferCarousel offers={offerItems} />
 
       {/* اسلایدر جدیدترین محصولات */}
       {categoriesWithProducts.length > 0 && (
@@ -178,7 +229,7 @@ export default async function Home() {
 
       {/* بخش بنر تکی */}
       <BannerSection
-        banners={singleBanner}
+        banners={singleBanners}
         heightClass="h-[130px] md:h-[250px] lg:h-[180px] xl:h-[210px]"
       />
 
@@ -194,7 +245,7 @@ export default async function Home() {
           {/* Add banner after first 2 categories */}
           {index === 1 && (
             <BannerSection
-              banners={doubleBanner}
+              banners={doubleBanners}
               heightClass="h-[130px] md:h-[250px] lg:h-[180px] xl:h-[180px]"
             />
           )}

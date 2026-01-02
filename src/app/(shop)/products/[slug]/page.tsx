@@ -84,8 +84,11 @@ export default async function ProductPage({ params }: PageProps) {
         nameEnglish: product.model ? `${product.brand || ''} ${product.model}`.trim() : '',
         brand: product.brand || 'آیس سنتر',
         model: product.model || '',
-        price: product.price,
-        listPrice: product.listPrice,
+        price: product.effectivePrice, // Use effective price from offer calculation
+        listPrice: product.hasOffer ? product.originalPrice : null, // Original price for strikethrough
+        discountPercent: product.discountPercent,
+        hasOffer: product.hasOffer,
+        activeOffer: product.activeOffer,
         stock: product.stock,
         inventoryStatus: product.inventoryStatus,
         rating: product.rating || 0,

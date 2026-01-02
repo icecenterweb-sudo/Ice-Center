@@ -191,18 +191,18 @@ export default function CategoriesClient({
                 <div className="max-w-[1440px] mx-auto py-4 px-4 lg:px-6 relative">
                     {/* Carousel container */}
                     <div className="overflow-hidden" ref={emblaRef}>
-                        <div className="flex flex-row gap-3 touch-pan-y">
+                        <div className="flex flex-row gap-2 sm:gap-3 touch-pan-y">
                             {categories.map((cat) => (
                                 <Link
                                     key={cat.id}
                                     href={`/categories/${cat.slug}`}
-                                    className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border transition-all hover:shadow-md group flex-shrink-0 ${selectedCategoryId === cat.id
+                                    className={`flex items-center gap-2 px-2.5 sm:px-4 py-2 rounded-lg sm:rounded-xl border transition-all hover:shadow-md group flex-shrink-0 ${selectedCategoryId === cat.id
                                         ? 'border-blue-400 bg-blue-50'
                                         : 'border-neutral-200 bg-white hover:border-blue-200'
                                         }`}
                                 >
                                     {/* Image */}
-                                    <div className="w-10 h-10 flex-shrink-0 rounded-lg bg-neutral-50 overflow-hidden">
+                                    <div className="w-7 h-7 sm:w-9 sm:h-9 flex-shrink-0 rounded-lg bg-neutral-50 overflow-hidden">
                                         {cat.image ? (
                                             <Image
                                                 src={cat.image}
@@ -213,13 +213,13 @@ export default function CategoriesClient({
                                             />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center">
-                                                <Grid3X3 size={16} className="text-neutral-300" />
+                                                <Grid3X3 size={14} className="text-neutral-300" />
                                             </div>
                                         )}
                                     </div>
 
                                     {/* Name Only */}
-                                    <span className={`text-sm font-medium whitespace-nowrap ${selectedCategoryId === cat.id ? 'text-blue-600' : 'text-neutral-700 group-hover:text-blue-600'
+                                    <span className={`text-[10px] sm:text-sm font-medium whitespace-nowrap ${selectedCategoryId === cat.id ? 'text-blue-600' : 'text-neutral-700 group-hover:text-blue-600'
                                         }`}>
                                         {cat.name}
                                     </span>
@@ -483,7 +483,7 @@ export default function CategoriesClient({
                     <div className="flex-1 min-w-0">
                         {/* Mobile Header */}
                         <div className="lg:hidden flex items-center justify-between mb-4">
-                            <h1 className="text-lg font-bold text-neutral-800">همه محصولات</h1>
+                            <h1 className="text-sm font-bold text-neutral-800">همه محصولات</h1>
                             <button onClick={() => setMobileFiltersOpen(true)}
                                 className="flex items-center gap-1.5 text-sm font-medium text-blue-500 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100">
                                 <SlidersHorizontal size={16} />
@@ -569,12 +569,12 @@ export default function CategoriesClient({
                             </div>
                         ) : (
                             <>
-                                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
                                     {products.map((product) => {
                                         const discount = getDiscount(product.price, product.listPrice);
                                         return (
                                             <Link key={product.id} href={`/products/${product.slug}`}
-                                                className="bg-white border border-transparent hover:border-neutral-200 rounded-xl p-4 transition-all duration-300 hover:shadow-lg group flex flex-col h-full">
+                                                className="bg-white border border-transparent hover:border-neutral-200 rounded-lg sm:rounded-xl p-2 sm:p-3 lg:p-4 transition-all duration-300 hover:shadow-lg group flex flex-col h-full">
                                                 <div className="relative aspect-[4/5] mb-3 overflow-hidden rounded-lg bg-neutral-50">
                                                     {product.thumbnail ? (
                                                         <Image src={product.thumbnail} alt={product.name} fill
@@ -589,7 +589,7 @@ export default function CategoriesClient({
                                                     )}
                                                 </div>
                                                 <div className="flex flex-col flex-1">
-                                                    <h3 className="text-sm text-neutral-700 leading-6 line-clamp-2 min-h-[48px] group-hover:text-blue-600 transition-colors mb-2">
+                                                    <h3 className="text-[11px] sm:text-xs lg:text-sm text-neutral-700 leading-5 sm:leading-6 line-clamp-2 min-h-[40px] sm:min-h-[48px] group-hover:text-blue-600 transition-colors mb-1 sm:mb-2">
                                                         {product.name}
                                                     </h3>
                                                     <div className="mt-auto">
@@ -598,7 +598,7 @@ export default function CategoriesClient({
                                                                 <div className="text-xs text-neutral-400 line-through">{formatPrice(product.listPrice)}</div>
                                                             )}
                                                             <div className="flex items-center gap-1 text-neutral-900">
-                                                                <span className="font-bold text-lg">{formatPrice(product.price)}</span>
+                                                                <span className="font-bold text-sm sm:text-base lg:text-lg">{formatPrice(product.price)}</span>
                                                                 <span className="text-[10px] font-light">تومان</span>
                                                             </div>
                                                         </div>

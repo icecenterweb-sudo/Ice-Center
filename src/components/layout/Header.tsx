@@ -19,6 +19,7 @@ import {
 import UserButton from '@/components/auth/UserButton';
 import { useCart } from '@/context/CartContext';
 import { toPersianDigits } from '@/lib/numbers';
+import SearchBar from './SearchBar';
 
 const Header: React.FC = () => {
   const { itemCount, openCart } = useCart();
@@ -102,16 +103,7 @@ const Header: React.FC = () => {
               </Link>
 
               {/* جستجو */}
-              <div className="flex items-center bg-[#f0f0f1] rounded-lg px-4 h-12 w-full max-w-[600px]">
-                <input
-                  type="text"
-                  placeholder="جستجو در محصولات: بستنی‌ساز، یخ‌ساز، فریزر و..."
-                  className="w-full bg-transparent border-none outline-none text-gray-700 placeholder-gray-400 text-sm ml-2"
-                />
-                <button className="text-gray-500 hover:text-gray-800 transition">
-                  <Search size={20} />
-                </button>
-              </div>
+              <SearchBar className="w-full max-w-[600px]" />
             </div>
 
             {/* موبایل/تبلت: دکمه جستجو و سبد خرید */}
@@ -176,20 +168,10 @@ const Header: React.FC = () => {
               exit={{ opacity: 0, height: 0 }}
               className="lg:hidden mt-3 pb-3"
             >
-              <div className="flex items-center bg-[#f0f0f1] rounded-lg px-4 h-12 w-full">
-                <input
-                  type="text"
-                  placeholder="جستجو در محصولات..."
-                  className="w-full bg-transparent border-none outline-none text-gray-700 placeholder-gray-400 text-sm ml-2"
-                  autoFocus
-                />
-                <button
-                  onClick={() => setIsSearchOpen(false)}
-                  className="text-gray-500 hover:text-gray-800 transition"
-                >
-                  <X size={20} />
-                </button>
-              </div>
+              <SearchBar
+                className="w-full"
+                placeholder="جستجو در محصولات..."
+              />
             </motion.div>
           )}
 
@@ -271,16 +253,7 @@ const Header: React.FC = () => {
 
           </motion.div>
 
-          {/* منوی موبایل/تبلت - دکمه همبرگر */}
-          <div className="lg:hidden border-t border-gray-100 pt-3 mt-3">
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="flex items-center gap-2 text-sm font-bold text-gray-700 hover:text-blue-600 transition w-full"
-            >
-              <Menu size={20} />
-              <span>دسته‌بندی محصولات</span>
-            </button>
-          </div>
+          {/* Removed: دسته‌بندی button - now in MobileBottomNav */}
 
         </header>
       </div>

@@ -14,14 +14,18 @@ import {
     LogOut,
     ChevronRight,
     ChevronLeft,
-    X
+    X,
+    Tag,
+    Palette
 } from 'lucide-react';
 
 const menuItems = [
     { icon: LayoutDashboard, label: 'داشبورد', href: '/admin/dashboard' },
     { icon: Package, label: 'محصولات', href: '/admin/dashboard/products' },
+    { icon: Tag, label: 'پیشنهادها', href: '/admin/dashboard/offers' },
     { icon: FolderTree, label: 'دسته‌بندی‌ها', href: '/admin/dashboard/categories' },
     { icon: FileText, label: 'بلاگ', href: '/admin/dashboard/blog' },
+    { icon: Palette, label: 'ظاهر', href: '/admin/dashboard/appearance' },
     { icon: Users, label: 'کاربران', href: '/admin/dashboard/users' },
     { icon: ShoppingCart, label: 'سفارشات', href: '/admin/dashboard/orders' },
 ];

@@ -88,6 +88,7 @@ export async function getSubcategoriesByCategoryId(categoryId: number) {
 
 /**
  * Get products with filtering, sorting, and pagination
+ * Now includes offer-based pricing with effectivePrice calculation
  */
 export async function getProducts({
     page = 1,
@@ -102,6 +103,7 @@ export async function getProducts({
     onlyDiscount,
 }: ProductFilterParams): Promise<ProductResult> {
     const skip = (page - 1) * limit;
+    const now = new Date();
 
     // Build where clause
     const where: any = { isActive: true };
@@ -137,9 +139,12 @@ export async function getProducts({
         where.inventoryStatus = { in: availability };
     }
 
-    // Discount filter
+    // Discount filter - now uses hasActiveOffer OR legacy listPrice
     if (onlyDiscount) {
-        where.listPrice = { not: null };
+        where.OR = [
+            { hasActiveOffer: true },
+            { listPrice: { not: null } }
+        ];
     }
 
     // Build orderBy
@@ -147,7 +152,7 @@ export async function getProducts({
     if (sort === 'price-asc') orderBy = { price: 'asc' };
     if (sort === 'price-desc') orderBy = { price: 'desc' };
 
-    // Fetch products
+    // Fetch products with offer data
     let allProducts = await prisma.product.findMany({
         where,
         orderBy,
@@ -160,16 +165,83 @@ export async function getProducts({
             thumbnail: true,
             inventoryStatus: true,
             brand: true,
+            hasActiveOffer: true,
+            // Include active offers for price calculation
+            offerProducts: {
+                where: {
+                    offer: {
+                        isActive: true,
+                        startDate: { lte: now },
+                        endDate: { gt: now },
+                    }
+                },
+                select: {
+                    customDiscountValue: true,
+                    offer: {
+                        select: {
+                            discountType: true,
+                            discountValue: true,
+                        }
+                    }
+                },
+                orderBy: { offer: { priority: 'desc' } },
+                take: 1
+            }
         }
     });
 
-    // Apply discount filter (listPrice > price)
+    // Calculate effective prices for each product
+    const productsWithPricing = allProducts.map(product => {
+        // Base price is listPrice (original) or price
+        const basePrice = product.listPrice || product.price;
+        const activeOfferProduct = product.offerProducts[0];
+        const activeOffer = activeOfferProduct?.offer;
+
+        let effectivePrice = product.price; // Default to current price
+        let discountPercent = 0;
+        let hasOffer = false;
+
+        if (activeOffer) {
+            // Calculate from offer
+            const discountValue = activeOfferProduct.customDiscountValue ?? activeOffer.discountValue;
+
+            if (activeOffer.discountType === 'PERCENTAGE') {
+                effectivePrice = basePrice * (1 - discountValue / 100);
+                discountPercent = Math.round(discountValue);
+            } else {
+                effectivePrice = basePrice - discountValue;
+                discountPercent = Math.round((discountValue / basePrice) * 100);
+            }
+            hasOffer = true;
+        } else if (product.listPrice && product.listPrice > product.price) {
+            // Legacy discount (listPrice > price)
+            effectivePrice = product.price;
+            discountPercent = Math.round(((product.listPrice - product.price) / product.listPrice) * 100);
+            hasOffer = true;
+        }
+
+        return {
+            id: product.id,
+            name: product.name,
+            slug: product.slug,
+            price: Math.round(effectivePrice), // Effective/selling price
+            listPrice: hasOffer ? basePrice : null, // Original price (for strikethrough)
+            thumbnail: product.thumbnail,
+            inventoryStatus: product.inventoryStatus,
+            brand: product.brand,
+            discountPercent, // For badge display
+            hasOffer, // For filtering/badges
+        };
+    });
+
+    // Apply discount filter post-processing
+    let filteredProducts = productsWithPricing;
     if (onlyDiscount) {
-        allProducts = allProducts.filter(p => p.listPrice && p.listPrice > p.price);
+        filteredProducts = productsWithPricing.filter(p => p.hasOffer);
     }
 
-    const totalCount = allProducts.length;
-    const products = allProducts.slice(skip, skip + limit);
+    const totalCount = filteredProducts.length;
+    const products = filteredProducts.slice(skip, skip + limit);
 
     return {
         products,

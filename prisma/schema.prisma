@@ -50,9 +50,17 @@ model Product {
   updatedAt            DateTime         @updatedAt
   installmentEnabled   Boolean          @default(false)
   installmentTerms     Json?
+  
+  // Offer System
+  hasActiveOffer       Boolean          @default(false)  // Denormalized flag for fast queries
+  
+  // Relations
   subcategory          Subcategory?     @relation(fields: [subcategoryId], references: [id])
   variants             ProductVariant[]
   cartItems            CartItem[]
+  offerProducts        OfferProduct[]   // Many-to-many with Offers
+  slides               Slide[]          // Hero slider slides linking to this product
+  banners              Banner[]         // Banners linking to this product
 
   @@index([slug])
   @@index([subcategoryId])
@@ -60,6 +68,7 @@ model Product {
   @@index([sku])
   @@index([isActive])
   @@index([featured])
+  @@index([hasActiveOffer])
 }
 
 model ProductVariant {
@@ -95,6 +104,8 @@ model Category {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   subcategories Subcategory[]
+  slides        Slide[]       // Hero slider slides linking to this category
+  banners       Banner[]      // Banners linking to this category
 }
 
 model Subcategory {
@@ -327,3 +338,149 @@ enum CommentStatus {
   REJECTED
 }
 
+// =============================================================================
+// OFFER SYSTEM
+// =============================================================================
+
+enum DiscountType {
+  PERCENTAGE    // e.g., 20% off
+  FIXED_AMOUNT  // e.g., 50,000 Toman off
+}
+
+model Offer {
+  id              Int          @id @default(autoincrement())
+  
+  // Identity
+  name            String       // "یلدا ویژه"
+  slug            String?      @unique
+  description     String?
+  
+  // Discount Configuration
+  discountType    DiscountType @default(PERCENTAGE)
+  discountValue   Float        // 20 for 20%, or 50000 for fixed amount
+  maxDiscountCap  Float?       // Optional: cap for percentage discounts
+  
+  // Timing
+  startDate       DateTime     @default(now())
+  endDate         DateTime
+  
+  // Control
+  isActive        Boolean      @default(true)
+  isFeatured      Boolean      @default(false)  // Show in carousel
+  priority        Int          @default(0)       // Higher wins conflicts
+  
+  // Display
+  badgeText       String?      // "۲۰٪ تخفیف"
+  badgeColor      String?      // Hex color for badge
+  
+  // Campaign grouping
+  campaignId      Int?
+  campaign        Campaign?    @relation(fields: [campaignId], references: [id])
+  
+  // Products (many-to-many)
+  products        OfferProduct[]
+  
+  // Audit
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([isActive, isFeatured, startDate, endDate])
+  @@index([isActive, startDate, endDate])
+  @@index([campaignId])
+  @@index([priority])
+}
+
+// Junction table for many-to-many Offer <-> Product
+model OfferProduct {
+  id                  Int      @id @default(autoincrement())
+  offerId             Int
+  offer               Offer    @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  productId           Int
+  product             Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  // Optional: Override discount for this specific product
+  customDiscountValue Float?
+  
+  createdAt           DateTime @default(now())
+  
+  @@unique([offerId, productId])
+  @@index([productId])
+  @@index([offerId])
+}
+
+// Campaign for grouping offers
+model Campaign {
+  id          Int      @id @default(autoincrement())
+  name        String   // "یلدا ۱۴۰۳"
+  slug        String   @unique
+  description String?
+  bannerUrl   String?
+  themeColor  String?  // Hex color for styling
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean  @default(true)
+  offers      Offer[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive, startDate, endDate])
+  @@index([slug])
+}
+
+// Hero Slider Slides
+model Slide {
+  id            Int       @id @default(autoincrement())
+  title         String?
+  desktopImage  String
+  mobileImage   String
+  alt           String
+  
+  // Link options: custom URL, product, or category
+  link          String?   // Custom URL (optional)
+  productId     Int?      // Link to product (optional)
+  categoryId    Int?      // Link to category (optional)
+  
+  isActive      Boolean   @default(true)
+  order         Int       @default(0)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  product       Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
+  category      Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  
+  @@index([isActive, order])
+}
+
+// Banner Position Types
+enum BannerPosition {
+  SINGLE_FULL   // تک بنر تمام‌عرض
+  DOUBLE        // دو بنر کنار هم
+}
+
+// Homepage Banners
+model Banner {
+  id            Int            @id @default(autoincrement())
+  title         String         // عنوان برای مدیریت
+  position      BannerPosition // موقعیت نمایش
+  desktopImage  String         // تصویر دسکتاپ
+  mobileImage   String         // تصویر موبایل
+  alt           String         // متن جایگزین
+  
+  // Link options: custom URL, product, or category
+  link          String?        // لینک مستقیم (اختیاری)
+  productId     Int?           // لینک به محصول (اختیاری)
+  categoryId    Int?           // لینک به دسته‌بندی (اختیاری)
+  
+  order         Int            @default(0)  // ترتیب نمایش
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  // Relations
+  product       Product?       @relation(fields: [productId], references: [id], onDelete: SetNull)
+  category      Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  
+  @@index([position, isActive, order])
+}

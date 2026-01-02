@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import useEmblaCarousel from 'embla-carousel-react';
@@ -9,8 +9,42 @@ import { ChevronLeft, ChevronRight, Percent } from 'lucide-react';
 import DiscountBadge from '../ui/DiscountBadge';
 import { toPersianDigits } from '@/lib/numbers';
 
-// --- Mock Data ---
-const products = [
+// Product type for carousel display
+interface OfferProduct {
+  id: number;
+  title: string;
+  slug?: string;
+  price: number;
+  oldPrice: number;
+  discount: number;
+  image: string | null;
+  inStock?: boolean;
+}
+
+// Offer item from API
+interface OfferItem {
+  id: number;
+  name: string;
+  endDate: Date | string;
+  badgeText?: string | null;
+  product: {
+    id: number;
+    title: string;
+    slug: string;
+    image: string | null;
+    price: number;
+    oldPrice: number;
+    discount: number;
+    inStock: boolean;
+  };
+}
+
+interface AmazingOfferCarouselProps {
+  offers?: OfferItem[];
+}
+
+// --- Fallback Mock Data (used when no offers provided) ---
+const mockProducts: OfferProduct[] = [
   {
     id: 1,
     title: 'دستگاه بستنی ساز خانگی مدل IC-200',
@@ -43,41 +77,36 @@ const products = [
     discount: 23,
     image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999218/dc2c39_kz3wpy.jpg',
   },
-  {
-    id: 5,
-    title: 'یخچال ویترینی دو درب صنعتی',
-    price: 22000000,
-    oldPrice: 28000000,
-    discount: 21,
-    image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999204/001-min-2_ip52ev.jpg',
-  },
-  {
-    id: 6,
-    title: 'قهوه ساز دو گروپ فایما',
-    price: 45000000,
-    oldPrice: 55000000,
-    discount: 18,
-    image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999309/D9_82_D9_87_D9_88_D9_87-_D8_B3_D8_A7_D8_B2-_DA_A9_D8_A7_D9_81_DB_8C-_D8_B4_D8_A7_D9_BE-_D8_AF_D9_88-_DA_AF_D8_B1_D9_88_D9_BE-_D9_81_D8_A7_D8_A6_D9_85_D8_A7-_D9_85_D8_AF_D9_84-Dieci-A2-Tall_i9vkgd.jpg',
-  },
-  {
-    id: 7,
-    title: 'بستنی ساز صنعتی 3 فاز',
-    price: 68000000,
-    oldPrice: 85000000,
-    discount: 20,
-    image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999156/711Jw2d2LuL_jwsd9x.jpg',
-  },
-  {
-    id: 8,
-    title: 'قطعات یدکی دستگاه بستنی ساز',
-    price: 1500000,
-    oldPrice: 2000000,
-    discount: 25,
-    image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999349/cp401-404-mobile-430in430-3_scz9sw.png',
-  }
 ];
 
-const AmazingOfferCarousel = () => {
+const AmazingOfferCarousel = ({ offers }: AmazingOfferCarouselProps) => {
+  // Transform offers to product format, or use mock data
+  const products: OfferProduct[] = useMemo(() => {
+    if (offers && offers.length > 0) {
+      return offers.map(offer => ({
+        id: offer.product.id,
+        title: offer.product.title,
+        slug: offer.product.slug,
+        price: offer.product.price,
+        oldPrice: offer.product.oldPrice,
+        discount: offer.product.discount,
+        image: offer.product.image,
+        inStock: offer.product.inStock,
+      }));
+    }
+    return mockProducts;
+  }, [offers]);
+
+  // Get earliest end date for timer
+  const earliestEndDate = useMemo(() => {
+    if (offers && offers.length > 0) {
+      const dates = offers.map(o => new Date(o.endDate).getTime());
+      return new Date(Math.min(...dates));
+    }
+    // Default: 24 hours from now
+    return new Date(Date.now() + 24 * 60 * 60 * 1000);
+  }, [offers]);
+
   // --- Timer Logic ---
   const [time, setTime] = useState({ hours: 14, minutes: 57, seconds: 27 });
 
@@ -232,7 +261,7 @@ const AmazingOfferCarousel = () => {
                       {/* Image */}
                       <div className="relative w-full aspect-square mb-2">
                         <Image
-                          src={product.image}
+                          src={product.image || '/images/placeholder-product.png'}
                           alt={product.title}
                           fill
                           draggable="false"
@@ -302,7 +331,7 @@ const AmazingOfferCarousel = () => {
             {/* Timer */}
             <div className="flex gap-1.5 mb-4" dir="ltr">
               <div className="bg-white text-ocean w-9 h-9 rounded-lg flex items-center justify-center font-bold text-base shadow-md">
-                {formatTime(time.seconds)}
+                {formatTime(time.hours)}
               </div>
               <span className="text-white font-bold self-center text-lg">:</span>
               <div className="bg-white text-ocean w-9 h-9 rounded-lg flex items-center justify-center font-bold text-base shadow-md">
@@ -310,7 +339,7 @@ const AmazingOfferCarousel = () => {
               </div>
               <span className="text-white font-bold self-center text-lg">:</span>
               <div className="bg-white text-ocean w-9 h-9 rounded-lg flex items-center justify-center font-bold text-base shadow-md">
-                {formatTime(time.hours)}
+                {formatTime(time.seconds)}
               </div>
             </div>
 
@@ -339,29 +368,26 @@ const AmazingOfferCarousel = () => {
 
             {/* Embla Container */}
             <div className="overflow-hidden h-full" ref={desktopEmblaRef}>
-              <div className="flex h-full gap-0">
+              <div className="flex h-full gap-2">
                 {products.map((product, index) => (
                   <div
                     key={product.id}
-                    className="
+                    className={`
                       relative flex-shrink-0 min-w-0
                       flex-[0_0_25%]
                       xl:flex-[0_0_20%]
                       2xl:flex-[0_0_16.666%]
-                      bg-white first:rounded-r-xl last:rounded-l-xl
-                    "
+                      bg-white
+                      ${index === 0 ? 'rounded-r-2xl' : ''}
+                      ${index === products.length - 1 ? 'rounded-l-2xl' : ''}
+                    `}
                   >
-                    {/* Vertical Divider */}
-                    {index !== products.length - 1 && (
-                      <div className="absolute top-8 left-0 w-[0.75px] h-[88%] bg-gray-200" />
-                    )}
-
                     <Link href={`/product/${product.id}`} className="flex flex-col h-full p-4 hover:shadow-lg transition-shadow duration-200 group">
 
                       {/* Image */}
                       <div className="relative w-full h-[140px] mb-3">
                         <Image
-                          src={product.image}
+                          src={product.image || '/images/placeholder-product.png'}
                           alt={product.title}
                           fill
                           className="object-contain group-hover:scale-105 transition-transform duration-300"

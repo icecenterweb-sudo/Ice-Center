@@ -6,10 +6,8 @@ import Image from 'next/image';
 
 interface Banner {
   id: number;
-  image: {
-    mobile: string;
-    desktop: string;
-  };
+  desktopImage: string;
+  mobileImage: string;
   link: string;
   alt: string;
 }
@@ -23,7 +21,7 @@ const BannerSection: React.FC<BannerSectionProps> = ({
   banners,
   heightClass = 'h-[200px] md:h-[300px] lg:h-[350px]',
 }) => {
-  
+
   if (banners.length === 0) return null;
 
   // تشخیص تعداد ستون
@@ -37,7 +35,7 @@ const BannerSection: React.FC<BannerSectionProps> = ({
   return (
     <section className="w-full bg-white py-6 md:py-8">
       <div className="max-w-[1600px] mx-auto px-4">
-        
+
         <div className={`grid grid-cols-1 ${gridClass} gap-4`}>
           {banners.map((banner) => (
             <Link
@@ -48,7 +46,7 @@ const BannerSection: React.FC<BannerSectionProps> = ({
               {/* تصویر موبایل */}
               <div className={`md:hidden relative w-full ${heightClass}`}>
                 <Image
-                  src={banner.image.mobile}
+                  src={banner.mobileImage}
                   alt={banner.alt}
                   fill
                   className="object-contain group-hover:scale-105 transition-transform duration-500"
@@ -59,7 +57,7 @@ const BannerSection: React.FC<BannerSectionProps> = ({
               {/* تصویر دسکتاپ/تبلت */}
               <div className={`hidden md:block relative w-full ${heightClass}`}>
                 <Image
-                  src={banner.image.desktop}
+                  src={banner.desktopImage}
                   alt={banner.alt}
                   fill
                   className="object-fit group-hover:scale-105 transition-transform duration-500"
