@@ -42,6 +42,7 @@ export default function ProductImageGallery({ images, productName }: ProductImag
                         fill
                         className="object-contain p-4 transition-transform duration-500 group-hover:scale-110"
                         priority
+                        sizes="(max-width: 768px) 100vw, 50vw"
                     />
                     {/* Zoom hint overlay */}
                     <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/10 transition-colors">
@@ -67,6 +68,7 @@ export default function ProductImageGallery({ images, productName }: ProductImag
                                 alt={`${productName} - تصویر ${index + 1}`}
                                 fill
                                 className="object-contain p-1"
+                                sizes="(max-width: 768px) 25vw, 12vw"
                             />
                         </button>
                     ))}

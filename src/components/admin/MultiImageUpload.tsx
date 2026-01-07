@@ -1,11 +1,11 @@
 'use client';
 
-import { Upload, X } from 'lucide-react';
+import { Upload, X, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 
 interface MultiImageUploadProps {
     currentImages?: string[];
-    onImagesChange?: (files: File[]) => void;
+    onImagesChange?: (urls: string[]) => void;
     maxImages?: number;
 }
 
@@ -14,60 +14,77 @@ export default function MultiImageUpload({
     onImagesChange,
     maxImages = 5
 }: MultiImageUploadProps) {
-    const [previews, setPreviews] = useState<string[]>(currentImages);
-    const [files, setFiles] = useState<File[]>([]);
+    const [images, setImages] = useState<string[]>(currentImages);
+    const [uploadingCount, setUploadingCount] = useState(0);
+    const [error, setError] = useState<string | null>(null);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFiles = Array.from(e.target.files || []);
+        setError(null);
 
         // Check total count
-        if (previews.length + selectedFiles.length > maxImages) {
-            alert(`حداکثر ${maxImages} تصویر می‌توانید انتخاب کنید`);
+        if (images.length + selectedFiles.length > maxImages) {
+            setError(`حداکثر ${maxImages} تصویر می‌توانید انتخاب کنید`);
             return;
         }
 
-        // Validate each file
+        // Validate each file first
         const validFiles: File[] = [];
-        const newPreviews: string[] = [];
-
-        selectedFiles.forEach(file => {
+        for (const file of selectedFiles) {
             // Validate file type
             if (!file.type.startsWith('image/')) {
-                alert('لطفاً فقط فایل تصویری انتخاب کنید');
-                return;
+                setError('لطفاً فقط فایل تصویری انتخاب کنید');
+                continue;
             }
 
             // Validate file size (max 5MB)
             if (file.size > 5 * 1024 * 1024) {
-                alert('حجم هر تصویر نباید بیشتر از 5 مگابایت باشد');
-                return;
+                setError('حجم هر تصویر نباید بیشتر از 5 مگابایت باشد');
+                continue;
             }
 
             validFiles.push(file);
+        }
 
-            // Create preview
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                newPreviews.push(reader.result as string);
-                if (newPreviews.length === validFiles.length) {
-                    setPreviews([...previews, ...newPreviews]);
-                }
-            };
-            reader.readAsDataURL(file);
+        if (validFiles.length === 0) return;
+
+        setUploadingCount(validFiles.length);
+
+        // Upload all files in parallel
+        const uploadPromises = validFiles.map(async (file) => {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const result = await response.json();
+
+            if (!result.success) {
+                throw new Error(result.message || 'خطا در آپلود تصویر');
+            }
+
+            return result.url;
         });
 
-        const updatedFiles = [...files, ...validFiles];
-        setFiles(updatedFiles);
-        onImagesChange?.(updatedFiles);
+        try {
+            const uploadedUrls = await Promise.all(uploadPromises);
+            const newImages = [...images, ...uploadedUrls];
+            setImages(newImages);
+            onImagesChange?.(newImages);
+        } catch (err: any) {
+            setError(err.message || 'خطا در آپلود تصاویر');
+        } finally {
+            setUploadingCount(0);
+        }
     };
 
     const removeImage = (index: number) => {
-        const newPreviews = previews.filter((_, i) => i !== index);
-        const newFiles = files.filter((_, i) => i !== index);
-
-        setPreviews(newPreviews);
-        setFiles(newFiles);
-        onImagesChange?.(newFiles);
+        const newImages = images.filter((_, i) => i !== index);
+        setImages(newImages);
+        onImagesChange?.(newImages);
     };
 
     return (
@@ -77,17 +94,17 @@ export default function MultiImageUpload({
                     تصاویر محصول (حداکثر {maxImages} تصویر)
                 </label>
                 <span className="text-xs text-gray-500">
-                    {previews.length} / {maxImages}
+                    {images.length} / {maxImages}
                 </span>
             </div>
 
             {/* Image Grid */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {previews.map((preview, index) => (
+                {images.map((image, index) => (
                     <div key={index} className="relative group">
                         <div className="relative w-full h-32 rounded-xl overflow-hidden border-2 border-gray-200">
                             <img
-                                src={preview}
+                                src={image}
                                 alt={`Product ${index + 1}`}
                                 className="w-full h-full object-cover"
                             />
@@ -107,8 +124,17 @@ export default function MultiImageUpload({
                     </div>
                 ))}
 
+                {/* Loading placeholders */}
+                {uploadingCount > 0 && [...Array(uploadingCount)].map((_, index) => (
+                    <div key={`loading-${index}`} className="relative">
+                        <div className="w-full h-32 rounded-xl overflow-hidden border-2 border-gray-200 bg-gray-100 flex items-center justify-center">
+                            <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                        </div>
+                    </div>
+                ))}
+
                 {/* Upload Button */}
-                {previews.length < maxImages && (
+                {images.length < maxImages && uploadingCount === 0 && (
                     <label className="block border-2 border-dashed border-gray-200 rounded-xl h-32 hover:border-blue-400 hover:bg-blue-50/50 transition-all cursor-pointer group">
                         <input
                             type="file"
@@ -127,6 +153,13 @@ export default function MultiImageUpload({
                     </label>
                 )}
             </div>
+
+            {error && (
+                <p className="text-sm text-red-500">{error}</p>
+            )}
+
+            {/* Hidden input to store Cloudinary URLs for form submission */}
+            <input type="hidden" name="imagesData" value={JSON.stringify(images)} />
 
             <p className="text-xs text-gray-500 flex items-start gap-1.5">
                 <span className="text-blue-500 mt-0.5">💡</span>

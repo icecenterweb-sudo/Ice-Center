@@ -40,7 +40,7 @@ function SubmitButton() {
 export default function EditCategoryForm({ category }: EditCategoryFormProps) {
     const [name, setName] = useState(category.name);
     const [slug, setSlug] = useState(category.slug);
-    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imageUrl, setImageUrl] = useState<string | null>(null);
 
     // Auto-generate slug from name
     const handleNameChange = (value: string) => {
@@ -54,18 +54,8 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
     };
 
     const handleSubmit = async (formData: FormData) => {
-        // Convert image to base64 if exists
-        if (imageFile) {
-            const reader = new FileReader();
-            reader.readAsDataURL(imageFile);
-            await new Promise((resolve) => {
-                reader.onloadend = () => {
-                    formData.append('imageData', reader.result as string);
-                    resolve(null);
-                };
-            });
-        }
-
+        // Image URL is now stored directly by the ImageUpload component
+        // via hidden input field 'imageUrl'
         return updateCategory(category.id, formData);
     };
 
@@ -149,7 +139,7 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
                     </p>
                 </div>
 
-                <ImageUpload currentImage={category.image} onImageChange={setImageFile} />
+                <ImageUpload currentImage={category.image} onImageChange={setImageUrl} />
 
                 <SubmitButton />
             </form>

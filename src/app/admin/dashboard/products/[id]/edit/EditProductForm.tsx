@@ -15,27 +15,13 @@ interface EditProductFormProps {
 
 export default function EditProductForm({ product, subcategories }: EditProductFormProps) {
     const router = useRouter();
-    const [imageFiles, setImageFiles] = useState<File[]>([]);
+    const [imageUrls, setImageUrls] = useState<string[]>([]);
     const [features, setFeatures] = useState<string[]>(product.features || []);
     const [specifications, setSpecifications] = useState<Record<string, string>>(product.specifications || {});
 
     const handleSubmit = async (formData: FormData) => {
-        // Convert images to base64 if exist
-        if (imageFiles.length > 0) {
-            const imageDataArray: string[] = [];
-
-            for (const file of imageFiles) {
-                const reader = new FileReader();
-                const base64 = await new Promise<string>((resolve) => {
-                    reader.onloadend = () => resolve(reader.result as string);
-                    reader.readAsDataURL(file);
-                });
-                imageDataArray.push(base64);
-            }
-
-            formData.append('imagesData', JSON.stringify(imageDataArray));
-        }
-
+        // Images are now already uploaded to Cloudinary by MultiImageUpload
+        // The imagesData hidden field is automatically populated by the component
         await updateProduct(product.id, formData);
     };
 
@@ -196,7 +182,7 @@ export default function EditProductForm({ product, subcategories }: EditProductF
                 <div className="md:col-span-2">
                     <MultiImageUpload
                         currentImages={product.images || []}
-                        onImagesChange={setImageFiles}
+                        onImagesChange={setImageUrls}
                         maxImages={5}
                     />
                 </div>

@@ -8,11 +8,6 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 const yekan = localFont({
     src: [
         {
-            path: "./fonts/YekanBakhFamily/webfonts/woff2/YekanBakh-Light.woff2",
-            weight: "300",
-            style: "normal",
-        },
-        {
             path: "./fonts/YekanBakhFamily/webfonts/woff2/YekanBakh-Regular.woff2",
             weight: "400",
             style: "normal",
@@ -25,11 +20,6 @@ const yekan = localFont({
         {
             path: "./fonts/YekanBakhFamily/webfonts/woff2/YekanBakh-Bold.woff2",
             weight: "700",
-            style: "normal",
-        },
-        {
-            path: "./fonts/YekanBakhFamily/webfonts/woff2/YekanBakh-Black.woff2",
-            weight: "900",
             style: "normal",
         },
     ],

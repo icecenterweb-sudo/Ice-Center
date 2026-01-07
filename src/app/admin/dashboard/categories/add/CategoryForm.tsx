@@ -28,7 +28,7 @@ function SubmitButton() {
 export default function CategoryForm() {
     const [name, setName] = useState('');
     const [slug, setSlug] = useState('');
-    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imageUrl, setImageUrl] = useState<string | null>(null);
 
     // Auto-generate slug from name
     const handleNameChange = (value: string) => {
@@ -42,20 +42,11 @@ export default function CategoryForm() {
     };
 
     const handleSubmit = async (formData: FormData) => {
-        // Convert image to base64 if exists
-        if (imageFile) {
-            const reader = new FileReader();
-            reader.readAsDataURL(imageFile);
-            await new Promise((resolve) => {
-                reader.onloadend = () => {
-                    formData.append('imageData', reader.result as string);
-                    resolve(null);
-                };
-            });
-        }
-
+        // Image URL is now stored directly by the ImageUpload component
+        // via hidden input field 'imageUrl'
         return createCategory(formData);
     };
+
 
     return (
         <div className="max-w-2xl mx-auto space-y-6">
@@ -136,7 +127,7 @@ export default function CategoryForm() {
                     </p>
                 </div>
 
-                <ImageUpload onImageChange={setImageFile} />
+                <ImageUpload onImageChange={setImageUrl} />
 
                 <SubmitButton />
             </form>

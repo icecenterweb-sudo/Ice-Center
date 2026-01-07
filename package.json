@@ -45,7 +45,6 @@
     "react-dom": "19.2.0",
     "react-hook-form": "^7.70.0",
     "react-hot-toast": "^2.6.0",
-    "swiper": "^12.0.3",
     "tiptap-markdown": "^0.9.0",
     "yet-another-react-lightbox": "^3.28.0",
     "zod": "^4.3.5"

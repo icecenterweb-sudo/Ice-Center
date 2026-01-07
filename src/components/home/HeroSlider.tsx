@@ -1,16 +1,11 @@
 'use client';
 
-import React from 'react';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation, Pagination, Autoplay, EffectFade } from 'swiper/modules';
+import React, { useCallback, useEffect, useState } from 'react';
+import useEmblaCarousel from 'embla-carousel-react';
+import Autoplay from 'embla-carousel-autoplay';
 import Image from 'next/image';
 import Link from 'next/link';
-
-// Import Swiper styles
-import 'swiper/css';
-import 'swiper/css/navigation';
-import 'swiper/css/pagination';
-import 'swiper/css/effect-fade';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Slide {
   id: number;
@@ -53,118 +48,157 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ slides }) => {
   // Use provided slides or fallback
   const displaySlides = slides && slides.length > 0 ? slides : fallbackSlides;
 
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  // Desktop carousel with autoplay
+  const [desktopRef, desktopApi] = useEmblaCarousel(
+    { loop: true, direction: 'rtl' },
+    [Autoplay({ delay: 4000, stopOnInteraction: false, stopOnMouseEnter: true })]
+  );
+
+  // Mobile carousel with autoplay
+  const [mobileRef, mobileApi] = useEmblaCarousel(
+    { loop: true, direction: 'rtl', align: 'center', containScroll: false },
+    [Autoplay({ delay: 4000, stopOnInteraction: false })]
+  );
+
+  const scrollPrev = useCallback(() => {
+    desktopApi?.scrollPrev();
+  }, [desktopApi]);
+
+  const scrollNext = useCallback(() => {
+    desktopApi?.scrollNext();
+  }, [desktopApi]);
+
+  const scrollTo = useCallback((index: number) => {
+    desktopApi?.scrollTo(index);
+    mobileApi?.scrollTo(index);
+  }, [desktopApi, mobileApi]);
+
+  // Sync selected index
+  useEffect(() => {
+    if (!desktopApi) return;
+
+    const onSelect = () => {
+      setSelectedIndex(desktopApi.selectedScrollSnap());
+    };
+
+    desktopApi.on('select', onSelect);
+    onSelect();
+
+    return () => {
+      desktopApi.off('select', onSelect);
+    };
+  }, [desktopApi]);
+
+  useEffect(() => {
+    if (!mobileApi) return;
+
+    const onSelect = () => {
+      setSelectedIndex(mobileApi.selectedScrollSnap());
+    };
+
+    mobileApi.on('select', onSelect);
+
+    return () => {
+      mobileApi.off('select', onSelect);
+    };
+  }, [mobileApi]);
+
   return (
     <div className="w-full">
-      {/* Desktop Slider - Original full-width with fade effect */}
+      {/* Desktop Slider */}
       <div className="hidden md:block relative">
-        <Swiper
-          modules={[Navigation, Pagination, Autoplay, EffectFade]}
-          spaceBetween={0}
-          slidesPerView={1}
-          navigation={{
-            nextEl: '.swiper-button-next-desktop',
-            prevEl: '.swiper-button-prev-desktop',
-          }}
-          pagination={{
-            clickable: true,
-            el: '.swiper-pagination-desktop',
-          }}
-          autoplay={{
-            delay: 4000,
-            disableOnInteraction: false,
-            pauseOnMouseEnter: true,
-          }}
-          effect="fade"
-          fadeEffect={{
-            crossFade: true
-          }}
-          loop={true}
-          className="hero-slider-desktop"
+        <div className="overflow-hidden" ref={desktopRef}>
+          <div className="flex">
+            {displaySlides.map((slide, index) => (
+              <div key={slide.id} className="flex-[0_0_100%] min-w-0">
+                <Link href={slide.link || '#'} className="block relative">
+                  <div className="relative w-full h-[400px]">
+                    <Image
+                      src={slide.desktopImage}
+                      alt={slide.alt}
+                      fill
+                      className="object-fill"
+                      priority={index === 0}
+                      sizes="100vw"
+                    />
+                  </div>
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Desktop Navigation Arrows */}
+        <button
+          onClick={scrollNext}
+          className="absolute top-1/2 right-4 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center cursor-pointer shadow-lg transition-all hover:scale-110"
+          aria-label="اسلاید قبلی"
         >
-          {displaySlides.map((slide, index) => (
-            <SwiperSlide key={slide.id}>
-              <Link href={slide.link || '#'} className="block relative">
-                <div className="relative w-full h-[400px]">
-                  <Image
-                    src={slide.desktopImage}
-                    alt={slide.alt}
-                    fill
-                    className="object-fill"
-                    priority={index === 0}
-                    sizes="100vw"
-                  />
-                </div>
-              </Link>
-            </SwiperSlide>
+          <ChevronRight className="w-6 h-6 text-gray-800" />
+        </button>
+        <button
+          onClick={scrollPrev}
+          className="absolute top-1/2 left-4 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center cursor-pointer shadow-lg transition-all hover:scale-110"
+          aria-label="اسلاید بعدی"
+        >
+          <ChevronLeft className="w-6 h-6 text-gray-800" />
+        </button>
+
+        {/* Desktop Pagination Dots */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-2">
+          {displaySlides.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => scrollTo(index)}
+              className={`w-2.5 h-2.5 rounded-full transition-all ${index === selectedIndex
+                  ? 'bg-ocean w-6'
+                  : 'bg-white/70 hover:bg-white'
+                }`}
+              aria-label={`رفتن به اسلاید ${index + 1}`}
+            />
           ))}
-
-          {/* Desktop Navigation Arrows */}
-          <div
-            className="swiper-button-prev-desktop absolute top-1/2 right-4 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center cursor-pointer shadow-lg transition-all hover:scale-110"
-            role="button"
-            aria-label="اسلاید قبلی"
-            tabIndex={0}
-          >
-            <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
-          <div
-            className="swiper-button-next-desktop absolute top-1/2 left-4 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center cursor-pointer shadow-lg transition-all hover:scale-110"
-            role="button"
-            aria-label="اسلاید بعدی"
-            tabIndex={0}
-          >
-            <svg className="w-6 h-6 text-gray-800 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
-
-          {/* Desktop Pagination Dots */}
-          <div className="swiper-pagination-desktop absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-2"></div>
-        </Swiper>
+        </div>
       </div>
 
       {/* Mobile Slider - Digikala-style with center focus and side previews */}
       <div className="md:hidden px-4 py-3">
-        <Swiper
-          modules={[Pagination, Autoplay]}
-          spaceBetween={12}
-          slidesPerView={1.08}
-          centeredSlides={true}
-          loop={true}
-          pagination={{
-            clickable: true,
-            el: '.swiper-pagination-mobile',
-            bulletClass: 'inline-block w-2 h-2 rounded-full bg-gray-300 mx-1 cursor-pointer transition-all',
-            bulletActiveClass: '!bg-ocean !w-5',
-          }}
-          autoplay={{
-            delay: 4000,
-            disableOnInteraction: false,
-          }}
-          className="hero-slider-mobile"
-        >
-          {displaySlides.map((slide, index) => (
-            <SwiperSlide key={slide.id}>
-              <Link href={slide.link || '#'} className="block">
-                <div className="relative w-full h-[160px] sm:h-[180px] rounded-xl overflow-hidden shadow-md">
-                  <Image
-                    src={slide.mobileImage}
-                    alt={slide.alt}
-                    fill
-                    className="object-cover"
-                    priority={index === 0}
-                    sizes="95vw"
-                  />
-                </div>
-              </Link>
-            </SwiperSlide>
-          ))}
-        </Swiper>
+        <div className="overflow-hidden" ref={mobileRef}>
+          <div className="flex gap-3">
+            {displaySlides.map((slide, index) => (
+              <div key={slide.id} className="flex-[0_0_92%] min-w-0">
+                <Link href={slide.link || '#'} className="block">
+                  <div className="relative w-full h-[160px] sm:h-[180px] rounded-xl overflow-hidden shadow-md">
+                    <Image
+                      src={slide.mobileImage}
+                      alt={slide.alt}
+                      fill
+                      className="object-cover"
+                      priority={index === 0}
+                      sizes="95vw"
+                    />
+                  </div>
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* Mobile Pagination Dots */}
-        <div className="swiper-pagination-mobile flex justify-center mt-3"></div>
+        <div className="flex justify-center mt-3 gap-1.5">
+          {displaySlides.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => scrollTo(index)}
+              className={`w-2 h-2 rounded-full transition-all ${index === selectedIndex
+                  ? 'bg-ocean w-5'
+                  : 'bg-gray-300'
+                }`}
+              aria-label={`رفتن به اسلاید ${index + 1}`}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

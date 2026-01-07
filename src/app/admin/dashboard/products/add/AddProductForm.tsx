@@ -49,7 +49,7 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
     const [selectedCategory, setSelectedCategory] = useState<string>('');
     const [nameLength, setNameLength] = useState(0);
     const [descLength, setDescLength] = useState(0);
-    const [imageFiles, setImageFiles] = useState<File[]>([]);
+    const [imageUrls, setImageUrls] = useState<string[]>([]);
     const [features, setFeatures] = useState<string[]>([]);
     const [specifications, setSpecifications] = useState<Record<string, string>>({});
 
@@ -67,22 +67,8 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
     const [sku, setSku] = useState(generateSKU());
 
     const handleSubmit = async (formData: FormData) => {
-        // Convert images to base64 if exist
-        if (imageFiles.length > 0) {
-            const imageDataArray: string[] = [];
-
-            for (const file of imageFiles) {
-                const reader = new FileReader();
-                const base64 = await new Promise<string>((resolve) => {
-                    reader.onloadend = () => resolve(reader.result as string);
-                    reader.readAsDataURL(file);
-                });
-                imageDataArray.push(base64);
-            }
-
-            formData.append('imagesData', JSON.stringify(imageDataArray));
-        }
-
+        // Images are now already uploaded to Cloudinary by MultiImageUpload
+        // The imagesData hidden field is automatically populated by the component
         return createProduct(formData);
     };
 
@@ -218,7 +204,7 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
                         </div>
                     </div>
 
-                    <MultiImageUpload onImagesChange={setImageFiles} maxImages={5} />
+                    <MultiImageUpload onImagesChange={setImageUrls} maxImages={5} />
 
                     {/* Features & Specifications */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">

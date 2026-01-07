@@ -264,6 +264,7 @@ const AmazingOfferCarousel = ({ offers }: AmazingOfferCarouselProps) => {
                           draggable="false"
                           loading="lazy"
                           className="object-contain rounded-lg group-hover:scale-105 transition-transform duration-300"
+                          sizes="(max-width: 640px) 50vw, 33vw"
                         />
                       </div>
 
@@ -384,6 +385,7 @@ const AmazingOfferCarousel = ({ offers }: AmazingOfferCarouselProps) => {
                           alt={product.title}
                           fill
                           className="object-contain group-hover:scale-105 transition-transform duration-300"
+                          sizes="(max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 16vw"
                         />
                       </div>
 

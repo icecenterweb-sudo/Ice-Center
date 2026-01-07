@@ -84,6 +84,7 @@ const CategorySection: React.FC<CategorySectionProps> = ({ categories }) => {
                             fill
                             draggable="false"
                             className="object-cover group-hover:scale-110 transition-transform duration-300"
+                            sizes="(max-width: 768px) 80px, 120px"
                           />
                         </div>
                       </div>
