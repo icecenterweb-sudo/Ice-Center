@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { connection } from 'next/server'
 import { prisma } from '@/lib/db'
 import { verifyUserToken, USER_TOKEN_COOKIE } from '@/lib/user-jwt'
 
 export async function GET(request: NextRequest) {
     try {
+        // Signal this is a dynamic route (prevents prerender warning)
+        await connection()
+
         // Get token from cookie
         const token = request.cookies.get(USER_TOKEN_COOKIE)?.value
 
@@ -69,6 +73,16 @@ export async function GET(request: NextRequest) {
         })
 
     } catch (error) {
+        // Handle prerender interruption gracefully (expected during build)
+        if (error instanceof Error &&
+            (error.message.includes('prerender') ||
+                (error as { digest?: string }).digest === 'NEXT_PRERENDER_INTERRUPTED')) {
+            return NextResponse.json(
+                { error: 'Authentication required' },
+                { status: 401 }
+            )
+        }
+
         console.error('Get user error:', error)
         return NextResponse.json(
             { error: 'خطای سرور' },

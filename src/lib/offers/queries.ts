@@ -6,6 +6,7 @@
  */
 
 import { prisma } from '@/lib/db';
+import { connection } from 'next/server';
 import { calculateEffectivePrice, isOfferActive, type OfferDiscount } from './pricing';
 
 /**
@@ -14,6 +15,8 @@ import { calculateEffectivePrice, isOfferActive, type OfferDiscount } from './pr
  * Each product becomes a separate carousel item
  */
 export async function getCarouselOffers(limit = 12) {
+    // Use connection() to opt out of prerendering for time-sensitive data
+    await connection();
     const now = new Date();
 
     const offers = await prisma.offer.findMany({

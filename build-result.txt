@@ -1,0 +1,130 @@
+﻿
+> ice-center@0.1.0 build
+> next build
+
+Γû▓ Next.js 16.1.1 (Turbopack, Cache Components)
+- Environments: .env.local, .env
+- Experiments (use with caution):
+  ┬╖ optimizePackageImports
+
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 52s
+  Running TypeScript ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/78) ...
+Γ£à Redis connected successfully
+Γ£à Redis connected successfully
+  Generating static pages using 7 workers (19/78) 
+  Generating static pages using 7 workers (38/78) 
+  Generating static pages using 7 workers (58/78) 
+Γ£ô Generating static pages using 7 workers (78/78) in 13.1s
+  Finalizing page optimization ...
+
+Route (app)                                              Revalidate  Expire
+Γöî Γùï /                                                            5m      1y
+Γö£ Γùï /_not-found
+Γö£ ΓùÉ /admin/dashboard
+Γö£ ΓùÉ /admin/dashboard/appearance
+Γö£ ΓùÉ /admin/dashboard/appearance/banners
+Γö£ ΓùÉ /admin/dashboard/appearance/banners/[id]/edit
+Γöé Γöö /admin/dashboard/appearance/banners/[id]/edit
+Γö£ ΓùÉ /admin/dashboard/appearance/banners/add
+Γö£ ΓùÉ /admin/dashboard/appearance/slides
+Γö£ ΓùÉ /admin/dashboard/appearance/slides/[id]/edit
+Γöé Γöö /admin/dashboard/appearance/slides/[id]/edit
+Γö£ ΓùÉ /admin/dashboard/appearance/slides/add
+Γö£ ΓùÉ /admin/dashboard/blog
+Γö£ ΓùÉ /admin/dashboard/blog/[id]/edit
+Γöé Γöö /admin/dashboard/blog/[id]/edit
+Γö£ ΓùÉ /admin/dashboard/blog/comments
+Γö£ ΓùÉ /admin/dashboard/blog/new
+Γö£ ΓùÉ /admin/dashboard/categories
+Γö£ ΓùÉ /admin/dashboard/categories/add
+Γö£ ΓùÉ /admin/dashboard/categories/edit/[id]
+Γöé Γöö /admin/dashboard/categories/edit/[id]
+Γö£ ΓùÉ /admin/dashboard/categories/subcategories/add
+Γö£ ΓùÉ /admin/dashboard/categories/subcategories/edit/[id]
+Γöé Γöö /admin/dashboard/categories/subcategories/edit/[id]
+Γö£ ΓùÉ /admin/dashboard/offers
+Γö£ ΓùÉ /admin/dashboard/offers/[id]/edit
+Γöé Γöö /admin/dashboard/offers/[id]/edit
+Γö£ ΓùÉ /admin/dashboard/offers/add
+Γö£ ΓùÉ /admin/dashboard/orders
+Γö£ ΓùÉ /admin/dashboard/products
+Γö£ ΓùÉ /admin/dashboard/products/[id]
+Γöé Γöö /admin/dashboard/products/[id]
+Γö£ ΓùÉ /admin/dashboard/products/[id]/edit
+Γöé Γöö /admin/dashboard/products/[id]/edit
+Γö£ ΓùÉ /admin/dashboard/products/add
+Γö£ ΓùÉ /admin/dashboard/users
+Γö£ Γùï /admin/login
+Γö£ Γùï /admin/products
+Γö£ ΓùÉ /admin/products/[id]
+Γöé Γöö /admin/products/[id]
+Γö£ Γùï /admin/products/new
+Γö£ ╞Æ /api/admin/auth/login
+Γö£ ╞Æ /api/admin/auth/logout
+Γö£ ╞Æ /api/admin/banners
+Γö£ ╞Æ /api/admin/banners/[id]
+Γö£ ╞Æ /api/admin/blog/comments/[id]
+Γö£ ╞Æ /api/auth/logout
+Γö£ ╞Æ /api/auth/me
+Γö£ ╞Æ /api/auth/send-otp
+Γö£ ╞Æ /api/auth/update-profile
+Γö£ ╞Æ /api/auth/verify-otp
+Γö£ ╞Æ /api/blog
+Γö£ ╞Æ /api/blog/[slug]
+Γö£ ╞Æ /api/blog/categories
+Γö£ ╞Æ /api/blog/comments
+Γö£ ╞Æ /api/blog/tags
+Γö£ ╞Æ /api/cart
+Γö£ ╞Æ /api/cart/add
+Γö£ ╞Æ /api/cart/remove
+Γö£ ╞Æ /api/cart/sync
+Γö£ ╞Æ /api/cart/update
+Γö£ ╞Æ /api/categories
+Γö£ ╞Æ /api/cron/sync-offers
+Γö£ ╞Æ /api/offers
+Γö£ ╞Æ /api/offers/[id]
+Γö£ ╞Æ /api/products
+Γö£ ╞Æ /api/products/[id]
+Γö£ ╞Æ /api/products/slug/[slug]
+Γö£ ╞Æ /api/search
+Γö£ ╞Æ /api/slides
+Γö£ ╞Æ /api/slides/[id]
+Γö£ ╞Æ /api/test
+Γö£ ╞Æ /api/upload
+Γö£ ╞Æ /api/user/addresses
+Γö£ ╞Æ /api/user/addresses/[id]
+Γö£ ╞Æ /api/user/addresses/[id]/default
+Γö£ Γùï /auth
+Γö£ ΓùÉ /blog
+Γö£ ΓùÉ /blog/[slug]
+Γöé Γöö /blog/[slug]
+Γö£ ΓùÉ /blog/category/[slug]
+Γöé Γöö /blog/category/[slug]
+Γö£ ΓùÉ /blog/tag/[slug]
+Γöé Γöö /blog/tag/[slug]
+Γö£ ΓùÉ /categories
+Γö£ ΓùÉ /categories/[slug]
+Γöé Γöö /categories/[slug]
+Γö£ Γùï /checkout
+Γö£ Γùï /products
+Γö£ ΓùÉ /products/[slug]
+Γöé Γöö /products/[slug]
+Γö£ Γùï /profile
+Γö£ Γùï /profile/addresses
+Γö£ Γùï /profile/discounts
+Γö£ Γùï /profile/edit
+Γö£ Γùï /profile/notifications
+Γö£ Γùï /profile/orders
+Γö£ Γùï /profile/wallet
+Γöö Γùï /profile/wishlist
+
+
+╞Æ Proxy (Middleware)
+
+Γùï  (Static)             prerendered as static content
+ΓùÉ  (Partial Prerender)  prerendered as static HTML with dynamic server-streamed content
+╞Æ  (Dynamic)            server-rendered on demand
+

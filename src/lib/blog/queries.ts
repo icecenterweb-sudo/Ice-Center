@@ -1,9 +1,11 @@
 import { prisma } from '@/lib/db';
+import { connection } from 'next/server';
 import type { Prisma } from '@prisma/client';
 import type { ListPostsQuery } from './validation';
 
 // Get published posts for public pages
 export async function getPublishedPosts(query: ListPostsQuery) {
+    await connection(); // Opt out of prerendering for time-sensitive data
     const { page, limit, categorySlug, tagSlug, search } = query;
     const skip = (page - 1) * limit;
 
@@ -58,6 +60,7 @@ export async function getPublishedPosts(query: ListPostsQuery) {
 
 // Get single post by slug (public)
 export async function getPublishedPostBySlug(slug: string) {
+    await connection(); // Opt out of prerendering for time-sensitive data
     return prisma.blogPost.findFirst({
         where: {
             slug,
@@ -174,6 +177,7 @@ export async function getBlogTagBySlug(slug: string) {
 
 // Get recent posts for homepage
 export async function getRecentPosts(limit = 5) {
+    await connection(); // Opt out of prerendering for time-sensitive data
     return prisma.blogPost.findMany({
         where: {
             status: 'PUBLISHED',

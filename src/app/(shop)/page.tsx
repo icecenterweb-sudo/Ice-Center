@@ -1,9 +1,25 @@
+// ============================================
+// HOMEPAGE - FULLY CACHED (5 min TTL)
+// ============================================
+// ❌ Do NOT import from lib/offers/queries.ts
+// ❌ Do NOT import from lib/blog/queries.ts  
+// ❌ Do NOT use connection(), cookies(), headers()
+// ❌ Do NOT use new Date() in UI layer
+// ✅ Only import from lib/cache/homepage.ts
+// ============================================
+
 import { Suspense } from 'react';
-import { prisma } from '@/lib/db';
-import { getRecentPosts } from '@/lib/blog/queries';
-import { getCarouselOffers } from '@/lib/offers';
-import { getSingleBanners, getDoubleBanners } from '@/lib/banners';
-import { connection } from 'next/server';
+
+// ✅ ONLY cached queries from isolated file
+import {
+  getCachedSlides,
+  getCachedCategories,
+  getCachedOffers,
+  getCachedCategoryProducts,
+  getCachedSingleBanners,
+  getCachedDoubleBanners,
+  getCachedBlogPosts,
+} from '@/lib/cache/homepage';
 
 // Components
 import HeroSlider from '@/components/home/HeroSlider';
@@ -24,196 +40,40 @@ import {
 } from '@/components/home/Skeletons';
 
 // ============================================
-// Data Fetching Functions
-// ============================================
-
-type DBProduct = {
-  id: number;
-  name: string;
-  slug: string;
-  price: number;
-  listPrice: number | null;
-  thumbnail: string | null;
-  hasActiveOffer?: boolean;
-  offerProducts?: Array<{
-    customDiscountValue: number | null;
-    offer: { discountType: string; discountValue: number };
-  }>;
-};
-
-function transformProducts(products: DBProduct[]) {
-  return products.map((p) => {
-    let effectivePrice = p.price;
-    let originalPrice = p.listPrice || p.price;
-    let hasDiscount = false;
-
-    const activeOffer = p.offerProducts?.[0]?.offer;
-    if (activeOffer) {
-      const discountValue = p.offerProducts![0].customDiscountValue ?? activeOffer.discountValue;
-      if (activeOffer.discountType === 'PERCENTAGE') {
-        effectivePrice = originalPrice * (1 - discountValue / 100);
-      } else {
-        effectivePrice = originalPrice - discountValue;
-      }
-      hasDiscount = true;
-    } else if (p.listPrice && p.listPrice > p.price) {
-      effectivePrice = p.price;
-      originalPrice = p.listPrice;
-      hasDiscount = true;
-    }
-
-    return {
-      id: p.id,
-      title: p.name,
-      image: p.thumbnail || 'https://via.placeholder.com/300x300?text=No+Image',
-      price: Math.round(effectivePrice),
-      oldPrice: hasDiscount ? originalPrice : undefined,
-      href: `/products/${p.slug}`,
-    };
-  });
-}
-
-// ============================================
-// Async Server Components (Each fetches own data)
+// Async Server Components (Use cached data)
 // ============================================
 
 async function HeroSection() {
-  await connection();
-  const slides = await prisma.slide.findMany({
-    where: { isActive: true },
-    include: {
-      product: { select: { id: true, slug: true } },
-      category: { select: { id: true, slug: true } },
-    },
-    orderBy: { order: 'asc' },
-  });
-
-  const formattedSlides = slides.map(slide => ({
-    id: slide.id,
-    desktopImage: slide.desktopImage,
-    mobileImage: slide.mobileImage,
-    alt: slide.alt,
-    link: slide.link ||
-      (slide.product ? `/products/${slide.product.slug}` : null) ||
-      (slide.category ? `/categories/${slide.category.slug}` : '#'),
-  }));
-
-  return <HeroSlider slides={formattedSlides} />;
+  const slides = await getCachedSlides();
+  return <HeroSlider slides={slides} />;
 }
 
 async function CategorySectionWrapper() {
-  await connection();
-  const categories = await prisma.category.findMany({
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      image: true,
-      subcategories: {
-        select: {
-          _count: { select: { products: true } }
-        }
-      }
-    },
-    orderBy: { name: 'asc' }
-  });
-
-  const formattedCategories = categories.map(category => ({
-    id: category.id,
-    name: category.name,
-    slug: category.slug,
-    image: category.image,
-    productCount: category.subcategories.reduce((sum, sub) => sum + sub._count.products, 0)
-  }));
-
-  return <CategorySection categories={formattedCategories} />;
+  const categories = await getCachedCategories();
+  return <CategorySection categories={categories} />;
 }
 
 async function OfferSectionWrapper() {
-  await connection();
-  const offerItems = await getCarouselOffers(12);
-  return <AmazingOfferCarousel offers={offerItems} />;
+  const offers = await getCachedOffers();
+  return <AmazingOfferCarousel offers={offers} />;
 }
 
 async function SingleBannerSection() {
-  await connection();
-  const singleBanners = await getSingleBanners();
+  const banners = await getCachedSingleBanners();
   return (
     <BannerSection
-      banners={singleBanners}
+      banners={banners}
       heightClass="aspect-[3/1] md:aspect-auto md:h-[250px] lg:h-[180px] xl:h-[210px]"
     />
   );
 }
 
 async function ProductCarouselsSection() {
-  await connection();
-  const now = new Date();
-
-  // Limit to 4 categories, 6 products each for better performance
-  const categories = await prisma.category.findMany({
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      subcategories: {
-        select: {
-          products: {
-            where: { isActive: true },
-            select: {
-              id: true,
-              name: true,
-              slug: true,
-              price: true,
-              listPrice: true,
-              thumbnail: true,
-              hasActiveOffer: true,
-              offerProducts: {
-                where: {
-                  offer: {
-                    isActive: true,
-                    startDate: { lte: now },
-                    endDate: { gt: now },
-                  }
-                },
-                select: {
-                  customDiscountValue: true,
-                  offer: {
-                    select: {
-                      discountType: true,
-                      discountValue: true,
-                    }
-                  }
-                },
-                take: 1
-              }
-            },
-            take: 6,  // Reduced from 12
-          },
-        }
-      }
-    },
-    orderBy: { name: 'asc' },
-    take: 4  // Limit categories
-  });
-
-  const categoriesWithProducts = categories
-    .map(category => {
-      const products = category.subcategories.flatMap(sub => sub.products);
-      return {
-        id: category.id,
-        name: category.name,
-        slug: category.slug,
-        products: transformProducts(products),
-      };
-    })
-    .filter(cat => cat.products.length > 0);
-
-  // Get first 12 products for "newest" carousel
-  const newestProducts = categoriesWithProducts.flatMap(cat => cat.products).slice(0, 12);
-
-  // Get double banners for between categories
-  const doubleBanners = await getDoubleBanners();
+  // Fetch cached data in parallel
+  const [{ categories, newestProducts }, doubleBanners] = await Promise.all([
+    getCachedCategoryProducts(),
+    getCachedDoubleBanners(),
+  ]);
 
   return (
     <>
@@ -225,7 +85,7 @@ async function ProductCarouselsSection() {
         />
       )}
 
-      {categoriesWithProducts.map((category, index) => (
+      {categories.map((category, index) => (
         <div key={category.id}>
           <ProductCarousel
             title={category.name}
@@ -246,9 +106,8 @@ async function ProductCarouselsSection() {
 }
 
 async function BlogSectionWrapper() {
-  await connection();
-  const blogPosts = await getRecentPosts(6);
-  return <BlogCarousel posts={blogPosts} />;
+  const posts = await getCachedBlogPosts(6);
+  return <BlogCarousel posts={posts} />;
 }
 
 // ============================================
@@ -258,22 +117,22 @@ async function BlogSectionWrapper() {
 export default function Home() {
   return (
     <>
-      {/* Hero: Loads immediately as it's lightweight */}
+      {/* Hero: Lightweight, quick load */}
       <Suspense fallback={<HeroSkeleton />}>
         <HeroSection />
       </Suspense>
 
-      {/* Categories: Quick loader, small data */}
+      {/* Categories: Small data */}
       <Suspense fallback={<CategorySkeleton />}>
         <CategorySectionWrapper />
       </Suspense>
 
-      {/* Offers: May take a bit due to offer logic */}
+      {/* Offers: Featured deals */}
       <Suspense fallback={<OfferSkeleton />}>
         <OfferSectionWrapper />
       </Suspense>
 
-      {/* Products: The heaviest section - streams independently */}
+      {/* Products: Heaviest section - streams independently */}
       <Suspense fallback={
         <>
           <ProductCarouselSkeleton />
