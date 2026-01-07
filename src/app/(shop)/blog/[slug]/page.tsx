@@ -7,6 +7,7 @@ import BlockRenderer from '@/components/blog/BlockRenderer';
 import BlogCommentSection from '@/components/blog/BlogCommentSection';
 import { getPublishedPostBySlug, getRecentPosts } from '@/lib/blog/queries';
 import type { BlogContent } from '@/lib/blog/validation';
+import { connection } from 'next/server';
 
 interface Props {
     params: Promise<{ slug: string }>;
@@ -14,6 +15,7 @@ interface Props {
 
 // Generate metadata for SEO
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+    await connection();
     const { slug } = await params;
     const post = await getPublishedPostBySlug(slug);
 
@@ -37,7 +39,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
 }
 
-export default async function BlogPostPage({ params }: Props) {
+import { Suspense } from 'react';
+
+async function BlogPostContent({ params }: Props) {
+    await connection();
     const { slug } = await params;
     const [post, recentPosts] = await Promise.all([
         getPublishedPostBySlug(slug),
@@ -193,5 +198,13 @@ export default async function BlogPostPage({ params }: Props) {
                 </aside>
             </div>
         </div>
+    );
+}
+
+export default function BlogPostPage(props: Props) {
+    return (
+        <Suspense fallback={<div className="p-8 text-center text-gray-500">در حال بارگذاری مقاله...</div>}>
+            <BlogPostContent {...props} />
+        </Suspense>
     );
 }

@@ -6,6 +6,9 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { ArrowRight, Save, Eye, Loader2 } from 'lucide-react';
 import BlogImageUpload from '@/components/admin/BlogImageUpload';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 
 // Dynamically import BlogEditor with SSR disabled to prevent hydration issues
 const BlogEditor = dynamic(() => import('@/components/blog/BlogEditor'), {
@@ -35,29 +38,56 @@ interface NewPostFormProps {
     tags: BlogTag[];
 }
 
+// Validation schema
+const postSchema = z.object({
+    title: z.string().min(1, 'عنوان الزامی است').max(200),
+    slug: z.string().min(1, 'اسلاگ الزامی است').regex(/^[a-z0-9-]+$/, 'اسلاگ فقط شامل حروف کوچک انگلیسی، اعداد و خط تیره'),
+    summary: z.string().max(160).optional(),
+    coverImage: z.string().optional(),
+    thumbnail: z.string().optional(),
+    seoTitle: z.string().max(60).optional(),
+    seoDescription: z.string().max(160).optional(),
+    keywords: z.string().optional(),
+    status: z.enum(['DRAFT', 'PUBLISHED', 'SCHEDULED']),
+    categoryId: z.string().optional(),
+    tagIds: z.array(z.number()),
+});
+
+type PostFormData = z.infer<typeof postSchema>;
+
 export default function NewPostForm({ categories, tags }: NewPostFormProps) {
     const router = useRouter();
-    const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-    const [formData, setFormData] = useState({
-        title: '',
-        slug: '',
-        summary: '',
-        coverImage: '',
-        thumbnail: '',
-        seoTitle: '',
-        seoDescription: '',
-        keywords: '',
-        status: 'DRAFT' as 'DRAFT' | 'PUBLISHED' | 'SCHEDULED',
-        categoryId: '',
-        tagIds: [] as number[],
-    });
-
     const [content, setContent] = useState<object>({
         type: 'doc',
         content: [{ type: 'paragraph' }],
     });
+
+    const {
+        register,
+        handleSubmit,
+        control,
+        watch,
+        setValue,
+        formState: { errors, isSubmitting },
+    } = useForm<PostFormData>({
+        resolver: zodResolver(postSchema),
+        defaultValues: {
+            title: '',
+            slug: '',
+            summary: '',
+            coverImage: '',
+            thumbnail: '',
+            seoTitle: '',
+            seoDescription: '',
+            keywords: '',
+            status: 'DRAFT',
+            categoryId: '',
+            tagIds: [],
+        },
+    });
+
+    const formValues = watch();
 
     // Auto-generate slug from title
     const generateSlug = (title: string) => {
@@ -71,32 +101,29 @@ export default function NewPostForm({ categories, tags }: NewPostFormProps) {
 
     const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const title = e.target.value;
-        setFormData({
-            ...formData,
-            title,
-            slug: formData.slug || generateSlug(title),
-        });
+        setValue('title', title);
+        if (!formValues.slug) {
+            setValue('slug', generateSlug(title));
+        }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
+    const onSubmit = async (data: PostFormData) => {
         setError(null);
 
         try {
             const payload = {
-                ...formData,
+                ...data,
                 content,
-                keywords: formData.keywords
-                    .split(',')
+                keywords: data.keywords
+                    ?.split(',')
                     .map((k) => k.trim())
-                    .filter(Boolean),
-                categoryId: formData.categoryId ? parseInt(formData.categoryId) : null,
-                summary: formData.summary.trim() || null,
-                coverImage: formData.coverImage.trim() || null,
-                thumbnail: formData.thumbnail.trim() || null,
-                seoTitle: formData.seoTitle.trim() || null,
-                seoDescription: formData.seoDescription.trim() || null,
+                    .filter(Boolean) || [],
+                categoryId: data.categoryId ? parseInt(data.categoryId) : null,
+                summary: data.summary?.trim() || null,
+                coverImage: data.coverImage?.trim() || null,
+                thumbnail: data.thumbnail?.trim() || null,
+                seoTitle: data.seoTitle?.trim() || null,
+                seoDescription: data.seoDescription?.trim() || null,
             };
 
             const response = await fetch('/api/blog', {
@@ -106,21 +133,19 @@ export default function NewPostForm({ categories, tags }: NewPostFormProps) {
             });
 
             if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.error || 'خطا در ایجاد پست');
+                const result = await response.json();
+                throw new Error(result.error || 'خطا در ایجاد پست');
             }
 
             router.push('/admin/dashboard/blog');
             router.refresh();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'خطای ناشناخته');
-        } finally {
-            setLoading(false);
         }
     };
 
     return (
-        <form onSubmit={handleSubmit} className="p-6 space-y-6" dir="rtl">
+        <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6" dir="rtl">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -146,10 +171,10 @@ export default function NewPostForm({ categories, tags }: NewPostFormProps) {
                     </button>
                     <button
                         type="submit"
-                        disabled={loading}
+                        disabled={isSubmitting}
                         className="flex items-center gap-2 bg-gradient-to-l from-ocean to-sky-breeze text-white px-4 py-2 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
                     >
-                        {loading ? (
+                        {isSubmitting ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
                             <Save className="w-4 h-4" />
@@ -175,12 +200,14 @@ export default function NewPostForm({ categories, tags }: NewPostFormProps) {
                         </label>
                         <input
                             type="text"
-                            value={formData.title}
+                            {...register('title')}
                             onChange={handleTitleChange}
-                            required
                             className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ocean focus:border-transparent text-gray-900 bg-white"
                             placeholder="عنوان پست را وارد کنید..."
                         />
+                        {errors.title && (
+                            <p className="text-xs text-red-500 mt-1">{errors.title.message}</p>
+                        )}
                     </div>
 
                     {/* Slug */}
@@ -192,15 +219,14 @@ export default function NewPostForm({ categories, tags }: NewPostFormProps) {
                             <span className="text-gray-500 text-sm">/blog/</span>
                             <input
                                 type="text"
-                                value={formData.slug}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, slug: e.target.value })
-                                }
-                                required
+                                {...register('slug')}
                                 className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ocean focus:border-transparent text-gray-900 bg-white"
                                 placeholder="slug-example"
                             />
                         </div>
+                        {errors.slug && (
+                            <p className="text-xs text-red-500 mt-1">{errors.slug.message}</p>
+                        )}
                     </div>
 
                     {/* Content Editor */}
@@ -217,16 +243,14 @@ export default function NewPostForm({ categories, tags }: NewPostFormProps) {
                             خلاصه (حداکثر ۱۶۰ کاراکتر)
                         </label>
                         <textarea
-                            value={formData.summary}
-                            onChange={(e) =>
-                                setFormData({ ...formData, summary: e.target.value.slice(0, 160) })
-                            }
+                            {...register('summary')}
                             rows={3}
+                            maxLength={160}
                             className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ocean focus:border-transparent resize-none text-gray-900 bg-white"
                             placeholder="یک خلاصه کوتاه برای پست..."
                         />
                         <div className="text-xs text-gray-400 mt-1 text-left">
-                            {formData.summary.length}/160
+                            {(formValues.summary?.length || 0)}/160
                         </div>
                     </div>
                 </div>
@@ -239,13 +263,7 @@ export default function NewPostForm({ categories, tags }: NewPostFormProps) {
                             وضعیت انتشار
                         </label>
                         <select
-                            value={formData.status}
-                            onChange={(e) =>
-                                setFormData({
-                                    ...formData,
-                                    status: e.target.value as 'DRAFT' | 'PUBLISHED' | 'SCHEDULED',
-                                })
-                            }
+                            {...register('status')}
                             className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ocean focus:border-transparent text-gray-900 bg-white"
                         >
                             <option value="DRAFT">پیش‌نویس</option>
@@ -260,10 +278,7 @@ export default function NewPostForm({ categories, tags }: NewPostFormProps) {
                             دسته‌بندی
                         </label>
                         <select
-                            value={formData.categoryId}
-                            onChange={(e) =>
-                                setFormData({ ...formData, categoryId: e.target.value })
-                            }
+                            {...register('categoryId')}
                             className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ocean focus:border-transparent text-gray-900 bg-white"
                         >
                             <option value="">بدون دسته‌بندی</option>
@@ -284,25 +299,19 @@ export default function NewPostForm({ categories, tags }: NewPostFormProps) {
                             {tags.map((tag) => (
                                 <label
                                     key={tag.id}
-                                    className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm cursor-pointer transition-colors ${formData.tagIds.includes(tag.id)
+                                    className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm cursor-pointer transition-colors ${formValues.tagIds.includes(tag.id)
                                         ? 'bg-ocean text-white'
                                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                         }`}
                                 >
                                     <input
                                         type="checkbox"
-                                        checked={formData.tagIds.includes(tag.id)}
+                                        checked={formValues.tagIds.includes(tag.id)}
                                         onChange={(e) => {
                                             if (e.target.checked) {
-                                                setFormData({
-                                                    ...formData,
-                                                    tagIds: [...formData.tagIds, tag.id],
-                                                });
+                                                setValue('tagIds', [...formValues.tagIds, tag.id]);
                                             } else {
-                                                setFormData({
-                                                    ...formData,
-                                                    tagIds: formData.tagIds.filter((id) => id !== tag.id),
-                                                });
+                                                setValue('tagIds', formValues.tagIds.filter((id) => id !== tag.id));
                                             }
                                         }}
                                         className="sr-only"
@@ -317,8 +326,8 @@ export default function NewPostForm({ categories, tags }: NewPostFormProps) {
                     <BlogImageUpload
                         label="تصویر کاور (برای صفحه پست)"
                         hint="تصویر بزرگ برای نمایش در صفحه پست (پیشنهاد: 1200×630)"
-                        value={formData.coverImage}
-                        onChange={(url) => setFormData({ ...formData, coverImage: url })}
+                        value={formValues.coverImage || ''}
+                        onChange={(url) => setValue('coverImage', url)}
                         aspectRatio="video"
                     />
 
@@ -326,8 +335,8 @@ export default function NewPostForm({ categories, tags }: NewPostFormProps) {
                     <BlogImageUpload
                         label="تصویر بندانگشتی (برای لیست‌ها)"
                         hint="تصویر کوچک برای کاروسل و لیست‌ها (پیشنهاد: 400×300)"
-                        value={formData.thumbnail}
-                        onChange={(url) => setFormData({ ...formData, thumbnail: url })}
+                        value={formValues.thumbnail || ''}
+                        onChange={(url) => setValue('thumbnail', url)}
                         aspectRatio="thumbnail"
                     />
 
@@ -341,13 +350,8 @@ export default function NewPostForm({ categories, tags }: NewPostFormProps) {
                             </label>
                             <input
                                 type="text"
-                                value={formData.seoTitle}
-                                onChange={(e) =>
-                                    setFormData({
-                                        ...formData,
-                                        seoTitle: e.target.value.slice(0, 60),
-                                    })
-                                }
+                                {...register('seoTitle')}
+                                maxLength={60}
                                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ocean text-gray-900 bg-white"
                                 placeholder="عنوان برای موتورهای جستجو..."
                             />
@@ -358,13 +362,8 @@ export default function NewPostForm({ categories, tags }: NewPostFormProps) {
                                 توضیحات سئو (۱۶۰ کاراکتر)
                             </label>
                             <textarea
-                                value={formData.seoDescription}
-                                onChange={(e) =>
-                                    setFormData({
-                                        ...formData,
-                                        seoDescription: e.target.value.slice(0, 160),
-                                    })
-                                }
+                                {...register('seoDescription')}
+                                maxLength={160}
                                 rows={2}
                                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ocean resize-none text-gray-900 bg-white"
                                 placeholder="توضیحات برای موتورهای جستجو..."
@@ -377,10 +376,7 @@ export default function NewPostForm({ categories, tags }: NewPostFormProps) {
                             </label>
                             <input
                                 type="text"
-                                value={formData.keywords}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, keywords: e.target.value })
-                                }
+                                {...register('keywords')}
                                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ocean text-gray-900 bg-white"
                                 placeholder="کلمه۱, کلمه۲, کلمه۳"
                             />

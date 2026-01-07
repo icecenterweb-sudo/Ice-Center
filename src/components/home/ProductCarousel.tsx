@@ -193,7 +193,7 @@ const ProductCarousel: React.FC<ProductCarouselProps> = ({
             </Link>
           </div>
 
-        {/* Carousel */}
+          {/* Carousel */}
           <div className="relative">
             <div className="overflow-hidden" ref={emblaRef}>
               <div className="flex touch-pan-y">
@@ -203,14 +203,7 @@ const ProductCarousel: React.FC<ProductCarouselProps> = ({
                   return (
                     <div
                       key={product.id}
-                      className="
-                      relative flex-shrink-0 min-w-0
-                      flex-[0_0_46%]
-                      md:flex-[0_0_28.57%]
-                      lg:flex-[0_0_25%]
-                      xl:flex-[0_0_20%]
-                      2xl:flex-[0_0_16.666%]
-                    "
+                      className="relative flex-shrink-0 min-w-0 flex-[0_0_46%] md:flex-[0_0_28.57%] lg:flex-[0_0_25%] xl:flex-[0_0_20%] 2xl:flex-[0_0_16.666%]"
                     >
                       {/* Vertical Divider */}
                       {index !== products.length - 1 && (

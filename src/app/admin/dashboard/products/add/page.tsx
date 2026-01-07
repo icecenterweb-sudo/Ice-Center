@@ -1,7 +1,10 @@
 import { prisma } from '@/lib/db';
 import AddProductForm from './AddProductForm';
+import { connection } from 'next/server';
+import { Suspense } from 'react';
 
-export default async function AddProductPage() {
+async function AddProductContent() {
+    await connection();
     // Fetch subcategories with their categories
     const subcategories = await prisma.subcategory.findMany({
         include: {
@@ -15,4 +18,12 @@ export default async function AddProductPage() {
     });
 
     return <AddProductForm subcategories={subcategories} />;
+}
+
+export default function AddProductPage() {
+    return (
+        <Suspense fallback={<div className="p-8 text-center text-gray-500">در حال بارگذاری...</div>}>
+            <AddProductContent />
+        </Suspense>
+    );
 }

@@ -5,7 +5,7 @@
  * POST - Create new slide (admin)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from 'next/server';
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
 
@@ -27,6 +27,7 @@ const createSlideSchema = z.object({
  * Fetch active slides for homepage carousel
  */
 export async function GET(request: NextRequest) {
+    await connection(); // Required for request.url with cacheComponents
     try {
         const { searchParams } = new URL(request.url);
         const all = searchParams.get('all') === 'true'; // For admin: get all slides

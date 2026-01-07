@@ -67,73 +67,76 @@ interface VerifyOtpResult {
 /**
  * Verify an OTP code for a phone number
  * Creates or updates user on successful verification
+ * USES TRANSACTION to prevent race conditions
  */
 export async function verifyOtp(phone: string, code: string): Promise<VerifyOtpResult> {
-    // Find the latest unexpired, unverified OTP request for this phone
-    const otpRequest = await prisma.otpRequest.findFirst({
-        where: {
-            phone,
-            verified: false,
-            expiresAt: { gt: new Date() },
-        },
-        orderBy: { createdAt: 'desc' },
-    })
-
-    if (!otpRequest) {
-        return { valid: false, error: 'کد تأیید منقضی شده یا یافت نشد' }
-    }
-
-    // Check max attempts
-    if (otpRequest.attempts >= MAX_ATTEMPTS) {
-        return { valid: false, error: 'تعداد تلاش‌های مجاز تمام شده است' }
-    }
-
-    // Check if code matches
-    if (otpRequest.code !== code) {
-        // Increment attempts
-        await prisma.otpRequest.update({
-            where: { id: otpRequest.id },
-            data: { attempts: otpRequest.attempts + 1 },
+    // Use transaction to prevent race conditions
+    return prisma.$transaction(async (tx) => {
+        // Find the latest unexpired, unverified OTP request for this phone
+        const otpRequest = await tx.otpRequest.findFirst({
+            where: {
+                phone,
+                verified: false,
+                expiresAt: { gt: new Date() },
+            },
+            orderBy: { createdAt: 'desc' },
         })
 
-        const remainingAttempts = MAX_ATTEMPTS - otpRequest.attempts - 1
-        return {
-            valid: false,
-            error: `کد تأیید اشتباه است. ${remainingAttempts} تلاش باقی‌مانده`
+        if (!otpRequest) {
+            return { valid: false, error: 'کد تأیید منقضی شده یا یافت نشد' }
         }
-    }
 
-    // Mark OTP as verified
-    await prisma.otpRequest.update({
-        where: { id: otpRequest.id },
-        data: { verified: true },
-    })
+        // Check max attempts
+        if (otpRequest.attempts >= MAX_ATTEMPTS) {
+            return { valid: false, error: 'تعداد تلاش‌های مجاز تمام شده است' }
+        }
 
-    // Find or create user
-    let user = await prisma.user.findUnique({ where: { phone } })
-    let isNewUser = false
+        // Check if code matches
+        if (otpRequest.code !== code) {
+            // Increment attempts within transaction
+            await tx.otpRequest.update({
+                where: { id: otpRequest.id },
+                data: { attempts: otpRequest.attempts + 1 },
+            })
 
-    if (!user) {
-        user = await prisma.user.create({
-            data: {
+            const remainingAttempts = MAX_ATTEMPTS - otpRequest.attempts - 1
+            return {
+                valid: false,
+                error: `کد تأیید اشتباه است. ${remainingAttempts} تلاش باقی‌مانده`
+            }
+        }
+
+        // Mark OTP as verified within transaction
+        await tx.otpRequest.update({
+            where: { id: otpRequest.id },
+            data: { verified: true },
+        })
+
+        // Use upsert to prevent race condition on user creation
+        const user = await tx.user.upsert({
+            where: { phone },
+            update: { isVerified: true },
+            create: {
                 phone,
-                isVerified: true,
+                isVerified: true
             },
         })
-        isNewUser = true
-    } else if (!user.isVerified) {
-        // Mark existing user as verified
-        user = await prisma.user.update({
-            where: { id: user.id },
-            data: { isVerified: true },
-        })
-    }
 
-    return {
-        valid: true,
-        userId: user.id,
-        isNewUser,
-    }
+        // Check if this was a new user by comparing createdAt with updatedAt
+        // If they're very close (within 1 second), it's a new user
+        const isNewUser = Math.abs(user.createdAt.getTime() - user.updatedAt.getTime()) < 1000
+
+        return {
+            valid: true,
+            userId: user.id,
+            isNewUser,
+        }
+    }, {
+        // Set isolation level for stronger consistency
+        isolationLevel: 'Serializable',
+        maxWait: 5000, // 5 seconds max wait for transaction lock
+        timeout: 10000, // 10 seconds timeout for entire transaction
+    })
 }
 
 /**

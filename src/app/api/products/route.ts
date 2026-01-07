@@ -1,17 +1,70 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from 'next/server';
 import prisma from '@/lib/db';
 import { getProductsCached, invalidateProductsCache } from '@/lib/cache/products';
+import { cookies } from 'next/headers';
+import { verifyAdminToken } from '@/lib/jwt';
+import { z } from 'zod';
+import { checkRateLimit, getClientIp, RATE_LIMITS } from '@/lib/rate-limiter';
 
-export const runtime = 'nodejs';
+// Pagination constraints
+const MAX_LIMIT = 50;
+const DEFAULT_LIMIT = 20;
+const MIN_PAGE = 1;
+
+// Validation schema for product creation
+const productSchema = z.object({
+  name: z.string().min(1, 'نام محصول الزامی است').max(200),
+  slug: z.string().min(1).max(200),
+  sku: z.string().optional().nullable(),
+  description: z.string().optional().nullable(),
+  brand: z.string().optional().nullable(),
+  model: z.string().optional().nullable(),
+  price: z.number().positive('قیمت باید مثبت باشد'),
+  listPrice: z.number().positive().optional().nullable(),
+  stock: z.number().int().min(0).default(0),
+  isActive: z.boolean().default(true),
+  featured: z.boolean().default(false),
+  subcategoryId: z.number().int().optional().nullable(),
+  images: z.array(z.string()).default([]),
+  thumbnail: z.string().optional().nullable(),
+  tags: z.array(z.string()).default([]),
+  features: z.array(z.string()).default([]),
+  warranty: z.string().optional().nullable(),
+  metaTitle: z.string().optional().nullable(),
+  metaDescription: z.string().optional().nullable(),
+}).passthrough();
 
 // GET - دریافت محصولات با کشینگ، صفحه‌بندی و جستجو
 export async function GET(request: NextRequest) {
+  await connection(); // Required for request.url with cacheComponents
   try {
-    // Parse query parameters
+    // Rate limiting for unauthenticated list requests
+    const clientIp = getClientIp(request);
+    const rateLimit = checkRateLimit(`products:list:${clientIp}`, RATE_LIMITS.normal);
+
+    if (!rateLimit.allowed) {
+      return NextResponse.json({
+        success: false,
+        message: `تعداد درخواست زیاد است. ${rateLimit.resetIn} ثانیه صبر کنید.`
+      }, {
+        status: 429,
+        headers: {
+          'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+          'X-RateLimit-Reset': rateLimit.resetIn.toString(),
+        }
+      });
+    }
+
+    // Parse and validate query parameters
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const limit = parseInt(searchParams.get('limit') || '20', 10);
+    let page = parseInt(searchParams.get('page') || '1', 10);
+    let limit = parseInt(searchParams.get('limit') || String(DEFAULT_LIMIT), 10);
     const search = searchParams.get('search') || undefined;
+
+    // Enforce pagination constraints
+    if (isNaN(page) || page < MIN_PAGE) page = MIN_PAGE;
+    if (isNaN(limit) || limit < 1) limit = DEFAULT_LIMIT;
+    if (limit > MAX_LIMIT) limit = MAX_LIMIT;
 
     // Get products with caching
     const { products, total, fromCache } = await getProductsCached({
@@ -39,6 +92,10 @@ export async function GET(request: NextRequest) {
       meta: {
         fromCache,
       },
+    }, {
+      headers: {
+        'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+      }
     });
   } catch (error) {
     console.error('خطا در دریافت محصولات:', error);
@@ -49,13 +106,44 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - ساخت محصول جدید
+// POST - ساخت محصول جدید (Admin only)
 export async function POST(request: NextRequest) {
   try {
+    // CRITICAL: Verify admin authentication
+    const cookieStore = await cookies();
+    const token = cookieStore.get('admin_token')?.value;
+
+    if (!token) {
+      return NextResponse.json({
+        success: false,
+        message: 'احراز هویت الزامی است'
+      }, { status: 401 });
+    }
+
+    const payload = await verifyAdminToken(token);
+    if (!payload) {
+      return NextResponse.json({
+        success: false,
+        message: 'توکن نامعتبر است'
+      }, { status: 401 });
+    }
+
+    // Validate input with zod schema
     const body = await request.json();
+    const validationResult = productSchema.safeParse(body);
+
+    if (!validationResult.success) {
+      return NextResponse.json({
+        success: false,
+        message: 'اطلاعات ورودی نامعتبر است',
+        errors: validationResult.error.flatten().fieldErrors
+      }, { status: 400 });
+    }
+
+    const validatedData = validationResult.data;
 
     const product = await prisma.product.create({
-      data: body
+      data: validatedData
     });
 
     // Invalidate products cache after creating new product

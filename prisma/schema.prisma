@@ -69,6 +69,7 @@ model Product {
   @@index([isActive])
   @@index([featured])
   @@index([hasActiveOffer])
+  @@index([isActive, createdAt])  // Composite index for list queries with ordering
 }
 
 model ProductVariant {

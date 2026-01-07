@@ -6,15 +6,15 @@ const Footer: React.FC = () => {
   return (
     <footer className="bg-gray-900 text-gray-300 mt-20">
       <div className="max-w-[1600px] mx-auto px-4 py-12">
-        
+
         {/* بخش اصلی */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-          
+
           {/* درباره ما */}
           <div>
             <h3 className="text-white font-bold text-lg mb-4">آیس سنتر</h3>
             <p className="text-sm leading-7">
-              فروشگاه تخصصی تجهیزات صنعتی بستنی، یخ‌سازی و سرمایش. 
+              فروشگاه تخصصی تجهیزات صنعتی بستنی، یخ‌سازی و سرمایش.
               ارائه دستگاه‌های با کیفیت با گارانتی معتبر.
             </p>
           </div>
@@ -58,14 +58,14 @@ const Footer: React.FC = () => {
                 <span>تهران، خیابان ولیعصر، پلاک 123</span>
               </li>
             </ul>
-            
+
             {/* شبکه‌های اجتماعی */}
             <div className="flex gap-3 mt-4">
-              <a href="#" className="w-9 h-9 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-blue-600 transition">
-                <Instagram size={18} />
+              <a href="#" aria-label="اینستاگرام" className="w-9 h-9 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-blue-600 transition">
+                <Instagram size={18} aria-hidden="true" />
               </a>
-              <a href="#" className="w-9 h-9 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-blue-600 transition">
-                <Send size={18} />
+              <a href="#" aria-label="تلگرام" className="w-9 h-9 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-blue-600 transition">
+                <Send size={18} aria-hidden="true" />
               </a>
             </div>
           </div>

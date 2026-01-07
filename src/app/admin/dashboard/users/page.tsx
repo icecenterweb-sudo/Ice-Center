@@ -1,9 +1,10 @@
 import { Users, Search, Phone, Calendar, ShieldCheck, ShieldX } from 'lucide-react';
 import { prisma } from '@/lib/db';
-
-export const dynamic = 'force-dynamic';
+import { connection } from 'next/server';
+import { Suspense } from 'react';
 
 async function getUsers() {
+    await connection(); // Opt out of caching
     return prisma.user.findMany({
         include: {
             _count: {
@@ -17,7 +18,7 @@ async function getUsers() {
     });
 }
 
-export default async function UsersPage() {
+async function UsersContent() {
     const users = await getUsers();
 
     const formatDate = (date: Date) => {
@@ -203,5 +204,13 @@ export default async function UsersPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function UsersPage() {
+    return (
+        <Suspense fallback={<div className="p-8 text-center text-gray-500">در حال بارگذاری کاربران...</div>}>
+            <UsersContent />
+        </Suspense>
     );
 }

@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import BlogCard from '@/components/blog/BlogCard';
 import { getPublishedPosts, getBlogCategoryBySlug, getBlogCategories } from '@/lib/blog/queries';
+import { connection } from 'next/server';
+import { Suspense } from 'react';
 
 interface BlogCategory {
     id: number;
@@ -30,6 +32,7 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+    await connection();
     const { slug } = await params;
     const category = await getBlogCategoryBySlug(slug);
 
@@ -43,7 +46,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
 }
 
-export default async function BlogCategoryPage({ params, searchParams }: Props) {
+async function BlogCategoryContent({ params, searchParams }: Props) {
+    await connection();
     const { slug } = await params;
     const search = await searchParams;
     const page = parseInt(search.page || '1', 10);
@@ -145,5 +149,13 @@ export default async function BlogCategoryPage({ params, searchParams }: Props) 
                 </div>
             )}
         </div>
+    );
+}
+
+export default function BlogCategoryPage(props: Props) {
+    return (
+        <Suspense fallback={<div className="p-8 text-center text-gray-500">در حال بارگذاری...</div>}>
+            <BlogCategoryContent {...props} />
+        </Suspense>
     );
 }

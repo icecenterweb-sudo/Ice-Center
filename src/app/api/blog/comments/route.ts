@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from 'next/server';
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
 
@@ -13,6 +13,7 @@ const createCommentSchema = z.object({
 
 // GET - Fetch approved comments for a post
 export async function GET(request: NextRequest) {
+    await connection(); // Required for request.url with cacheComponents
     const { searchParams } = new URL(request.url);
     const postId = searchParams.get('postId');
 

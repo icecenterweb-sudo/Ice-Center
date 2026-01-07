@@ -33,7 +33,7 @@ const BannerSection: React.FC<BannerSectionProps> = ({
   }[Math.min(columns, 3)] || 'md:grid-cols-2';
 
   return (
-    <section className="w-full bg-white py-6 md:py-8">
+    <section className="w-full py-6 md:py-8">
       <div className="max-w-[1600px] mx-auto px-4">
 
         <div className={`grid grid-cols-1 ${gridClass} gap-4`}>
@@ -41,13 +41,14 @@ const BannerSection: React.FC<BannerSectionProps> = ({
             <Link
               key={banner.id}
               href={banner.link}
+              aria-label={banner.alt}
               className="group block overflow-hidden rounded-xl shadow-sm hover:shadow-md transition-all duration-300"
             >
               {/* تصویر موبایل */}
               <div className={`md:hidden relative w-full ${heightClass}`}>
                 <Image
                   src={banner.mobileImage}
-                  alt={banner.alt}
+                  alt=""
                   fill
                   className="object-contain group-hover:scale-105 transition-transform duration-500"
                   sizes="100vw"
@@ -58,7 +59,7 @@ const BannerSection: React.FC<BannerSectionProps> = ({
               <div className={`hidden md:block relative w-full ${heightClass}`}>
                 <Image
                   src={banner.desktopImage}
-                  alt={banner.alt}
+                  alt=""
                   fill
                   className="object-fit group-hover:scale-105 transition-transform duration-500"
                   sizes="100vw"

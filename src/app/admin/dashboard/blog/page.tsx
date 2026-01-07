@@ -1,8 +1,11 @@
 import Link from 'next/link';
 import { Plus, Edit, Trash2, Eye, MessageCircle } from 'lucide-react';
 import { prisma } from '@/lib/db';
+import { connection } from 'next/server';
+import { Suspense } from 'react';
 
 async function getBlogPosts() {
+    await connection();
     return prisma.blogPost.findMany({
         include: {
             category: { select: { id: true, name: true } },
@@ -13,10 +16,11 @@ async function getBlogPosts() {
 }
 
 async function getPendingCommentsCount() {
+    await connection();
     return prisma.blogComment.count({ where: { status: 'PENDING' } });
 }
 
-export default async function AdminBlogPage() {
+async function BlogContent() {
     const [posts, pendingComments] = await Promise.all([getBlogPosts(), getPendingCommentsCount()]);
 
     const getStatusBadge = (status: string) => {
@@ -201,5 +205,13 @@ export default async function AdminBlogPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function AdminBlogPage() {
+    return (
+        <Suspense fallback={<div className="p-8 text-center text-gray-500">در حال بارگذاری اطلاعات بلاگ...</div>}>
+            <BlogContent />
+        </Suspense>
     );
 }

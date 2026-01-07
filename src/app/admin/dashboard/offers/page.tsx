@@ -3,8 +3,8 @@ import { Tag, Plus, Clock, Calendar, CheckCircle, XCircle, AlertCircle } from 'l
 import { prisma } from '@/lib/db';
 import { formatPersianNumber } from '@/utils/persian';
 import DeleteOfferButton from './DeleteOfferButton';
-
-export const dynamic = 'force-dynamic';
+import { connection } from 'next/server';
+import { Suspense } from 'react';
 
 // Helper to get offer status
 function getOfferStatus(offer: { isActive: boolean; startDate: Date; endDate: Date }) {
@@ -16,7 +16,9 @@ function getOfferStatus(offer: { isActive: boolean; startDate: Date; endDate: Da
     return { label: 'فعال', color: 'bg-green-100 text-green-700', icon: CheckCircle };
 }
 
-export default async function OffersPage() {
+async function OffersContent() {
+    await connection(); // Opt out of caching for this page
+
     const offers = await prisma.offer.findMany({
         include: {
             products: {
@@ -242,5 +244,13 @@ export default async function OffersPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function OffersPage() {
+    return (
+        <Suspense fallback={<div className="p-8 text-center text-gray-500">در حال بارگذاری پیشنهادها...</div>}>
+            <OffersContent />
+        </Suspense>
     );
 }

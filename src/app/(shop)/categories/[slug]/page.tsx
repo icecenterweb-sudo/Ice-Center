@@ -18,12 +18,6 @@ type Props = {
     }>;
 };
 
-// Force Node.js runtime (not Edge) for Prisma adapter compatibility
-export const runtime = 'nodejs';
-
-// Revalidate every 60 seconds
-export const revalidate = 60;
-
 
 
 

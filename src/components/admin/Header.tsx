@@ -31,7 +31,7 @@ export default function Header({ adminName }: { adminName?: string }) {
     };
 
     return (
-        <header className="bg-white border-b border-gray-200 px-4 md:px-6 py-4 flex items-center justify-between sticky top-0 z-10 shadow-sm">
+        <header className="bg-white border-b border-gray-200 px-4 md:px-6 py-4 flex items-center justify-between sticky top-0 z-40 shadow-sm">
             {/* Sidebar Toggle Button (Desktop) */}
             <button
                 onClick={toggleSidebar}

@@ -65,14 +65,7 @@ const CategorySection: React.FC<CategorySectionProps> = ({ categories }) => {
               {categories.map((category) => (
                 <div
                   key={category.id}
-                  className="
-                    flex-shrink-0 min-w-0
-                    flex-[0_0_28.5%]
-                    xs:flex-[0_0_20%]
-                    sm:flex-[0_0_15%]
-                    md:flex-[0_0_16.666%]
-                    lg:flex-[0_0_14.28%]
-                  "
+                  className="flex-shrink-0 min-w-0 flex-[0_0_28.5%] xs:flex-[0_0_20%] sm:flex-[0_0_15%] md:flex-[0_0_16.666%] lg:flex-[0_0_14.28%]"
                 >
                   <Link
                     href={`/categories/${category.slug}`}

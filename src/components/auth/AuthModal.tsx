@@ -6,6 +6,7 @@ import { X, Phone, Lock, Check, Edit2, ArrowLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { toPersianDigits, toEnglishDigits } from '@/lib/numbers'
+import OTPInputField from '@/components/ui/OTPInput'
 
 type AuthStep = 'phone' | 'otp'
 
@@ -295,15 +296,11 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                                             </button>
                                         </div>
 
-                                        <input
-                                            ref={otpInputRef}
-                                            type="text"
-                                            value={toPersianDigits(otp)}
-                                            onChange={(e) => setOtp(toEnglishDigits(e.target.value).replace(/\D/g, '').slice(0, 4))}
-                                            placeholder="• • • •"
-                                            className="w-full bg-gray-50 border border-gray-200 text-gray-800 rounded-xl px-4 py-4 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-2xl text-center tracking-[0.5em]"
-                                            required
+                                        <OTPInputField
+                                            value={otp}
+                                            onChange={(value) => setOtp(value)}
                                             maxLength={4}
+                                            disabled={loading}
                                         />
 
                                         <div className="flex justify-center">

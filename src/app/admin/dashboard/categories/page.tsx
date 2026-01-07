@@ -3,10 +3,12 @@ import { FolderTree, Plus, Edit, Trash2, Image as ImageIcon } from 'lucide-react
 import Link from 'next/link';
 import DeleteCategoryButton from './DeleteCategoryButton';
 import DeleteSubcategoryButton from './DeleteSubcategoryButton';
+import { connection } from 'next/server';
+import { Suspense } from 'react';
 
-export const dynamic = 'force-dynamic';
+async function CategoriesContent() {
+    await connection(); // Opt out of caching for this page
 
-export default async function CategoriesPage() {
     // Fetch all categories with their subcategories
     const categories = await prisma.category.findMany({
         include: {
@@ -143,5 +145,13 @@ export default async function CategoriesPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function CategoriesPage() {
+    return (
+        <Suspense fallback={<div className="p-8 text-center text-gray-500">در حال بارگذاری دسته‌بندی‌ها...</div>}>
+            <CategoriesContent />
+        </Suspense>
     );
 }

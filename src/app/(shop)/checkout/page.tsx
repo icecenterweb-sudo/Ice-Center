@@ -9,7 +9,6 @@ import {
     ArrowRight,
     ArrowLeft,
     ShoppingBag,
-    Phone,
     User,
     MapPin,
     CreditCard,
@@ -26,6 +25,23 @@ import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/hooks/useAuth';
 import { toPersianDigits } from '@/lib/numbers';
 import toast from 'react-hot-toast';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
+// Checkout form validation schema
+const checkoutSchema = z.object({
+    firstName: z.string().min(1, 'نام الزامی است').max(50),
+    lastName: z.string().min(1, 'نام خانوادگی الزامی است').max(50),
+    phone: z.string().min(10, 'شماره موبایل معتبر نیست').max(11),
+    province: z.string().min(1, 'استان الزامی است'),
+    city: z.string().min(1, 'شهر الزامی است'),
+    address: z.string().min(5, 'آدرس کامل الزامی است'),
+    postalCode: z.string().optional(),
+    deliveryNotes: z.string().optional(),
+});
+
+type CheckoutFormData = z.infer<typeof checkoutSchema>;
 
 // Define steps
 const STEPS = [
@@ -175,27 +191,48 @@ export default function CheckoutPage() {
 
     // Current step
     const [currentStep, setCurrentStep] = useState(1);
-
-    // Form state
-    const [phone, setPhone] = useState('');
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
-    const [province, setProvince] = useState('');
-    const [city, setCity] = useState('');
-    const [address, setAddress] = useState('');
-    const [postalCode, setPostalCode] = useState('');
-    const [deliveryNotes, setDeliveryNotes] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [orderId, setOrderId] = useState<string | null>(null);
+
+    // Form handling with react-hook-form + zod
+    const {
+        register,
+        watch,
+        trigger,
+        reset,
+        formState: { errors },
+    } = useForm<CheckoutFormData>({
+        resolver: zodResolver(checkoutSchema),
+        defaultValues: {
+            firstName: '',
+            lastName: '',
+            phone: '',
+            province: '',
+            city: '',
+            address: '',
+            postalCode: '',
+            deliveryNotes: '',
+        },
+    });
+
+    // Watch form values for review step
+    const formValues = watch();
 
     // Pre-fill user data
     useEffect(() => {
         if (user) {
-            setPhone(user.phone || '');
-            setFirstName(user.firstName || '');
-            setLastName(user.lastName || '');
+            reset({
+                firstName: user.firstName || '',
+                lastName: user.lastName || '',
+                phone: user.phone || '',
+                province: '',
+                city: '',
+                address: '',
+                postalCode: '',
+                deliveryNotes: '',
+            });
         }
-    }, [user]);
+    }, [user, reset]);
 
     // Redirect if cart is empty (after loading finishes, but not on success step)
     useEffect(() => {
@@ -213,7 +250,7 @@ export default function CheckoutPage() {
     const shippingCost = 0;
     const finalTotal = totalPrice + shippingCost;
 
-    const handleNextStep = () => {
+    const handleNextStep = async () => {
         // Validate current step before moving forward
         if (currentStep === 1) {
             if (!isAuthenticated) {
@@ -221,12 +258,14 @@ export default function CheckoutPage() {
                 openAuthModal();
                 return;
             }
-            if (!firstName || !lastName || !phone) {
+            const isValid = await trigger(['firstName', 'lastName', 'phone']);
+            if (!isValid) {
                 toast.error('لطفاً همه فیلدها را پر کنید');
                 return;
             }
         } else if (currentStep === 2) {
-            if (!province || !city || !address) {
+            const isValid = await trigger(['province', 'city', 'address']);
+            if (!isValid) {
                 toast.error('لطفاً همه فیلدهای اجباری را پر کنید');
                 return;
             }
@@ -245,7 +284,7 @@ export default function CheckoutPage() {
         }
     };
 
-    const handleSubmit = async () => {
+    const submitOrder = async () => {
         if (!isAuthenticated) {
             toast.error('لطفاً ابتدا وارد شوید');
             openAuthModal();
@@ -345,23 +384,25 @@ export default function CheckoutPage() {
                                                     <label className="block text-sm font-medium text-gray-700 mb-2">نام *</label>
                                                     <input
                                                         type="text"
-                                                        value={firstName}
-                                                        onChange={(e) => setFirstName(e.target.value)}
+                                                        {...register('firstName')}
                                                         placeholder="نام"
                                                         className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
-                                                        required
                                                     />
+                                                    {errors.firstName && (
+                                                        <p className="text-xs text-red-500 mt-1">{errors.firstName.message}</p>
+                                                    )}
                                                 </div>
                                                 <div>
                                                     <label className="block text-sm font-medium text-gray-700 mb-2">نام خانوادگی *</label>
                                                     <input
                                                         type="text"
-                                                        value={lastName}
-                                                        onChange={(e) => setLastName(e.target.value)}
+                                                        {...register('lastName')}
                                                         placeholder="نام خانوادگی"
                                                         className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
-                                                        required
                                                     />
+                                                    {errors.lastName && (
+                                                        <p className="text-xs text-red-500 mt-1">{errors.lastName.message}</p>
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -369,13 +410,14 @@ export default function CheckoutPage() {
                                                 <label className="block text-sm font-medium text-gray-700 mb-2">شماره موبایل *</label>
                                                 <input
                                                     type="tel"
-                                                    value={phone}
-                                                    onChange={(e) => setPhone(e.target.value)}
+                                                    {...register('phone')}
                                                     placeholder="09xxxxxxxxx"
                                                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all dir-ltr text-left"
-                                                    required
                                                     disabled={isAuthenticated}
                                                 />
+                                                {errors.phone && (
+                                                    <p className="text-xs text-red-500 mt-1">{errors.phone.message}</p>
+                                                )}
                                                 {isAuthenticated && (
                                                     <p className="text-xs text-gray-500 mt-1.5">شماره موبایل از حساب کاربری شما</p>
                                                 )}
@@ -420,48 +462,50 @@ export default function CheckoutPage() {
                                                 <div>
                                                     <label className="block text-sm font-medium text-gray-700 mb-2">استان *</label>
                                                     <select
-                                                        value={province}
-                                                        onChange={(e) => setProvince(e.target.value)}
+                                                        {...register('province')}
                                                         className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
-                                                        required
                                                     >
                                                         <option value="">انتخاب استان</option>
                                                         {provinces.map((p) => (
                                                             <option key={p} value={p}>{p}</option>
                                                         ))}
                                                     </select>
+                                                    {errors.province && (
+                                                        <p className="text-xs text-red-500 mt-1">{errors.province.message}</p>
+                                                    )}
                                                 </div>
                                                 <div>
                                                     <label className="block text-sm font-medium text-gray-700 mb-2">شهر *</label>
                                                     <input
                                                         type="text"
-                                                        value={city}
-                                                        onChange={(e) => setCity(e.target.value)}
+                                                        {...register('city')}
                                                         placeholder="نام شهر"
                                                         className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
-                                                        required
                                                     />
+                                                    {errors.city && (
+                                                        <p className="text-xs text-red-500 mt-1">{errors.city.message}</p>
+                                                    )}
                                                 </div>
                                             </div>
 
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-2">آدرس کامل *</label>
                                                 <textarea
-                                                    value={address}
-                                                    onChange={(e) => setAddress(e.target.value)}
+                                                    {...register('address')}
                                                     placeholder="خیابان، کوچه، پلاک، واحد"
                                                     rows={3}
                                                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all resize-none"
-                                                    required
                                                 />
+                                                {errors.address && (
+                                                    <p className="text-xs text-red-500 mt-1">{errors.address.message}</p>
+                                                )}
                                             </div>
 
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-2">کد پستی (اختیاری)</label>
                                                 <input
                                                     type="text"
-                                                    value={postalCode}
-                                                    onChange={(e) => setPostalCode(e.target.value)}
+                                                    {...register('postalCode')}
                                                     placeholder="کد پستی ۱۰ رقمی"
                                                     maxLength={10}
                                                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all dir-ltr text-left"
@@ -471,8 +515,7 @@ export default function CheckoutPage() {
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-2">توضیحات ارسال (اختیاری)</label>
                                                 <textarea
-                                                    value={deliveryNotes}
-                                                    onChange={(e) => setDeliveryNotes(e.target.value)}
+                                                    {...register('deliveryNotes')}
                                                     placeholder="توضیحات تکمیلی برای پیک"
                                                     rows={2}
                                                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all resize-none"
@@ -554,23 +597,23 @@ export default function CheckoutPage() {
                                             <div className="space-y-3 text-sm">
                                                 <div className="flex justify-between py-2 border-b border-gray-100">
                                                     <span className="text-gray-600">نام</span>
-                                                    <span className="font-medium text-gray-900">{firstName} {lastName}</span>
+                                                    <span className="font-medium text-gray-900">{formValues.firstName} {formValues.lastName}</span>
                                                 </div>
                                                 <div className="flex justify-between py-2 border-b border-gray-100">
                                                     <span className="text-gray-600">موبایل</span>
-                                                    <span className="font-medium text-gray-900 dir-ltr">{phone}</span>
+                                                    <span className="font-medium text-gray-900 dir-ltr">{formValues.phone}</span>
                                                 </div>
                                                 <div className="flex justify-between py-2 border-b border-gray-100">
                                                     <span className="text-gray-600">استان</span>
-                                                    <span className="font-medium text-gray-900">{province}</span>
+                                                    <span className="font-medium text-gray-900">{formValues.province}</span>
                                                 </div>
                                                 <div className="flex justify-between py-2 border-b border-gray-100">
                                                     <span className="text-gray-600">شهر</span>
-                                                    <span className="font-medium text-gray-900">{city}</span>
+                                                    <span className="font-medium text-gray-900">{formValues.city}</span>
                                                 </div>
                                                 <div className="py-2">
                                                     <span className="text-gray-600">آدرس</span>
-                                                    <p className="font-medium text-gray-900 mt-1">{address}</p>
+                                                    <p className="font-medium text-gray-900 mt-1">{formValues.address}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -746,7 +789,7 @@ export default function CheckoutPage() {
                                 {currentStep === 3 && (
                                     <div className="p-6 pt-0">
                                         <button
-                                            onClick={handleSubmit}
+                                            onClick={submitOrder}
                                             disabled={isSubmitting || !isAuthenticated}
                                             className={`w-full py-4 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 ${isSubmitting || !isAuthenticated
                                                 ? 'bg-gray-300 cursor-not-allowed shadow-none'

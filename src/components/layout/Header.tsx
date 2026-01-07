@@ -111,17 +111,19 @@ const Header: React.FC = () => {
               {/* دکمه جستجو */}
               <button
                 onClick={() => setIsSearchOpen(!isSearchOpen)}
+                aria-label="جستجو"
                 className="flex items-center justify-center w-10 h-10 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
               >
-                <Search size={20} />
+                <Search size={20} aria-hidden="true" />
               </button>
 
               {/* دکمه سبد خرید */}
               <button
                 onClick={openCart}
+                aria-label="سبد خرید"
                 className="relative flex items-center justify-center w-10 h-10 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
               >
-                <ShoppingCart size={20} />
+                <ShoppingCart size={20} aria-hidden="true" />
                 {itemCount > 0 && (
                   <motion.span
                     key={itemCount}
@@ -143,9 +145,10 @@ const Header: React.FC = () => {
               {/* دکمه سبد خرید */}
               <button
                 onClick={openCart}
+                aria-label="سبد خرید"
                 className="relative flex items-center justify-center w-11 h-11 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
               >
-                <ShoppingCart size={20} />
+                <ShoppingCart size={20} aria-hidden="true" />
                 {itemCount > 0 && (
                   <motion.span
                     key={itemCount}

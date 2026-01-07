@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, connection } from 'next/server'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/db'
 import { verifyUserToken, USER_TOKEN_COOKIE } from '@/lib/user-jwt'
 
 export async function DELETE(request: NextRequest) {
+    await connection(); // Required for cookies() with cacheComponents
     try {
         const cookieStore = await cookies()
         const token = cookieStore.get(USER_TOKEN_COOKIE)?.value

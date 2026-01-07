@@ -1,18 +1,62 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Phone, Lock } from 'lucide-react';
+import { ArrowLeft, Phone, Lock, Send, Loader2 } from 'lucide-react';
 
 export default function AdminLoginPage() {
     const router = useRouter();
+    const [step, setStep] = useState<'phone' | 'otp'>('phone');
     const [phone, setPhone] = useState('');
     const [otp, setOtp] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [countdown, setCountdown] = useState(0);
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    // Countdown timer for resend
+    useEffect(() => {
+        if (countdown > 0) {
+            const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [countdown]);
+
+    const handleSendOtp = async () => {
+        if (!phone || phone.length < 10) {
+            setError('شماره موبایل معتبر وارد کنید');
+            return;
+        }
+
+        setError('');
+        setLoading(true);
+
+        try {
+            const response = await fetch('/api/auth/send-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setError(data.error || 'خطا در ارسال کد');
+                setLoading(false);
+                return;
+            }
+
+            // Move to OTP step
+            setStep('otp');
+            setCountdown(120); // 2 minutes
+            setLoading(false);
+        } catch (err) {
+            setError('خطای شبکه. لطفا دوباره تلاش کنید.');
+            setLoading(false);
+        }
+    };
+
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setLoading(true);
@@ -27,7 +71,7 @@ export default function AdminLoginPage() {
             const data = await response.json();
 
             if (!response.ok) {
-                setError(data.error || 'Login failed');
+                setError(data.error || 'ورود ناموفق');
                 setLoading(false);
                 return;
             }
@@ -35,9 +79,15 @@ export default function AdminLoginPage() {
             router.push('/admin/dashboard');
             router.refresh();
         } catch (err) {
-            setError('Network error. Please try again.');
+            setError('خطای شبکه. لطفا دوباره تلاش کنید.');
             setLoading(false);
         }
+    };
+
+    const formatCountdown = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
     return (
@@ -65,11 +115,15 @@ export default function AdminLoginPage() {
                         </svg>
                     </motion.div>
                     <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">پنل مدیریت آیس سنتر</h1>
-                    <p className="text-blue-200/60">وارد حساب کاربری خود شوید</p>
+                    <p className="text-blue-200/60">
+                        {step === 'phone' ? 'شماره موبایل خود را وارد کنید' : 'کد ارسال شده را وارد کنید'}
+                    </p>
                 </div>
 
                 <div className="bg-white/10 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <form onSubmit={step === 'otp' ? handleLogin : (e) => { e.preventDefault(); handleSendOtp(); }} className="space-y-6">
+
+                        {/* Phone Input */}
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-blue-100/80 mr-1 block">شماره موبایل</label>
                             <div className="relative group">
@@ -78,31 +132,61 @@ export default function AdminLoginPage() {
                                     value={phone}
                                     onChange={(e) => setPhone(e.target.value)}
                                     placeholder="0912xxxxxxx"
-                                    className="w-full bg-slate-900/50 border border-slate-700 text-white rounded-xl px-4 py-3.5 pl-10 focus:outline-none focus:border-ocean focus:ring-1 focus:ring-ocean transition-all font-mono dir-ltr placeholder:text-slate-600"
+                                    disabled={step === 'otp'}
+                                    className="w-full bg-slate-900/50 border border-slate-700 text-white rounded-xl px-4 py-3.5 pl-10 focus:outline-none focus:border-ocean focus:ring-1 focus:ring-ocean transition-all font-mono dir-ltr placeholder:text-slate-600 disabled:opacity-60 disabled:cursor-not-allowed"
                                     required
                                 />
                                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-blue-100/80 mr-1 block">کد تأیید</label>
-                            <div className="relative group">
-                                <input
-                                    type="text"
-                                    value={otp}
-                                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                                    placeholder="----"
-                                    className="w-full bg-slate-900/50 border border-slate-700 text-white rounded-xl px-4 py-3.5 pl-10 focus:outline-none focus:border-ocean focus:ring-1 focus:ring-ocean transition-all font-mono text-center tracking-[1em] placeholder:tracking-normal placeholder:text-slate-600"
-                                    required
-                                    maxLength={4}
-                                />
-                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
-                            </div>
-                            <div className="flex justify-end">
-                                <p className="text-[10px] text-slate-400">کد تست: <span className="text-blue-400 font-mono">1234</span></p>
-                            </div>
-                        </div>
+                        {/* OTP Input - Only shown in step 2 */}
+                        {step === 'otp' && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                className="space-y-2"
+                            >
+                                <label className="text-sm font-medium text-blue-100/80 mr-1 block">کد تأیید</label>
+                                <div className="relative group">
+                                    <input
+                                        type="text"
+                                        value={otp}
+                                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                                        placeholder="----"
+                                        className="w-full bg-slate-900/50 border border-slate-700 text-white rounded-xl px-4 py-3.5 pl-10 focus:outline-none focus:border-ocean focus:ring-1 focus:ring-ocean transition-all font-mono text-center tracking-[1em] placeholder:tracking-normal placeholder:text-slate-600"
+                                        required
+                                        maxLength={4}
+                                        autoFocus
+                                    />
+                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
+                                </div>
+
+                                {/* Resend / Countdown */}
+                                <div className="flex justify-between items-center text-xs">
+                                    <button
+                                        type="button"
+                                        onClick={() => { setStep('phone'); setOtp(''); setError(''); }}
+                                        className="text-slate-400 hover:text-white transition-colors"
+                                    >
+                                        تغییر شماره
+                                    </button>
+                                    {countdown > 0 ? (
+                                        <span className="text-slate-400">
+                                            ارسال مجدد: <span className="font-mono text-blue-400">{formatCountdown(countdown)}</span>
+                                        </span>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={handleSendOtp}
+                                            className="text-blue-400 hover:text-blue-300 transition-colors"
+                                        >
+                                            ارسال مجدد کد
+                                        </button>
+                                    )}
+                                </div>
+                            </motion.div>
+                        )}
 
                         {error && (
                             <motion.div
@@ -121,7 +205,12 @@ export default function AdminLoginPage() {
                             className="w-full bg-gradient-to-r from-ocean to-sky-breeze hover:from-royal hover:to-ocean text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-ocean/25 flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {loading ? (
-                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : step === 'phone' ? (
+                                <>
+                                    <span>ارسال کد تأیید</span>
+                                    <Send className="w-5 h-5 group-hover:translate-x-[-2px] transition-transform" />
+                                </>
                             ) : (
                                 <>
                                     <span>ورود به سیستم</span>

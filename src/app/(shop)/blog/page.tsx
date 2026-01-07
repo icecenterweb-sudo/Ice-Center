@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import BlogCard from '@/components/blog/BlogCard';
 import { getPublishedPosts, getBlogCategories } from '@/lib/blog/queries';
+import { connection } from 'next/server';
+import { Suspense } from 'react';
 
 export const metadata: Metadata = {
     title: 'وبلاگ آیس سنتر | مقالات و راهنماها',
@@ -31,7 +33,8 @@ interface Props {
     searchParams: Promise<{ page?: string; category?: string }>;
 }
 
-export default async function BlogPage({ searchParams }: Props) {
+async function BlogPageContent({ searchParams }: Props) {
+    await connection();
     const params = await searchParams;
     const page = parseInt(params.page || '1', 10);
     const categorySlug = params.category;
@@ -125,5 +128,13 @@ export default async function BlogPage({ searchParams }: Props) {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function BlogPage(props: Props) {
+    return (
+        <Suspense fallback={<div className="p-8 text-center text-gray-500">در حال بارگذاری وبلاگ...</div>}>
+            <BlogPageContent {...props} />
+        </Suspense>
     );
 }

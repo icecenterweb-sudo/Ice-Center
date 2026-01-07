@@ -2,10 +2,11 @@ import { prisma } from '@/lib/db';
 import Link from 'next/link';
 import { MessageCircle, CheckCircle, XCircle, Clock, Eye, ArrowLeft } from 'lucide-react';
 import CommentActions from './CommentActions';
-
-export const dynamic = 'force-dynamic';
+import { connection } from 'next/server';
+import { Suspense } from 'react';
 
 async function getComments() {
+    await connection(); // Opt out of caching
     return prisma.blogComment.findMany({
         include: {
             post: { select: { id: true, title: true, slug: true } },
@@ -17,6 +18,7 @@ async function getComments() {
 }
 
 async function getStats() {
+    await connection(); // Opt out of caching
     const [total, pending, approved, rejected] = await Promise.all([
         prisma.blogComment.count(),
         prisma.blogComment.count({ where: { status: 'PENDING' } }),
@@ -26,7 +28,7 @@ async function getStats() {
     return { total, pending, approved, rejected };
 }
 
-export default async function AdminCommentsPage() {
+async function AdminCommentsContent() {
     const [comments, stats] = await Promise.all([getComments(), getStats()]);
 
     const getStatusBadge = (status: string) => {
@@ -228,5 +230,13 @@ export default async function AdminCommentsPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function AdminCommentsPage() {
+    return (
+        <Suspense fallback={<div className="p-8 text-center text-gray-500">در حال بارگذاری نظرات...</div>}>
+            <AdminCommentsContent />
+        </Suspense>
     );
 }

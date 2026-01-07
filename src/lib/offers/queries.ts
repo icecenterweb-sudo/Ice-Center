@@ -380,7 +380,7 @@ export async function updateProductOfferFlag(productId: number) {
 
 /**
  * Sync all offer flags (for cron job)
- * Checks offers that started or ended recently
+ * Uses batch updates instead of N+1 queries
  */
 export async function syncOfferFlags(minutesWindow = 5) {
     const now = new Date();
@@ -401,24 +401,62 @@ export async function syncOfferFlags(minutesWindow = 5) {
         }
     });
 
-    // Get unique product IDs
-    const productIds = new Set<number>();
+    // Get unique product IDs that might be affected
+    const affectedProductIds = new Set<number>();
     for (const offer of affectedOffers) {
         for (const { productId } of offer.products) {
-            productIds.add(productId);
+            affectedProductIds.add(productId);
         }
     }
 
-    // Update each product's flag
+    if (affectedProductIds.size === 0) {
+        return { updated: 0, errors: 0 };
+    }
+
+    const productIdArray = Array.from(affectedProductIds);
+
+    // BATCH UPDATE: Find which products actually have active offers now
+    const productsWithActiveOffers = await prisma.offerProduct.findMany({
+        where: {
+            productId: { in: productIdArray },
+            offer: {
+                isActive: true,
+                startDate: { lte: now },
+                endDate: { gt: now },
+            }
+        },
+        select: { productId: true },
+        distinct: ['productId'],
+    });
+
+    const activeProductIds = productsWithActiveOffers.map(p => p.productId);
+    const inactiveProductIds = productIdArray.filter(id => !activeProductIds.includes(id));
+
+    // BATCH UPDATE: Set hasActiveOffer = true for active, false for inactive
     const results = { updated: 0, errors: 0 };
-    for (const productId of productIds) {
-        try {
-            await updateProductOfferFlag(productId);
-            results.updated++;
-        } catch (error) {
-            console.error(`Failed to update offer flag for product ${productId}:`, error);
-            results.errors++;
-        }
+
+    try {
+        await prisma.$transaction([
+            // Set true for products with active offers
+            ...(activeProductIds.length > 0 ? [
+                prisma.product.updateMany({
+                    where: { id: { in: activeProductIds } },
+                    data: { hasActiveOffer: true }
+                })
+            ] : []),
+            // Set false for products without active offers
+            ...(inactiveProductIds.length > 0 ? [
+                prisma.product.updateMany({
+                    where: { id: { in: inactiveProductIds } },
+                    data: { hasActiveOffer: false }
+                })
+            ] : []),
+        ]);
+
+        results.updated = productIdArray.length;
+    } catch (error) {
+        console.error('Failed to batch update offer flags:', error);
+        results.errors = productIdArray.length;
     }
 
     return results;

@@ -5,7 +5,7 @@
  * POST - Create new offer (admin only)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCarouselOffers } from '@/lib/offers';
 import { z } from 'zod';
@@ -45,6 +45,7 @@ const createOfferSchema = z.object({
  * Fetch featured offers for homepage carousel
  */
 export async function GET(request: NextRequest) {
+    await connection(); // Required for request.url with cacheComponents
     try {
         const { searchParams } = new URL(request.url);
         const limit = parseInt(searchParams.get('limit') || '12');

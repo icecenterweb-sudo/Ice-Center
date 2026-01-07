@@ -242,21 +242,18 @@ const AmazingOfferCarousel = ({ offers }: AmazingOfferCarouselProps) => {
               {products.map((product, index) => (
                 <div
                   key={product.id}
-                  className={`
-                    relative flex-shrink-0 min-w-0
-                    flex-[0_0_46%]
-                    md:flex-[0_0_28.57%]
-                    bg-white
-                    ${index === 0 ? 'rounded-r-xl' : ''}
-                    ${index === products.length - 1 ? 'rounded-l-xl' : ''}
-                  `}
+                  className={[
+                    'relative flex-shrink-0 min-w-0 flex-[0_0_46%] md:flex-[0_0_28.57%] bg-white',
+                    index === 0 ? 'rounded-r-xl' : '',
+                    index === products.length - 1 ? 'rounded-l-xl' : '',
+                  ].filter(Boolean).join(' ')}
                 >
                   {/* Vertical Divider */}
                   {index !== products.length - 1 && (
                     <div className="absolute top-8 left-0 w-[0.75px] h-[88%] bg-gray-200 ml-[1px]" />
                   )}
 
-                  <Link href={`/product/${product.id}`} className="block group h-full">
+                  <Link href={`/products/${product.slug || product.id}`} className="block group h-full">
                     <div className="relative p-2 md:p-3 flex flex-col h-full hover:shadow-lg transition-shadow">
                       {/* Image */}
                       <div className="relative w-full aspect-square mb-2">
@@ -372,17 +369,13 @@ const AmazingOfferCarousel = ({ offers }: AmazingOfferCarouselProps) => {
                 {products.map((product, index) => (
                   <div
                     key={product.id}
-                    className={`
-                      relative flex-shrink-0 min-w-0
-                      flex-[0_0_25%]
-                      xl:flex-[0_0_20%]
-                      2xl:flex-[0_0_16.666%]
-                      bg-white
-                      ${index === 0 ? 'rounded-r-2xl' : ''}
-                      ${index === products.length - 1 ? 'rounded-l-2xl' : ''}
-                    `}
+                    className={[
+                      'relative flex-shrink-0 min-w-0 flex-[0_0_25%] xl:flex-[0_0_20%] 2xl:flex-[0_0_16.666%] bg-white',
+                      index === 0 ? 'rounded-r-2xl' : '',
+                      index === products.length - 1 ? 'rounded-l-2xl' : '',
+                    ].filter(Boolean).join(' ')}
                   >
-                    <Link href={`/product/${product.id}`} className="flex flex-col h-full p-4 hover:shadow-lg transition-shadow duration-200 group">
+                    <Link href={`/products/${product.slug || product.id}`} className="flex flex-col h-full p-4 hover:shadow-lg transition-shadow duration-200 group">
 
                       {/* Image */}
                       <div className="relative w-full h-[140px] mb-3">

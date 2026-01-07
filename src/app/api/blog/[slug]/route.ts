@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from 'next/server';
 import { prisma } from '@/lib/db';
 import { updatePostSchema } from '@/lib/blog/validation';
 import { getPostBySlug, getPublishedPostBySlug } from '@/lib/blog/queries';
@@ -9,6 +9,7 @@ interface RouteParams {
 
 // GET /api/blog/[slug] - Get single post
 export async function GET(request: NextRequest, { params }: RouteParams) {
+    await connection(); // Required for request.url with cacheComponents
     try {
         const { slug } = await params;
         const { searchParams } = new URL(request.url);

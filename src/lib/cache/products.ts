@@ -4,6 +4,9 @@ import prisma from '@/lib/db'
 // Cache TTL in seconds (2 minutes)
 const PRODUCTS_CACHE_TTL = 120
 
+// Cache version - increment this to invalidate all caches
+let CACHE_VERSION = 1;
+
 // Type for cached product list (only fields we need for carousels/listings)
 export type CachedProduct = {
     id: number
@@ -16,11 +19,11 @@ export type CachedProduct = {
     hasActiveOffer: boolean
 }
 
-// Cache key generator
+// Cache key generator with version
 const CACHE_KEYS = {
     productList: (page: number, limit: number, search?: string) =>
-        `products:list:${page}:${limit}:${search || 'all'}`,
-    productBySlug: (slug: string) => `products:slug:${slug}`,
+        `products:v${CACHE_VERSION}:list:${page}:${limit}:${search || 'all'}`,
+    productBySlug: (slug: string) => `products:v${CACHE_VERSION}:slug:${slug}`,
 }
 
 /**
@@ -117,18 +120,64 @@ export async function getProductsCached(options: {
 }
 
 /**
- * Invalidate products cache
- * Call this when products are created/updated/deleted
+ * Invalidate products cache using versioned keys
+ * Instead of using KEYS (O(N) blocking), we increment version
+ * Old keys will naturally expire via TTL
  */
 export async function invalidateProductsCache(): Promise<void> {
     try {
-        // Get all product cache keys and delete them
-        const keys = await redis.keys('products:*')
-        if (keys.length > 0) {
-            await redis.del(...keys)
-            console.log(`[Cache] Invalidated ${keys.length} product cache keys`)
-        }
+        // Simply increment version - old keys become orphaned and expire via TTL
+        CACHE_VERSION++;
+        console.log(`[Cache] Invalidated by incrementing version to ${CACHE_VERSION}`)
+
+        // Optionally clean up old keys in background using SCAN (non-blocking)
+        // This is fire-and-forget, doesn't block the request
+        cleanupOldCacheKeys().catch(err =>
+            console.error('[Cache] Background cleanup error:', err)
+        );
     } catch (error) {
         console.error('[Cache] Invalidation error:', error)
+    }
+}
+
+/**
+ * Clean up old cache keys using SCAN (non-blocking)
+ * SCAN is O(1) per call and iterates incrementally
+ */
+async function cleanupOldCacheKeys(): Promise<void> {
+    try {
+        let cursor: number | string = 0;
+        const keysToDelete: string[] = [];
+        const currentVersionPrefix = `products:v${CACHE_VERSION}:`;
+
+        do {
+            // SCAN is non-blocking unlike KEYS
+            const result: [string | number, string[]] = await redis.scan(cursor, {
+                match: 'products:*',
+                count: 100
+            });
+
+            cursor = result[0];
+            const keys: string[] = result[1];
+
+            // Filter out current version keys, collect old ones for deletion
+            for (const key of keys) {
+                if (!key.startsWith(currentVersionPrefix)) {
+                    keysToDelete.push(key);
+                }
+            }
+        } while (cursor !== 0 && cursor !== '0');
+
+        // Delete old keys in batches
+        if (keysToDelete.length > 0) {
+            // Delete in batches of 100 to avoid too many args
+            for (let i = 0; i < keysToDelete.length; i += 100) {
+                const batch = keysToDelete.slice(i, i + 100);
+                await redis.del(...batch);
+            }
+            console.log(`[Cache] Cleaned up ${keysToDelete.length} old cache keys`);
+        }
+    } catch (error) {
+        console.error('[Cache] Cleanup error:', error);
     }
 }

@@ -16,9 +16,6 @@ type Props = {
     }>;
 };
 
-export const runtime = 'nodejs';
-export const revalidate = 60; // Revalidate every 60 seconds
-
 export const metadata: Metadata = {
     title: 'همه محصولات | آیس سنتر',
     description: 'مشاهده همه محصولات - دستگاه بستنی قیفی، یخچال، فریزر، آبمیوه‌گیری و تجهیزات صنعتی',

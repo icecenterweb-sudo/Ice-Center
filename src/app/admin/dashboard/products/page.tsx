@@ -3,11 +3,12 @@ import { Package, Plus, Search, Filter, Eye, Edit } from 'lucide-react';
 import { prisma } from '@/lib/db';
 import DeleteProductButton from './DeleteProductButton';
 import { formatPersianNumber } from '@/utils/persian';
+import { connection } from 'next/server';
+import { Suspense } from 'react';
 
+async function ProductsContent() {
+    await connection(); // Opt out of caching for this page
 
-export const dynamic = 'force-dynamic'; // Ensure we always get fresh data
-
-export default async function ProductsPage() {
     // Fetch products with variants
     const products = await prisma.product.findMany({
         include: {
@@ -177,5 +178,13 @@ export default async function ProductsPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function ProductsPage() {
+    return (
+        <Suspense fallback={<div className="p-8 text-center text-gray-500">در حال بارگذاری محصولات...</div>}>
+            <ProductsContent />
+        </Suspense>
     );
 }

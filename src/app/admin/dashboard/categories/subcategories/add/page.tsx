@@ -1,12 +1,15 @@
 import { prisma } from '@/lib/db';
 import { notFound } from 'next/navigation';
 import SubcategoryForm from './SubcategoryForm';
+import { connection } from 'next/server';
+import { Suspense } from 'react';
 
-export default async function AddSubcategoryPage({
+async function AddSubcategoryContent({
     searchParams
 }: {
     searchParams: Promise<{ categoryId?: string }>
 }) {
+    await connection();
     const params = await searchParams;
     const categoryId = params.categoryId ? parseInt(params.categoryId) : null;
 
@@ -25,4 +28,12 @@ export default async function AddSubcategoryPage({
     }
 
     return <SubcategoryForm categories={categories} defaultCategoryId={categoryId} />;
+}
+
+export default function AddSubcategoryPage(props: { searchParams: Promise<{ categoryId?: string }> }) {
+    return (
+        <Suspense fallback={<div className="p-8 text-center text-gray-500">در حال بارگذاری...</div>}>
+            <AddSubcategoryContent {...props} />
+        </Suspense>
+    );
 }

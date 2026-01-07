@@ -1,61 +1,75 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, User, Check, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toPersianDigits } from '@/lib/numbers';
 import toast from 'react-hot-toast';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
+// Validation schema using Zod
+const profileSchema = z.object({
+    firstName: z.string().max(50, 'نام نمی‌تواند بیشتر از ۵۰ کاراکتر باشد'),
+    lastName: z.string().max(50, 'نام خانوادگی نمی‌تواند بیشتر از ۵۰ کاراکتر باشد'),
+}).refine(data => data.firstName.trim() || data.lastName.trim(), {
+    message: 'لطفاً حداقل یک فیلد را پر کنید',
+    path: ['firstName'],
+});
+
+type ProfileFormData = z.infer<typeof profileSchema>;
 
 export default function ProfileEditPage() {
     const router = useRouter();
     const { user, refreshUser } = useAuth();
 
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
-    const [isSaving, setIsSaving] = useState(false);
+    const {
+        register,
+        handleSubmit,
+        reset,
+        formState: { errors, isSubmitting },
+    } = useForm<ProfileFormData>({
+        resolver: zodResolver(profileSchema),
+        defaultValues: {
+            firstName: '',
+            lastName: '',
+        },
+    });
 
-    // Populate form with user data
+    // Populate form with user data when loaded
     useEffect(() => {
         if (user) {
-            setFirstName(user.firstName || '');
-            setLastName(user.lastName || '');
+            reset({
+                firstName: user.firstName || '',
+                lastName: user.lastName || '',
+            });
         }
-    }, [user]);
+    }, [user, reset]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (!firstName.trim() && !lastName.trim()) {
-            toast.error('لطفاً حداقل یک فیلد را پر کنید');
-            return;
-        }
-
-        setIsSaving(true);
-
+    const onSubmit = async (data: ProfileFormData) => {
         try {
             const response = await fetch('/api/auth/update-profile', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    firstName: firstName.trim(),
-                    lastName: lastName.trim(),
+                    firstName: data.firstName.trim(),
+                    lastName: data.lastName.trim(),
                 }),
             });
 
-            const data = await response.json();
+            const result = await response.json();
 
             if (response.ok) {
                 toast.success('پروفایل با موفقیت بروزرسانی شد');
                 await refreshUser();
                 router.push('/profile');
             } else {
-                toast.error(data.error || 'خطا در بروزرسانی پروفایل');
+                toast.error(result.error || 'خطا در بروزرسانی پروفایل');
             }
         } catch {
             toast.error('خطا در برقراری ارتباط');
-        } finally {
-            setIsSaving(false);
         }
     };
 
@@ -90,7 +104,7 @@ export default function ProfileEditPage() {
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 {/* Phone (Read-only) */}
                 <div className="bg-white rounded-2xl p-4 shadow-sm">
                     <label className="block text-xs text-gray-500 mb-2">شماره موبایل</label>
@@ -110,12 +124,13 @@ export default function ProfileEditPage() {
                     <input
                         type="text"
                         id="firstName"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
+                        {...register('firstName')}
                         placeholder="نام خود را وارد کنید"
                         className="w-full text-sm text-gray-800 placeholder-gray-400 outline-none"
-                        maxLength={50}
                     />
+                    {errors.firstName && (
+                        <p className="text-xs text-red-500 mt-1">{errors.firstName.message}</p>
+                    )}
                 </div>
 
                 {/* Last Name */}
@@ -126,21 +141,22 @@ export default function ProfileEditPage() {
                     <input
                         type="text"
                         id="lastName"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
+                        {...register('lastName')}
                         placeholder="نام خانوادگی خود را وارد کنید"
                         className="w-full text-sm text-gray-800 placeholder-gray-400 outline-none"
-                        maxLength={50}
                     />
+                    {errors.lastName && (
+                        <p className="text-xs text-red-500 mt-1">{errors.lastName.message}</p>
+                    )}
                 </div>
 
                 {/* Submit Button */}
                 <button
                     type="submit"
-                    disabled={isSaving}
+                    disabled={isSubmitting}
                     className="w-full bg-ocean hover:bg-blue-600 text-white font-medium py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    {isSaving ? (
+                    {isSubmitting ? (
                         <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (
                         <>
@@ -153,3 +169,4 @@ export default function ProfileEditPage() {
         </div>
     );
 }
+

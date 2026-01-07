@@ -5,10 +5,11 @@
  * Should be called every 5 minutes via Vercel Cron or external scheduler.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from 'next/server';
 import { syncOfferFlags } from '@/lib/offers';
 
 export async function GET(request: NextRequest) {
+    await connection(); // Required for request.headers with cacheComponents
     try {
         // Verify cron secret for Vercel Cron Jobs
         const authHeader = request.headers.get('authorization');

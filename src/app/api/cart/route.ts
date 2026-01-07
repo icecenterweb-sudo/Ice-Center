@@ -2,8 +2,10 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/db'
 import { verifyUserToken, USER_TOKEN_COOKIE } from '@/lib/user-jwt'
+import { connection } from 'next/server'
 
 export async function GET() {
+    await connection(); // Required for cookies() with cacheComponents
     try {
         const cookieStore = await cookies()
         const token = cookieStore.get(USER_TOKEN_COOKIE)?.value

@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from 'next/server';
 import { prisma } from '@/lib/db';
 import { createPostSchema, listPostsQuerySchema } from '@/lib/blog/validation';
 import { getPublishedPosts, getAllPosts } from '@/lib/blog/queries';
 
 // GET /api/blog - List posts
 export async function GET(request: NextRequest) {
+    await connection(); // Required for request.url with cacheComponents
     try {
         const { searchParams } = new URL(request.url);
 

@@ -4,8 +4,11 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import VariantManager from './VariantManager';
 import EditProductForm from './EditProductForm';
+import { connection } from 'next/server';
+import { Suspense } from 'react';
 
-export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
+async function EditProductContent({ params }: { params: Promise<{ id: string }> }) {
+    await connection();
     const { id } = await params;
     const productId = parseInt(id);
 
@@ -56,5 +59,13 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
             {/* Variant Manager */}
             <VariantManager productId={productId} variants={product.variants} />
         </div>
+    );
+}
+
+export default function EditProductPage(props: { params: Promise<{ id: string }> }) {
+    return (
+        <Suspense fallback={<div className="p-8 text-center text-gray-500">در حال بارگذاری...</div>}>
+            <EditProductContent {...props} />
+        </Suspense>
     );
 }

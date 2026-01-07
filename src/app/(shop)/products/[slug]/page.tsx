@@ -7,10 +7,6 @@ type PageProps = {
     params: Promise<{ slug: string }>;
 };
 
-export const runtime = 'nodejs';
-export const revalidate = 60; // Revalidate every 60 seconds
-
-
 export default async function ProductPage({ params }: PageProps) {
     const { slug } = await params;
     const product = await getProductBySlug(slug);

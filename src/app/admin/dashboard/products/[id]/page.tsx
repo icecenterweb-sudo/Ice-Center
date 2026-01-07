@@ -2,12 +2,15 @@ import { prisma } from '@/lib/db';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, Edit, Package } from 'lucide-react';
+import { connection } from 'next/server';
+import { Suspense } from 'react';
 
 const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fa-IR').format(amount);
 };
 
-export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
+async function ProductDetailContent({ params }: { params: Promise<{ id: string }> }) {
+    await connection();
     const { id } = await params;
     const productId = parseInt(id);
 
@@ -163,5 +166,13 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function ProductDetailPage(props: { params: Promise<{ id: string }> }) {
+    return (
+        <Suspense fallback={<div className="p-8 text-center text-gray-500">در حال بارگذاری جزئیات محصول...</div>}>
+            <ProductDetailContent {...props} />
+        </Suspense>
     );
 }

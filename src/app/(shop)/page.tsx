@@ -8,7 +8,7 @@ import { prisma } from '@/lib/db';
 import { getRecentPosts } from '@/lib/blog/queries';
 import { getCarouselOffers } from '@/lib/offers';
 import { getSingleBanners, getDoubleBanners } from '@/lib/banners';
-
+import { connection } from 'next/server';
 // Define product type for transformation
 type DBProduct = {
   id: number;
@@ -195,8 +195,10 @@ async function getSlides() {
 }
 
 
+import { Suspense } from 'react';
 
-export default async function Home() {
+async function HomeContent() {
+  await connection();
   const [categories, categoriesWithProducts, blogPosts, offerItems, slides, singleBanners, doubleBanners] = await Promise.all([
     getCategories(),
     getCategoriesWithProducts(),
@@ -230,7 +232,7 @@ export default async function Home() {
       {/* بخش بنر تکی */}
       <BannerSection
         banners={singleBanners}
-        heightClass="h-[130px] md:h-[250px] lg:h-[180px] xl:h-[210px]"
+        heightClass="aspect-[3/1] md:aspect-auto md:h-[250px] lg:h-[180px] xl:h-[210px]"
       />
 
       {/* اسلایدرهای محصولات بر اساس دسته‌بندی */}
@@ -246,7 +248,7 @@ export default async function Home() {
           {index === 1 && (
             <BannerSection
               banners={doubleBanners}
-              heightClass="h-[130px] md:h-[250px] lg:h-[180px] xl:h-[180px]"
+              heightClass="aspect-[3/1] md:aspect-auto md:h-[250px] lg:h-[180px] xl:h-[180px]"
             />
           )}
         </div>
@@ -255,5 +257,13 @@ export default async function Home() {
       {/* اسلایدر وبلاگ */}
       <BlogCarousel posts={blogPosts} />
     </>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50"></div>}>
+      <HomeContent />
+    </Suspense>
   );
 }

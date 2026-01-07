@@ -99,13 +99,23 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ slides }) => {
           ))}
 
           {/* Desktop Navigation Arrows */}
-          <div className="swiper-button-prev-desktop absolute top-1/2 right-4 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center cursor-pointer shadow-lg transition-all hover:scale-110">
-            <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div
+            className="swiper-button-prev-desktop absolute top-1/2 right-4 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center cursor-pointer shadow-lg transition-all hover:scale-110"
+            role="button"
+            aria-label="اسلاید قبلی"
+            tabIndex={0}
+          >
+            <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </div>
-          <div className="swiper-button-next-desktop absolute top-1/2 left-4 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center cursor-pointer shadow-lg transition-all hover:scale-110">
-            <svg className="w-6 h-6 text-gray-800 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div
+            className="swiper-button-next-desktop absolute top-1/2 left-4 -translate-y-1/2 z-10 w-10 h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center cursor-pointer shadow-lg transition-all hover:scale-110"
+            role="button"
+            aria-label="اسلاید بعدی"
+            tabIndex={0}
+          >
+            <svg className="w-6 h-6 text-gray-800 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </div>

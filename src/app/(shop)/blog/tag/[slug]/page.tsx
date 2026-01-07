@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ChevronLeft, Tag } from 'lucide-react';
 import BlogCard from '@/components/blog/BlogCard';
 import { getPublishedPosts, getBlogTagBySlug, getBlogTags } from '@/lib/blog/queries';
+import { connection } from 'next/server';
 
 interface BlogTag {
     id: number;
@@ -29,6 +30,7 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+    await connection();
     const { slug } = await params;
     const tag = await getBlogTagBySlug(slug);
 
@@ -42,7 +44,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
 }
 
-export default async function BlogTagPage({ params, searchParams }: Props) {
+import { Suspense } from 'react';
+
+async function BlogTagContent({ params, searchParams }: Props) {
+    await connection();
     const { slug } = await params;
     const search = await searchParams;
     const page = parseInt(search.page || '1', 10);
@@ -148,5 +153,13 @@ export default async function BlogTagPage({ params, searchParams }: Props) {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function BlogTagPage(props: Props) {
+    return (
+        <Suspense fallback={<div className="p-8 text-center text-gray-500">در حال بارگذاری...</div>}>
+            <BlogTagContent {...props} />
+        </Suspense>
     );
 }

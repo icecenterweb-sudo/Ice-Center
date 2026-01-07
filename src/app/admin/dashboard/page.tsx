@@ -1,9 +1,10 @@
 import { prisma } from '@/lib/db';
 import DashboardView from './DashboardView';
+import { connection } from 'next/server';
+import { Suspense } from 'react';
 
-export const dynamic = 'force-dynamic';
-
-export default async function AdminDashboardPage() {
+async function DashboardContent() {
+    await connection(); // Required for dynamic data access with cacheComponents
     // Fetch real data from database
     const [productCount, userCount, blogPostCount, pendingComments] = await Promise.all([
         prisma.product.count(),
@@ -27,6 +28,14 @@ export default async function AdminDashboardPage() {
             blogPostCount={blogPostCount}
             pendingComments={pendingComments}
         />
+    );
+}
+
+export default function AdminDashboardPage() {
+    return (
+        <Suspense fallback={<div className="p-8 text-center text-gray-500">در حال بارگذاری اطلاعات...</div>}>
+            <DashboardContent />
+        </Suspense>
     );
 }
 

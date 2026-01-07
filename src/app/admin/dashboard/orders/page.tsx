@@ -1,6 +1,7 @@
 import { ShoppingCart } from 'lucide-react';
+import { Suspense } from 'react';
 
-export default function OrdersPage() {
+function OrdersContent() {
     return (
         <div className="space-y-6">
             {/* Page Header */}
@@ -18,5 +19,13 @@ export default function OrdersPage() {
                 <p className="text-gray-600">بخش مدیریت سفارشات در حال توسعه است</p>
             </div>
         </div>
+    );
+}
+
+export default function OrdersPage() {
+    return (
+        <Suspense fallback={<div className="p-8 text-center text-gray-500">در حال بارگذاری...</div>}>
+            <OrdersContent />
+        </Suspense>
     );
 }
