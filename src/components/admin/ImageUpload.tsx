@@ -83,7 +83,7 @@ export default function ImageUpload({ currentImage, onImageChange }: ImageUpload
                         <Upload className="w-8 h-8" />
                     </div>
                     <p className="font-bold text-gray-700">کلیک کنید یا تصویر را اینجا رها کنید</p>
-                    <p className="text-sm text-gray-400 mt-2">PNG, JPG تا حجم 5 مگابایت</p>
+                    <p className="text-sm text-gray-500 mt-2">PNG, JPG تا حجم 5 مگابایت</p>
                 </label>
             )}
 

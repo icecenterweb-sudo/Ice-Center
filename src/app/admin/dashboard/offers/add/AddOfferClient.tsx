@@ -304,7 +304,7 @@ export default function AddOfferPage() {
                                         onChange={(e) => setStartDate(e.target.value)}
                                         className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900"
                                     />
-                                    <p className="text-xs text-gray-400 mt-1">خالی = همین الان</p>
+                                    <p className="text-xs text-gray-500 mt-1">خالی = همین الان</p>
                                 </div>
 
                                 <div>
@@ -387,7 +387,7 @@ export default function AddOfferPage() {
                                         <p className="text-sm text-gray-600">
                                             {selectedProducts.length} محصول انتخاب شده
                                         </p>
-                                        <p className="text-xs text-gray-400">
+                                        <p className="text-xs text-gray-500">
                                             تخفیف سفارشی اختیاری
                                         </p>
                                     </div>

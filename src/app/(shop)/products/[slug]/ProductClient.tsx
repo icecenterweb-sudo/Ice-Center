@@ -137,7 +137,7 @@ export default function ProductClient({ product }: ProductClientProps) {
                                     {product.description ? (
                                         <p className="mb-4">{product.description}</p>
                                     ) : (
-                                        <p className="mb-4 text-gray-400">توضیحات محصول به زودی اضافه خواهد شد.</p>
+                                        <p className="mb-4 text-gray-500">توضیحات محصول به زودی اضافه خواهد شد.</p>
                                     )}
                                 </div>
 
@@ -162,7 +162,7 @@ export default function ProductClient({ product }: ProductClientProps) {
                                 {product.specifications.length > 0 ? (
                                     <ProductSpecifications categories={product.specifications} />
                                 ) : (
-                                    <div className="text-gray-400 text-center py-8">
+                                    <div className="text-gray-500 text-center py-8">
                                         مشخصات فنی محصول به زودی اضافه خواهد شد.
                                     </div>
                                 )}

@@ -1,0 +1,62 @@
+Ice Center performance notes (code + lighthouse json)
+
+Lighthouse JSON quick facts
+- Performance score: 0.26 (FCP 28.5s, LCP 30.6s, TBT 2960ms, main-thread 23.1s, bootup 9.1s)
+- Total transfer size: ~6.4MB
+- Document (HTML) transfer size: ~5.56MB
+- Network requests show many data:image/* base64 assets inside the HTML document.
+
+Primary bottleneck (highest impact)
+1) Base64 images stored in DB and sent in the HTML/RSC payload.
+   Evidence in code:
+   - Product images are converted to base64 and stored in DB in:
+     `src/app/admin/dashboard/products/add/AddProductForm.tsx`
+     `src/app/admin/dashboard/products/[id]/edit/EditProductForm.tsx`
+     `src/app/actions/products.ts`
+   - Category images are converted to base64 in:
+     `src/app/admin/dashboard/categories/add/CategoryForm.tsx`
+     `src/app/admin/dashboard/categories/edit/[id]/EditCategoryForm.tsx`
+     `src/app/actions/categories.ts`
+   This makes the initial HTML huge and forces the browser to parse megabytes before first paint.
+
+   Fix direction:
+   - Upload images to Cloudinary (or your upload API) and store only URLs in DB.
+   - You already have `/api/upload` and Cloudinary usage elsewhere; reuse it.
+   - For existing base64 data, run a migration: upload to Cloudinary, replace DB fields with URLs.
+
+Secondary bottlenecks (medium impact)
+2) Home page sends a lot of product data to client components.
+   - `src/app/(shop)/page.tsx` loads categories + up to 12 products per subcategory, then renders a carousel per category.
+   - Because `ProductCarousel`, `CategorySection`, `HeroSlider`, etc are client components, the full data is serialized into the HTML/JS payload.
+   Fix direction:
+   - Reduce products per category (or only show a few categories on the home page).
+   - Move as much rendering as possible to server components; keep only the carousel logic client-side.
+   - Consider lazy-loading category carousels after first viewport.
+
+3) Unbounded LCP candidates and heavy hero/banner media.
+   - `HeroSlider` uses large images; `TopBar` uses GIF banners (likely heavy).
+   Fix direction:
+   - Replace GIFs with MP4/WebP when possible; use `priority` only on the true LCP image.
+   - Use `sizes` on all `next/image` components that use `fill` to prevent large downloads.
+
+4) Dynamic rendering may disable caching.
+   - `HomeContent` calls `await connection()` in `src/app/(shop)/page.tsx`, which forces dynamic rendering.
+   Fix direction:
+   - If you can tolerate caching, remove `connection()` and use `revalidate` or `fetch` cache settings.
+
+Fonts and local assets check
+- Local font files in `src/app/fonts/YekanBakhFamily/webfonts/woff2` total ~2.4MB on disk.
+- Runtime usage in `src/app/layout.tsx` loads 5 weights (Light/Regular/SemiBold/Bold/Black), roughly ~210KB combined.
+- The rest of the font family is unused at runtime but lives in the repo.
+  Suggestions:
+  - If you can reduce to 2-3 weights, it saves a few requests on first paint.
+  - Keep only needed weights in the project to reduce repo size and build artifacts.
+
+Quick wins to try first
+- Stop storing base64 images in DB; store URLs instead.
+- Add `sizes` to `next/image` usages (e.g., `ProductCard`, `CategorySection`, `ProductCarousel`, `OfferCarousel`).
+- Replace GIF top banners with smaller formats.
+- Reduce the amount of product data rendered on the home page.
+
+Notes
+- I could not parse `icecentr-summry.pdf` in this environment due to missing PDF tooling. The JSON Lighthouse report is fully read and reflected above.

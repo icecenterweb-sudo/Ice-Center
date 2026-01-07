@@ -141,7 +141,7 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
                                     <label className="block text-sm font-medium text-gray-700">
                                         نام محصول<span className="text-red-500">*</span>
                                     </label>
-                                    <span className={`text-xs font-mono ${nameLength > 70 ? 'text-red-500' : nameLength > 50 ? 'text-orange-500' : 'text-gray-400'}`}>
+                                    <span className={`text-xs font-mono ${nameLength > 70 ? 'text-red-500' : nameLength > 50 ? 'text-orange-500' : 'text-gray-500'}`}>
                                         {nameLength}/70
                                     </span>
                                 </div>
@@ -163,7 +163,7 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
                             <div>
                                 <div className="flex items-center justify-between mb-2">
                                     <label className="block text-sm font-medium text-gray-700">توضیحات</label>
-                                    <span className={`text-xs font-mono ${descLength > 500 ? 'text-red-500' : descLength > 300 ? 'text-orange-500' : 'text-gray-400'}`}>
+                                    <span className={`text-xs font-mono ${descLength > 500 ? 'text-red-500' : descLength > 300 ? 'text-orange-500' : 'text-gray-500'}`}>
                                         {descLength}/500
                                     </span>
                                 </div>
@@ -313,8 +313,13 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
                             <div className="pt-4 border-t border-gray-100">
                                 <label className="flex items-center gap-3 cursor-pointer p-2 hover:bg-gray-50 rounded-lg transition-colors">
                                     <div className="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" name="active" className="sr-only peer" defaultChecked />
-                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                        <input
+                                            type="checkbox"
+                                            name="active"
+                                            className="peer h-6 w-11 cursor-pointer appearance-none rounded-full bg-gray-200 transition-colors checked:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2"
+                                            defaultChecked
+                                        />
+                                        <span className="pointer-events-none absolute left-[2px] top-[2px] h-5 w-5 rounded-full bg-white border border-gray-300 shadow-sm transition-transform peer-checked:translate-x-5 peer-checked:border-white" />
                                     </div>
                                     <span className="text-sm font-medium text-gray-700">محصول فعال باشد</span>
                                 </label>

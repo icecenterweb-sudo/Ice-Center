@@ -122,7 +122,7 @@ export default function MultiImageUpload({
                                 <Upload className="w-6 h-6" />
                             </div>
                             <p className="text-sm font-bold text-gray-700">افزودن تصویر</p>
-                            <p className="text-xs text-gray-400 mt-1">PNG, JPG</p>
+                            <p className="text-xs text-gray-500 mt-1">PNG, JPG</p>
                         </div>
                     </label>
                 )}

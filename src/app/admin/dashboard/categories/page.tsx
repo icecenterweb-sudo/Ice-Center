@@ -42,7 +42,7 @@ async function CategoriesContent() {
                     <div className="inline-block p-6 bg-gray-100 rounded-full mb-4">
                         <FolderTree className="w-12 h-12 text-gray-400" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">هنوز دسته‌بندی‌ای ثبت نشده</h3>
+                    <h2 className="text-xl font-bold text-gray-900 mb-2">هنوز دسته‌بندی‌ای ثبت نشده</h2>
                     <p className="text-gray-600 mb-6">برای شروع، اولین دسته‌بندی خود را ایجاد کنید</p>
                     <Link
                         href="/admin/dashboard/categories/add"
@@ -75,7 +75,7 @@ async function CategoriesContent() {
                                     )}
 
                                     <div className="flex-1 min-w-0">
-                                        <h3 className="text-lg font-bold text-gray-900 mb-1 truncate">{category.name}</h3>
+                                        <h2 className="text-lg font-bold text-gray-900 mb-1 truncate">{category.name}</h2>
                                         {category.description && (
                                             <p className="text-sm text-gray-600 line-clamp-2">{category.description}</p>
                                         )}

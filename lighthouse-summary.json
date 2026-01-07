@@ -1,0 +1,205 @@
+{
+  "requestedUrl": "https://icecentr.com/",
+  "finalUrl": "https://icecentr.com/",
+  "fetchTime": "2026-01-07T06:44:24.883Z",
+  "lighthouseVersion": "13.0.1",
+  "categories": {
+    "performance": 0.26,
+    "accessibility": 0.94,
+    "bestPractices": 0.73,
+    "seo": 1
+  },
+  "metrics": {
+    "firstContentfulPaint": {
+      "score": 0,
+      "value": 28527.8007,
+      "displayValue": "28.5 s"
+    },
+    "largestContentfulPaint": {
+      "score": 0,
+      "value": 30630.8007,
+      "displayValue": "30.6 s"
+    },
+    "speedIndex": {
+      "score": 0,
+      "value": 28527.8007,
+      "displayValue": "28.5 s"
+    },
+    "totalBlockingTime": {
+      "score": 0.03,
+      "value": 2957,
+      "displayValue": "2,960 ms"
+    },
+    "cumulativeLayoutShift": {
+      "score": 1,
+      "value": 0.0065543362978955294,
+      "displayValue": "0.007"
+    },
+    "timeToInteractive": {
+      "score": 0,
+      "value": 35636.8007,
+      "displayValue": "35.6 s"
+    },
+    "serverResponseTime": {
+      "score": 1,
+      "value": 218,
+      "displayValue": "Root document took 220 ms"
+    },
+    "maxPotentialFid": {
+      "score": 0.05,
+      "value": 559,
+      "displayValue": "560 ms"
+    }
+  },
+  "weight": {
+    "totalByteWeight": {
+      "score": 0.5,
+      "value": 6550863,
+      "displayValue": "Total size was 6,397 KiB"
+    },
+    "resourceSummary": [
+      {
+        "resourceType": "total",
+        "label": "Total",
+        "requestCount": 107,
+        "transferSize": 6550863
+      },
+      {
+        "resourceType": "document",
+        "label": "Document",
+        "requestCount": 1,
+        "transferSize": 5562280
+      },
+      {
+        "resourceType": "script",
+        "label": "Script",
+        "requestCount": 27,
+        "transferSize": 537448
+      },
+      {
+        "resourceType": "font",
+        "label": "Font",
+        "requestCount": 10,
+        "transferSize": 208849
+      },
+      {
+        "resourceType": "image",
+        "label": "Image",
+        "requestCount": 7,
+        "transferSize": 155868
+      },
+      {
+        "resourceType": "other",
+        "label": "Other",
+        "requestCount": 59,
+        "transferSize": 61742
+      },
+      {
+        "resourceType": "stylesheet",
+        "label": "Stylesheet",
+        "requestCount": 3,
+        "transferSize": 24676
+      },
+      {
+        "resourceType": "media",
+        "label": "Media",
+        "requestCount": 0,
+        "transferSize": 0
+      },
+      {
+        "resourceType": "third-party",
+        "label": "Third-party",
+        "requestCount": 3,
+        "transferSize": 147934
+      }
+    ]
+  },
+  "diagnostics": {
+    "mainthreadWorkBreakdown": {
+      "score": 0,
+      "value": 23125.228000000065,
+      "displayValue": "23.1 s"
+    },
+    "bootupTime": {
+      "score": 0,
+      "value": 9112.119999999933,
+      "displayValue": "9.1 s"
+    },
+    "unusedJavascript": {
+      "score": 0.5,
+      "value": 0,
+      "displayValue": "Est savings of 135 KiB"
+    },
+    "unminifiedJavascript": {
+      "score": 1,
+      "value": 0,
+      "displayValue": null
+    },
+    "unminifiedCss": {
+      "score": 1,
+      "value": 0,
+      "displayValue": null
+    }
+  },
+  "opportunities": {
+    "renderBlockingResources": null,
+    "usesTextCompression": null,
+    "usesLongCacheTtl": null,
+    "offscreenImages": null,
+    "usesOptimizedImages": null,
+    "usesResponsiveImages": null,
+    "modernImageFormats": null
+  },
+  "topRequests": [
+    {
+      "url": "https://icecentr.com/",
+      "resourceType": "Document",
+      "transferSize": 5562280
+    },
+    {
+      "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAArwAAAK8CAIAAACC2PsUAAAAAXNSR0IArs4c6QAAAARnQU1BAACxj…",
+      "resourceType": "Image",
+      "transferSize": 214016
+    },
+    {
+      "url": "https://www.googletagmanager.com/gtag/js?id=G-C9MG3EGDGP",
+      "resourceType": "Script",
+      "transferSize": 147232
+    },
+    {
+      "url": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAQEBAQEBAQEBAQGBgUGBggHBwcHCAwJCQkJCQwTDA4M…",
+      "resourceType": "Image",
+      "transferSize": 144989
+    },
+    {
+      "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAyAAAAMgCAMAAADsrvZaAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCA…",
+      "resourceType": "Image",
+      "transferSize": 140802
+    },
+    {
+      "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAyAAAAMgCAMAAADsrvZaAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCA…",
+      "resourceType": "Image",
+      "transferSize": 130162
+    },
+    {
+      "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABLAAAASwCAMAAADc/0P9AAAABGdBTUEAALGPC/xhBQAAAAFzUkdCA…",
+      "resourceType": "Image",
+      "transferSize": 125364
+    },
+    {
+      "url": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAQEBAQEBAUFBQUHBwYHBwoJCAgJCg8KCwoLCg8WDhAO…",
+      "resourceType": "Image",
+      "transferSize": 119783
+    },
+    {
+      "url": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAUFBQUFBQUGBgUICAcICAsKCQkKCxEMDQwNDBEaEBMQ…",
+      "resourceType": "Image",
+      "transferSize": 78767
+    },
+    {
+      "url": "https://icecentr.com/_next/static/chunks/42220f1b0287093e.js",
+      "resourceType": "Script",
+      "transferSize": 72637
+    }
+  ]
+}

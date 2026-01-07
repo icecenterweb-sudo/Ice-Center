@@ -111,12 +111,12 @@ async function ProductsContent() {
                                         </td>
                                         <td className="px-3 py-3">
                                             <div className="font-bold text-gray-800 text-sm">{product.name}</div>
-                                            <div className="text-xs text-gray-400 mt-0.5">{product.sku || '---'}</div>
+                                            <div className="text-xs text-gray-500 mt-0.5">{product.sku || '---'}</div>
                                         </td>
                                         <td className="px-3 py-3 text-gray-600 text-sm">
                                             <div>{product.brand || '---'}</div>
                                             {product.subcategory && (
-                                                <div className="text-xs text-gray-400 mt-0.5">{product.subcategory.name}</div>
+                                                <div className="text-xs text-gray-500 mt-0.5">{product.subcategory.name}</div>
                                             )}
                                         </td>
                                         <td className="px-3 py-3 font-bold text-gray-700 text-sm whitespace-nowrap">
@@ -136,7 +136,7 @@ async function ProductsContent() {
                                                     {product.variants.length} واریانت
                                                 </span>
                                             ) : (
-                                                <span className="text-xs text-gray-400">---</span>
+                                                <span className="text-xs text-gray-500">---</span>
                                             )}
                                         </td>
                                         <td className="px-3 py-3">

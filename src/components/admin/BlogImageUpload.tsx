@@ -142,7 +142,7 @@ export default function BlogImageUpload({
                                         <Upload className="w-6 h-6" />
                                     </div>
                                     <p className="font-medium text-gray-700 text-sm">آپلود تصویر</p>
-                                    <p className="text-xs text-gray-400 mt-1">PNG, JPG تا 5MB</p>
+                                    <p className="text-xs text-gray-500 mt-1">PNG, JPG تا 5MB</p>
                                 </>
                             )}
                         </label>
@@ -185,7 +185,7 @@ export default function BlogImageUpload({
                     </div>
                 )}
 
-                <p className="text-xs text-gray-400">{hint}</p>
+                <p className="text-xs text-gray-500">{hint}</p>
             </div>
         </div>
     );

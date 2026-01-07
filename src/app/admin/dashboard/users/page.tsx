@@ -199,7 +199,7 @@ async function UsersContent() {
                     <div className="inline-block p-6 bg-gray-100 rounded-full mb-4">
                         <Users className="w-12 h-12 text-gray-400" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">هنوز کاربری ثبت‌نام نکرده</h3>
+                    <h2 className="text-xl font-bold text-gray-900 mb-2">هنوز کاربری ثبت‌نام نکرده</h2>
                     <p className="text-gray-600">کاربران ثبت‌نام شده در این قسمت نمایش داده می‌شوند</p>
                 </div>
             )}

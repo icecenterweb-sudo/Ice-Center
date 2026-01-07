@@ -108,10 +108,10 @@ export default function ProfileEditPage() {
                 {/* Phone (Read-only) */}
                 <div className="bg-white rounded-2xl p-4 shadow-sm">
                     <label className="block text-xs text-gray-500 mb-2">شماره موبایل</label>
-                    <div className="text-sm text-gray-400" dir="ltr">
+                    <div className="text-sm text-gray-500" dir="ltr">
                         {user?.phone ? toPersianDigits(user.phone) : ''}
                     </div>
-                    <p className="text-[10px] text-gray-400 mt-2">
+                    <p className="text-[10px] text-gray-500 mt-2">
                         شماره موبایل قابل تغییر نیست
                     </p>
                 </div>

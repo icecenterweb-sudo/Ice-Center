@@ -53,7 +53,7 @@ export default function StatsCard({
                             <span className={`px-2 py-1 rounded-full ${trendUp ? 'bg-green-100' : 'bg-red-100'}`}>
                                 {trendUp ? '↑' : '↓'} {trend}
                             </span>
-                            <span className="text-gray-400 font-normal text-[10px]">نسبت به ماه قبل</span>
+                            <span className="text-gray-500 font-normal text-[10px]">نسبت به ماه قبل</span>
                         </div>
                     )}
                 </div>

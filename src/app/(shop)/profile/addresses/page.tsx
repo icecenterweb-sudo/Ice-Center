@@ -170,7 +170,7 @@ export default function AddressesPage() {
                                         {address.address}
                                     </p>
                                     {address.postalCode && (
-                                        <p className="text-[10px] text-gray-400 mt-1">
+                                        <p className="text-[10px] text-gray-500 mt-1">
                                             کد پستی: {address.postalCode}
                                         </p>
                                     )}

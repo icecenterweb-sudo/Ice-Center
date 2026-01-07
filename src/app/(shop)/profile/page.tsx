@@ -191,7 +191,7 @@ export default function ProfilePage() {
             </button>
 
             {/* Mobile: App Version */}
-            <div className="lg:hidden text-center mt-6 text-[11px] text-gray-400">
+            <div className="lg:hidden text-center mt-6 text-[11px] text-gray-500">
                 نسخه ۱.۰.۰
             </div>
 

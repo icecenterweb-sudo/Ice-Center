@@ -64,8 +64,11 @@ export default function FilterSidebar({ onFilterChange }: FilterSidebarProps) {
                     <label className="flex items-center justify-between cursor-pointer group">
                         <span className="font-semibold text-[13px] text-gray-700 group-hover:text-blue-600 transition-colors">فقط کالاهای موجود</span>
                         <div className="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" className="sr-only peer" />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-blue-500 peer-checked:to-blue-600 shadow-inner"></div>
+                            <input
+                                type="checkbox"
+                                className="peer h-6 w-11 cursor-pointer appearance-none rounded-full bg-gray-200 transition-colors checked:bg-gradient-to-r checked:from-blue-500 checked:to-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2 shadow-inner"
+                            />
+                            <span className="pointer-events-none absolute right-[2px] top-[2px] h-5 w-5 rounded-full bg-white border border-gray-300 shadow-sm transition-transform peer-checked:-translate-x-5 peer-checked:border-white" />
                         </div>
                     </label>
                 </div>

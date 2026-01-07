@@ -268,7 +268,7 @@ export default function ProductsPage() {
                                 </div>
                             )}
                             {!hasMore && displayedProducts.length > 0 && (
-                                <div className="text-center text-gray-400 text-sm py-4">
+                                <div className="text-center text-gray-500 text-sm py-4">
                                     همه محصولات نمایش داده شد
                                 </div>
                             )}
