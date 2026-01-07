@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ChevronLeft, ChevronDown, ChevronUp, X, SlidersHorizontal, ArrowUpDown, Tag, DollarSign, Package } from 'lucide-react';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 type Product = {
     id: number;
@@ -71,6 +72,7 @@ export default function CategoryClient({
 }: CategoryClientProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const [isPending, startTransition] = useTransition();
 
     // Filter panel states
     const [subCatExpanded, setSubCatExpanded] = useState(true);
@@ -110,7 +112,10 @@ export default function CategoryClient({
 
         const search = current.toString();
         const query = search ? `?${search}` : '';
-        router.push(`/categories/${category.slug}${query}`, { scroll: false });
+
+        startTransition(() => {
+            router.push(`/categories/${category.slug}${query}`, { scroll: false });
+        });
     }, [searchParams, router, category.slug]);
 
     const handleSortChange = (newSort: string) => {
@@ -189,6 +194,8 @@ export default function CategoryClient({
 
     return (
         <div className="min-h-screen bg-neutral-50" dir="rtl">
+            {isPending && <LoadingSpinner />}
+
             {/* Breadcrumb */}
             <div className="bg-white border-b border-neutral-100">
                 <div className="max-w-[1440px] mx-auto px-4 lg:px-6 py-3">

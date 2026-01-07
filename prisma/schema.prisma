@@ -136,6 +136,7 @@ model User {
   addresses    Address[]
   cartItems    CartItem[]
   blogComments BlogComment[]
+  orders       Order[]
 
   @@index([phone])
 }
@@ -484,4 +485,81 @@ model Banner {
   category      Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   
   @@index([position, isActive, order])
+}
+
+// =============================================================================
+// ORDER SYSTEM
+// =============================================================================
+
+enum OrderStatus {
+  PENDING      // در انتظار پرداخت
+  PAID         // پرداخت شده
+  PROCESSING   // در حال پردازش
+  SHIPPED      // ارسال شده
+  DELIVERED    // تحویل داده شده
+  CANCELLED    // لغو شده
+}
+
+model Order {
+  id              Int         @id @default(autoincrement())
+  orderNumber     String      @unique  // شماره سفارش یکتا
+  
+  // Customer Info (denormalized for history)
+  userId          Int
+  user            User        @relation(fields: [userId], references: [id])
+  customerName    String      // نام مشتری (snapshot)
+  customerPhone   String      // شماره تماس (snapshot)
+  
+  // Shipping Address (snapshot)
+  shippingAddress String      // آدرس ارسال
+  shippingCity    String      // شهر
+  shippingProvince String?    // استان
+  postalCode      String?     // کد پستی
+  
+  // Order Details
+  items           OrderItem[]
+  subtotal        Float       // جمع قبل از تخفیف
+  discount        Float       @default(0)
+  shippingCost    Float       @default(0)
+  total           Float       // جمع کل
+  
+  // Status & Notes
+  status          OrderStatus @default(PENDING)
+  notes           String?     // یادداشت مشتری
+  adminNotes      String?     // یادداشت ادمین (internal)
+  
+  // Timestamps
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  paidAt          DateTime?   // زمان پرداخت
+  shippedAt       DateTime?   // زمان ارسال
+  deliveredAt     DateTime?   // زمان تحویل
+  
+  @@index([userId])
+  @@index([status])
+  @@index([orderNumber])
+  @@index([createdAt])
+  @@index([status, createdAt])
+}
+
+model OrderItem {
+  id          Int      @id @default(autoincrement())
+  orderId     Int
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  // Product Info (snapshot - doesn't change if product is updated)
+  productId   Int
+  productName String   // نام محصول
+  productSku  String?  // کد محصول
+  thumbnail   String?  // تصویر محصول
+  
+  // Pricing
+  quantity    Int
+  unitPrice   Float    // قیمت واحد
+  totalPrice  Float    // قیمت کل (quantity * unitPrice)
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([orderId])
+  @@index([productId])
 }

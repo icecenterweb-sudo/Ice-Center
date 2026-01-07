@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import ProductClient from './ProductClient';
-import { getProductBySlug } from '@/lib/prisma/queries-product';
+import { getProductWithCaching } from '@/lib/cache/product';
 import { generateProductPageJsonLd } from '@/lib/seo/product-jsonld';
 
 type PageProps = {
@@ -9,7 +9,7 @@ type PageProps = {
 
 export default async function ProductPage({ params }: PageProps) {
     const { slug } = await params;
-    const product = await getProductBySlug(slug);
+    const product = await getProductWithCaching(slug);
 
     // Product not found - show 404
     if (!product) {

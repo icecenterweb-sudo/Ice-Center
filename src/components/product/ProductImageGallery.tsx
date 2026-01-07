@@ -42,6 +42,7 @@ export default function ProductImageGallery({ images, productName }: ProductImag
                         fill
                         className="object-contain p-4 transition-transform duration-500 group-hover:scale-110"
                         priority
+                        fetchPriority="high"
                         sizes="(max-width: 768px) 100vw, 50vw"
                     />
                     {/* Zoom hint overlay */}
