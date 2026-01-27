@@ -293,16 +293,32 @@ export default function CheckoutPage() {
 
         setIsSubmitting(true);
 
-        // TODO: Implement order submission API
-        setTimeout(() => {
-            // Generate a random order ID
-            const newOrderId = `ICE-${Date.now().toString(36).toUpperCase()}`;
-            setOrderId(newOrderId);
+        try {
+            // Create order via API
+            const res = await fetch('/api/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    notes: formValues.deliveryNotes,
+                }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || 'خطا در ثبت سفارش');
+            }
+
+            setOrderId(data.order.orderNumber);
             setIsSubmitting(false);
             setCurrentStep(4); // Move to success step
             window.scrollTo({ top: 0, behavior: 'smooth' });
             toast.success('سفارش شما با موفقیت ثبت شد!');
-        }, 2000);
+        } catch (error: any) {
+            console.error('Order error:', error);
+            toast.error(error.message || 'خطا در ثبت سفارش');
+            setIsSubmitting(false);
+        }
     };
 
     // Loading skeleton

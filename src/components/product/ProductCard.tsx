@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Star, ShoppingCart, BarChart2, Check, Phone } from 'lucide-react';
+import WishlistButton from './WishlistButton';
 
 interface ProductCardProps {
     product: {
@@ -46,17 +47,21 @@ export default function ProductCard({ product }: ProductCardProps) {
                     </div>
                 )}
 
-                {/* Compare Checkbox (Hidden by default, shown on hover/group) */}
-                <div className="absolute top-3 left-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                {/* Action Buttons (Wishlist + Compare) */}
+                <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
+                    {/* Wishlist Button - Always visible */}
+                    <WishlistButton productId={product.id} size="sm" />
+
+                    {/* Compare Button - Show on hover */}
                     <button
-                        className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-blue-600 bg-white/90 backdrop-blur px-2 py-1 rounded-full border border-gray-200 hover:border-blue-300 transition-colors"
+                        className="flex items-center justify-center w-7 h-7 text-gray-400 hover:text-blue-600 bg-white/90 backdrop-blur rounded-full border border-gray-200 hover:border-blue-300 transition-all opacity-0 group-hover:opacity-100"
                         onClick={(e) => {
                             e.preventDefault();
                             // Handle compare
                         }}
+                        title="مقایسه"
                     >
-                        <BarChart2 className="w-3 h-3" />
-                        <span>مقایسه</span>
+                        <BarChart2 className="w-3.5 h-3.5" />
                     </button>
                 </div>
 

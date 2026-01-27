@@ -22,6 +22,169 @@ interface BlogCommentSectionProps {
     postId: number;
 }
 
+interface CommentFormProps {
+    parentId?: number;
+    onCancel?: () => void;
+    onSubmit: (e: React.FormEvent, parentId?: number) => void;
+    formData: {
+        authorName: string;
+        authorEmail: string;
+        content: string;
+    };
+    setFormData: (data: any) => void;
+    submitting: boolean;
+}
+
+// Extracted CommentForm Component
+const CommentForm = ({ parentId, onCancel, onSubmit, formData, setFormData, submitting }: CommentFormProps) => (
+    <form onSubmit={(e) => onSubmit(e, parentId)} className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input
+                type="text"
+                placeholder="نام شما (اختیاری)"
+                value={formData.authorName}
+                onChange={(e) => setFormData({ ...formData, authorName: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-ocean focus:border-transparent bg-white text-gray-900"
+            />
+            <input
+                type="email"
+                placeholder="ایمیل شما (اختیاری)"
+                value={formData.authorEmail}
+                onChange={(e) => setFormData({ ...formData, authorEmail: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-ocean focus:border-transparent bg-white text-gray-900"
+            />
+        </div>
+        <textarea
+            placeholder="نظر خود را بنویسید..."
+            value={formData.content}
+            onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+            required
+            rows={4}
+            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-ocean focus:border-transparent resize-none bg-white text-gray-900"
+        />
+        <div className="flex gap-3">
+            <button
+                type="submit"
+                disabled={submitting || !formData.content.trim()}
+                className="flex items-center gap-2 bg-ocean hover:bg-royal text-white px-6 py-3 rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                <Send className="w-4 h-4" />
+                {submitting ? 'در حال ارسال...' : 'ارسال نظر'}
+            </button>
+            {onCancel && (
+                <button
+                    type="button"
+                    onClick={onCancel}
+                    className="px-6 py-3 border border-gray-300 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors"
+                >
+                    انصراف
+                </button>
+            )}
+        </div>
+    </form>
+);
+
+// Helper functions (moved outside or kept inside if simple)
+const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('fa-IR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+    });
+};
+
+const getDisplayName = (comment: Comment) => {
+    if (comment.user) {
+        return `${comment.user.firstName || ''} ${comment.user.lastName || ''}`.trim() || 'کاربر';
+    }
+    return comment.authorName || 'کاربر مهمان';
+};
+
+interface CommentItemProps {
+    comment: Comment;
+    isReply?: boolean;
+    replyingTo: number | null;
+    setReplyingTo: (id: number | null) => void;
+    formData: any;
+    setFormData: (data: any) => void;
+    handleSubmit: (e: React.FormEvent, parentId?: number) => void;
+    submitting: boolean;
+}
+
+// Extracted CommentItem Component
+const CommentItem = ({
+    comment,
+    isReply = false,
+    replyingTo,
+    setReplyingTo,
+    formData,
+    setFormData,
+    handleSubmit,
+    submitting
+}: CommentItemProps) => (
+    <div className={`${isReply ? 'mr-8 border-r-2 border-gray-200 pr-4' : ''}`}>
+        <div className={`bg-white rounded-xl p-4 ${isReply ? 'bg-gray-50' : 'border border-gray-200'}`}>
+            {/* Header */}
+            <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-ocean/10 rounded-full flex items-center justify-center">
+                        <User className="w-4 h-4 text-ocean" />
+                    </div>
+                    <div>
+                        <span className="font-medium text-gray-800">{getDisplayName(comment)}</span>
+                        <span className="text-xs text-gray-500 mr-2">{formatDate(comment.createdAt)}</span>
+                    </div>
+                </div>
+                {!isReply && (
+                    <button
+                        onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+                        className="flex items-center gap-1 text-sm text-gray-500 hover:text-ocean transition-colors"
+                    >
+                        <Reply className="w-4 h-4" />
+                        پاسخ
+                    </button>
+                )}
+            </div>
+
+            {/* Content */}
+            <p className="text-gray-700 leading-7">{comment.content}</p>
+
+            {/* Reply Form */}
+            {replyingTo === comment.id && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                    <CommentForm
+                        parentId={comment.id}
+                        onCancel={() => setReplyingTo(null)}
+                        onSubmit={handleSubmit}
+                        formData={formData}
+                        setFormData={setFormData}
+                        submitting={submitting}
+                    />
+                </div>
+            )}
+        </div>
+
+        {/* Replies */}
+        {comment.replies && comment.replies.length > 0 && (
+            <div className="mt-4 space-y-3">
+                {comment.replies.map((reply) => (
+                    <CommentItem
+                        key={reply.id}
+                        comment={reply}
+                        isReply
+                        replyingTo={replyingTo}
+                        setReplyingTo={setReplyingTo}
+                        formData={formData}
+                        setFormData={setFormData}
+                        handleSubmit={handleSubmit}
+                        submitting={submitting}
+                    />
+                ))}
+            </div>
+        )}
+    </div>
+);
+
 export default function BlogCommentSection({ postId }: BlogCommentSectionProps) {
     const [comments, setComments] = useState<Comment[]>([]);
     const [loading, setLoading] = useState(true);
@@ -91,120 +254,6 @@ export default function BlogCommentSection({ postId }: BlogCommentSectionProps) 
         }
     };
 
-    // Format date
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('fa-IR', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-        });
-    };
-
-    // Get display name
-    const getDisplayName = (comment: Comment) => {
-        if (comment.user) {
-            return `${comment.user.firstName || ''} ${comment.user.lastName || ''}`.trim() || 'کاربر';
-        }
-        return comment.authorName || 'کاربر مهمان';
-    };
-
-    // Comment Form Component
-    const CommentForm = ({ parentId, onCancel }: { parentId?: number; onCancel?: () => void }) => (
-        <form onSubmit={(e) => handleSubmit(e, parentId)} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input
-                    type="text"
-                    placeholder="نام شما (اختیاری)"
-                    value={formData.authorName}
-                    onChange={(e) => setFormData({ ...formData, authorName: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-ocean focus:border-transparent bg-white text-gray-900"
-                />
-                <input
-                    type="email"
-                    placeholder="ایمیل شما (اختیاری)"
-                    value={formData.authorEmail}
-                    onChange={(e) => setFormData({ ...formData, authorEmail: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-ocean focus:border-transparent bg-white text-gray-900"
-                />
-            </div>
-            <textarea
-                placeholder="نظر خود را بنویسید..."
-                value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                required
-                rows={4}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-ocean focus:border-transparent resize-none bg-white text-gray-900"
-            />
-            <div className="flex gap-3">
-                <button
-                    type="submit"
-                    disabled={submitting || !formData.content.trim()}
-                    className="flex items-center gap-2 bg-ocean hover:bg-royal text-white px-6 py-3 rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    <Send className="w-4 h-4" />
-                    {submitting ? 'در حال ارسال...' : 'ارسال نظر'}
-                </button>
-                {onCancel && (
-                    <button
-                        type="button"
-                        onClick={onCancel}
-                        className="px-6 py-3 border border-gray-300 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors"
-                    >
-                        انصراف
-                    </button>
-                )}
-            </div>
-        </form>
-    );
-
-    // Single Comment Component
-    const CommentItem = ({ comment, isReply = false }: { comment: Comment; isReply?: boolean }) => (
-        <div className={`${isReply ? 'mr-8 border-r-2 border-gray-200 pr-4' : ''}`}>
-            <div className={`bg-white rounded-xl p-4 ${isReply ? 'bg-gray-50' : 'border border-gray-200'}`}>
-                {/* Header */}
-                <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-ocean/10 rounded-full flex items-center justify-center">
-                            <User className="w-4 h-4 text-ocean" />
-                        </div>
-                        <div>
-                            <span className="font-medium text-gray-800">{getDisplayName(comment)}</span>
-                            <span className="text-xs text-gray-500 mr-2">{formatDate(comment.createdAt)}</span>
-                        </div>
-                    </div>
-                    {!isReply && (
-                        <button
-                            onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
-                            className="flex items-center gap-1 text-sm text-gray-500 hover:text-ocean transition-colors"
-                        >
-                            <Reply className="w-4 h-4" />
-                            پاسخ
-                        </button>
-                    )}
-                </div>
-
-                {/* Content */}
-                <p className="text-gray-700 leading-7">{comment.content}</p>
-
-                {/* Reply Form */}
-                {replyingTo === comment.id && (
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                        <CommentForm parentId={comment.id} onCancel={() => setReplyingTo(null)} />
-                    </div>
-                )}
-            </div>
-
-            {/* Replies */}
-            {comment.replies && comment.replies.length > 0 && (
-                <div className="mt-4 space-y-3">
-                    {comment.replies.map((reply) => (
-                        <CommentItem key={reply.id} comment={reply} isReply />
-                    ))}
-                </div>
-            )}
-        </div>
-    );
-
     return (
         <div className="mt-12 pt-8 border-t border-gray-200">
             {/* Header */}
@@ -228,8 +277,8 @@ export default function BlogCommentSection({ postId }: BlogCommentSectionProps) 
             {message && (
                 <div
                     className={`p-4 rounded-xl mb-6 ${message.type === 'success'
-                            ? 'bg-green-50 text-green-700 border border-green-200'
-                            : 'bg-red-50 text-red-700 border border-red-200'
+                        ? 'bg-green-50 text-green-700 border border-green-200'
+                        : 'bg-red-50 text-red-700 border border-red-200'
                         }`}
                 >
                     {message.text}
@@ -240,7 +289,12 @@ export default function BlogCommentSection({ postId }: BlogCommentSectionProps) 
             {showForm && (
                 <div className="bg-frost rounded-xl p-6 mb-8">
                     <h4 className="font-medium text-gray-800 mb-4">ثبت نظر جدید</h4>
-                    <CommentForm />
+                    <CommentForm
+                        onSubmit={handleSubmit}
+                        formData={formData}
+                        setFormData={setFormData}
+                        submitting={submitting}
+                    />
                 </div>
             )}
 
@@ -263,7 +317,16 @@ export default function BlogCommentSection({ postId }: BlogCommentSectionProps) 
             ) : (
                 <div className="space-y-6">
                     {comments.map((comment) => (
-                        <CommentItem key={comment.id} comment={comment} />
+                        <CommentItem
+                            key={comment.id}
+                            comment={comment}
+                            replyingTo={replyingTo}
+                            setReplyingTo={setReplyingTo}
+                            formData={formData}
+                            setFormData={setFormData}
+                            handleSubmit={handleSubmit}
+                            submitting={submitting}
+                        />
                     ))}
                 </div>
             )}

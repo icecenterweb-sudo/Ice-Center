@@ -11,7 +11,8 @@ import MiniPricingBox from '@/components/product/MiniPricingBox';
 import MobileActionBar from '@/components/product/MobileActionBar';
 import SimilarProducts from '@/components/product/SimilarProducts';
 import ProductTabs from '@/components/product/ProductTabs';
-import { Zap, Snowflake, Settings, Award } from 'lucide-react';
+import WishlistButton from '@/components/product/WishlistButton';
+import { Zap, Snowflake, Settings, Award, Share2 } from 'lucide-react';
 
 type Specification = {
     title: string;
@@ -95,6 +96,31 @@ export default function ProductClient({ product }: ProductClientProps) {
 
                     {/* Right: Gallery */}
                     <div className="lg:col-span-4">
+                        {/* Action Buttons */}
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <WishlistButton productId={product.id} size="lg" />
+                                <button
+                                    className="w-11 h-11 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
+                                    onClick={() => {
+                                        if (navigator.share) {
+                                            navigator.share({
+                                                title: product.name,
+                                                url: window.location.href,
+                                            });
+                                        } else {
+                                            navigator.clipboard.writeText(window.location.href);
+                                        }
+                                    }}
+                                    title="اشتراک‌گذاری"
+                                >
+                                    <Share2 className="w-5 h-5" />
+                                </button>
+                            </div>
+                            {product.sku && (
+                                <span className="text-xs text-gray-400">کد: {product.sku}</span>
+                            )}
+                        </div>
                         <ProductImageGallery images={product.images} productName={product.name} />
                     </div>
 

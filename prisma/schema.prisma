@@ -61,6 +61,7 @@ model Product {
   offerProducts        OfferProduct[]   // Many-to-many with Offers
   slides               Slide[]          // Hero slider slides linking to this product
   banners              Banner[]         // Banners linking to this product
+  wishlistItems        WishlistItem[]   // Wishlist items
 
   @@index([slug])
   @@index([subcategoryId])
@@ -137,6 +138,7 @@ model User {
   cartItems    CartItem[]
   blogComments BlogComment[]
   orders       Order[]
+  wishlistItems WishlistItem[]
 
   @@index([phone])
 }
@@ -563,3 +565,21 @@ model OrderItem {
   @@index([orderId])
   @@index([productId])
 }
+
+// =============================================================================
+// WISHLIST SYSTEM
+// =============================================================================
+
+model WishlistItem {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
+}
+

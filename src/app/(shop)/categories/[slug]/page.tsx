@@ -1,8 +1,14 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import CategoryClient from './CategoryClient';
-import { getCategoryBySlug, getSubcategoriesByCategoryId, getProducts, getAvailableBrands } from '@/lib/prisma/queries-category';
-import { generateCategoryJsonLd } from '@/lib/seo/jsonld';
+import {
+    getCachedCategoryBySlug,
+    getCachedSubcategories,
+    getCachedBrands,
+    getCachedBaseProducts,
+    applyFiltersToProducts,
+    getFreshFilteredProducts,
+} from '@/lib/cache/category';
 
 type Props = {
     params: Promise<{ slug: string }>;
@@ -18,12 +24,9 @@ type Props = {
     }>;
 };
 
-
-
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { slug } = await params;
-    const category = await getCategoryBySlug(slug);
+    const category = await getCachedCategoryBySlug(slug);
 
     if (!category) {
         return { title: 'دسته‌بندی یافت نشد' };
@@ -45,10 +48,12 @@ export default async function CategoryPage({ params, searchParams }: Props) {
     const { slug } = await params;
     const sp = await searchParams;
 
-    const category = await getCategoryBySlug(slug);
+    // STATIC LAYER: Cached category info (30 min TTL)
+    const category = await getCachedCategoryBySlug(slug);
     if (!category) notFound();
 
-    const subcategories = await getSubcategoriesByCategoryId(category.id);
+    // STATIC LAYER: Cached subcategories (30 min TTL)
+    const subcategories = await getCachedSubcategories(category.id);
 
     // Parse filter parameters
     const page = parseInt(sp.page || '1');
@@ -60,20 +65,54 @@ export default async function CategoryPage({ params, searchParams }: Props) {
     const availability = sp.availability ? sp.availability.split(',').filter(Boolean) : undefined;
     const onlyDiscount = sp.discount === 'true';
 
-    // Get available brands in this category
-    const availableBrands = await getAvailableBrands(category.id, subcategoryId);
+    // STATIC LAYER: Cached brands (10 min TTL)
+    const availableBrands = await getCachedBrands(category.id, subcategoryId);
 
-    const { products, totalCount, totalPages, currentPage } = await getProducts({
-        categoryId: category.id,
-        subcategoryId,
-        sort,
-        page,
-        minPrice,
-        maxPrice,
-        brands,
-        availability,
-        onlyDiscount,
-    });
+    // Determine if we should use cached filtering or fresh query
+    // Use fresh query for subcategory filter (different data set)
+    // Use cached + client-side filtering for other filters
+    const hasSubcategoryFilter = subcategoryId !== undefined;
+
+    let products: any[];
+    let totalCount: number;
+    let totalPages: number;
+    let currentPage: number;
+
+    if (hasSubcategoryFilter) {
+        // DYNAMIC: Fresh query needed for subcategory (different product set)
+        const result = await getFreshFilteredProducts(category.id, {
+            subcategoryId,
+            minPrice,
+            maxPrice,
+            brands,
+            availability,
+            onlyDiscount,
+            sort,
+            page,
+            limit: 12,
+        });
+        products = result.products;
+        totalCount = result.totalCount;
+        totalPages = result.totalPages;
+        currentPage = result.currentPage;
+    } else {
+        // SEMI-DYNAMIC: Use cached base products + client-side filtering
+        const baseProducts = await getCachedBaseProducts(category.id);
+        const result = applyFiltersToProducts(baseProducts, {
+            minPrice,
+            maxPrice,
+            brands,
+            availability,
+            onlyDiscount,
+            sort,
+            page,
+            limit: 12,
+        });
+        products = result.products;
+        totalCount = result.totalCount;
+        totalPages = result.totalPages;
+        currentPage = result.currentPage;
+    }
 
     // Transform subcategories for client component
     const subcategoriesForClient = subcategories.map(s => ({
@@ -88,6 +127,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
         ...p,
         subcategory: null
     }));
+
     // JSON-LD Structured Data for SEO
     const jsonLd = {
         '@context': 'https://schema.org',
@@ -175,3 +215,4 @@ export default async function CategoryPage({ params, searchParams }: Props) {
         </>
     );
 }
+
