@@ -1,4 +1,4 @@
-# 🎨 Brand Color Palette
+# 🎨 Brand Color Palette [ICECENTR]
 
 This palette is updated including a main background color suggestion.
 
