@@ -134,11 +134,12 @@ model User {
   status     UserStatus @default(ACTIVE)
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
-  addresses    Address[]
-  cartItems    CartItem[]
-  blogComments BlogComment[]
-  orders       Order[]
+  addresses     Address[]
+  cartItems     CartItem[]
+  blogComments  BlogComment[]
+  orders        Order[]
   wishlistItems WishlistItem[]
+  notifications Notification[]
 
   @@index([phone])
 }
@@ -583,3 +584,30 @@ model WishlistItem {
   @@index([productId])
 }
 
+// =============================================================================
+// NOTIFICATION SYSTEM
+// =============================================================================
+
+enum NotificationType {
+  ORDER       // Order status updates
+  PROMO       // Promotions and campaigns
+  PRICE       // Price drop alerts
+  STOCK       // Back in stock alerts
+  SYSTEM      // System announcements
+}
+
+model Notification {
+  id        Int              @id @default(autoincrement())
+  userId    Int
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  message   String
+  link      String?          // Optional redirect URL (e.g. /profile/orders/123)
+  readAt    DateTime?        // null = unread, timestamp = read
+  createdAt DateTime         @default(now())
+
+  @@index([userId])
+  @@index([userId, readAt])  // For unread count queries
+  @@index([createdAt])
+}

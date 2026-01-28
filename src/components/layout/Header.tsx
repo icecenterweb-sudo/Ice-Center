@@ -20,6 +20,7 @@ import UserButton from '@/components/auth/UserButton';
 import { useCart } from '@/context/CartContext';
 import { toPersianDigits } from '@/lib/numbers';
 import SearchBar from './SearchBar';
+import NotificationBell from './NotificationBell';
 
 const Header: React.FC = () => {
   const { itemCount, openCart } = useCart();
@@ -137,10 +138,13 @@ const Header: React.FC = () => {
               </button>
             </div>
 
-            {/* دسکتاپ: ورود و سبد خرید */}
+            {/* دسکتاپ: ورود، اعلان و سبد خرید */}
             <div className="hidden lg:flex items-center gap-4">
               {/* دکمه ورود / حساب کاربری */}
               <UserButton />
+
+              {/* دکمه اعلان‌ها */}
+              <NotificationBell />
 
               {/* دکمه سبد خرید */}
               <button
