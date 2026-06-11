@@ -2,6 +2,7 @@ import { NextRequest, NextResponse, connection } from 'next/server';
 import { prisma } from '@/lib/db';
 import { updatePostSchema } from '@/lib/blog/validation';
 import { getPostBySlug, getPublishedPostBySlug } from '@/lib/blog/queries';
+import { requireAdmin } from '@/lib/admin-auth';
 
 interface RouteParams {
     params: Promise<{ slug: string }>;
@@ -14,6 +15,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         const { slug } = await params;
         const { searchParams } = new URL(request.url);
         const isAdmin = searchParams.has('admin');
+        if (isAdmin) {
+            const auth = await requireAdmin(request);
+            if (!auth.ok) return auth.response;
+        }
 
         const post = isAdmin
             ? await getPostBySlug(slug)
@@ -39,6 +44,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // PUT /api/blog/[slug] - Update post
 export async function PUT(request: NextRequest, { params }: RouteParams) {
     try {
+        const auth = await requireAdmin(request);
+        if (!auth.ok) return auth.response;
+
         const { slug } = await params;
         const body = await request.json();
 
@@ -118,6 +126,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 // DELETE /api/blog/[slug] - Delete post
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
     try {
+        const auth = await requireAdmin(request);
+        if (!auth.ok) return auth.response;
+
         const { slug } = await params;
 
         // Check if post exists

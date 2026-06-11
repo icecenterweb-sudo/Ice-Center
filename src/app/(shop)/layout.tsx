@@ -3,6 +3,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 import Analytics from "@/components/analytics/GoogleAnalytics";
+import VisitTracker from "@/components/analytics/VisitTracker";
 import AuthWrapper from "@/components/auth/AuthWrapper";
 import { CartProvider } from "@/context/CartContext";
 import CartDrawer from "@/components/cart/CartDrawer";
@@ -34,9 +35,11 @@ export default function ShopLayout({
             <MobileBottomNav />
           </Suspense>
           <Analytics />
+          <Suspense fallback={null}>
+            <VisitTracker />
+          </Suspense>
         </CartProvider>
       </AuthWrapper>
     </Suspense>
   );
 }
-

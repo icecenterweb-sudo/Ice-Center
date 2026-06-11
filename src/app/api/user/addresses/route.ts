@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { verifyUserToken, USER_TOKEN_COOKIE } from '@/lib/user-jwt';
+import { verifyUserToken, USER_TOKEN_COOKIE } from '@/lib/jwt';
 
 // GET - Fetch user addresses
 export async function GET(request: NextRequest) {

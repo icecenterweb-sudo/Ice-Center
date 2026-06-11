@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import cloudinary from '@/lib/cloudinary';
+import type { UploadApiResponse } from 'cloudinary';
+import { requireAdmin } from '@/lib/admin-auth';
+
+const MAX_UPLOAD_SIZE = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin(request);
+    if (!auth.ok) return auth.response;
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
 
@@ -13,12 +21,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid image type' },
+        { status: 400 }
+      );
+    }
+
+    if (file.size > MAX_UPLOAD_SIZE) {
+      return NextResponse.json(
+        { success: false, message: 'Image size must be 5MB or less' },
+        { status: 413 }
+      );
+    }
+
     // تبدیل File به Buffer
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
     // آپلود به Cloudinary
-    const result: any = await new Promise((resolve, reject) => {
+    const result = await new Promise<UploadApiResponse>((resolve, reject) => {
       cloudinary.uploader.upload_stream(
         {
           folder: 'ice-center-products', // پوشه در Cloudinary
@@ -26,7 +48,8 @@ export async function POST(request: NextRequest) {
         },
         (error, result) => {
           if (error) reject(error);
-          else resolve(result);
+          else if (result) resolve(result);
+          else reject(new Error('Cloudinary upload returned no result'));
         }
       ).end(buffer);
     });
@@ -35,10 +58,11 @@ export async function POST(request: NextRequest) {
       success: true,
       url: result.secure_url,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('خطا در آپلود:', error);
+    const message = error instanceof Error ? error.message : 'Upload failed';
     return NextResponse.json(
-      { success: false, message: error.message },
+      { success: false, message },
       { status: 500 }
     );
   }

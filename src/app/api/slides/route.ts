@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
+import { requireAdmin } from '@/lib/admin-auth';
 
 // Validation schema for creating a slide
 const createSlideSchema = z.object({
@@ -31,6 +32,10 @@ export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
         const all = searchParams.get('all') === 'true'; // For admin: get all slides
+        if (all) {
+            const auth = await requireAdmin(request);
+            if (!auth.ok) return auth.response;
+        }
 
         const slides = await prisma.slide.findMany({
             where: all ? {} : { isActive: true },
@@ -89,7 +94,8 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
     try {
-        // TODO: Add admin authentication check
+        const auth = await requireAdmin(request);
+        if (!auth.ok) return auth.response;
 
         const body = await request.json();
         const validation = createSlideSchema.safeParse(body);

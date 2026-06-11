@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import prisma from '@/lib/db';
-import { verifyUserToken } from '@/lib/user-jwt';
+import { verifyUserToken } from '@/lib/jwt';
 
 /**
  * GET /api/notifications - List user's notifications

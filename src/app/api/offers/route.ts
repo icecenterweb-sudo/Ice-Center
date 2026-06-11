@@ -9,6 +9,7 @@ import { NextRequest, NextResponse, connection } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCarouselOffers } from '@/lib/offers';
 import { z } from 'zod';
+import { requireAdmin } from '@/lib/admin-auth';
 
 // Product with optional custom discount
 const productEntrySchema = z.object({
@@ -107,9 +108,8 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
     try {
-        // TODO: Add admin authentication check
-        // const session = await getAdminSession();
-        // if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const auth = await requireAdmin(request);
+        if (!auth.ok) return auth.response;
 
         const body = await request.json();
         const validation = createOfferSchema.safeParse(body);

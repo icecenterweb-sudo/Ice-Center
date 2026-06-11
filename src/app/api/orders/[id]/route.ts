@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { verifyUserToken } from '@/lib/user-jwt';
+import { verifyUserToken } from '@/lib/jwt';
 import { cookies } from 'next/headers';
 
 type Props = {

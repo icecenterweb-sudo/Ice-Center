@@ -7,8 +7,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
+import { requireAdmin } from '@/lib/admin-auth';
 
 // Validation schema for updating a slide
 const updateSlideSchema = z.object({
@@ -75,7 +77,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
  */
 export async function PUT(request: NextRequest, { params }: RouteParams) {
     try {
-        // TODO: Add admin authentication check
+        const auth = await requireAdmin(request);
+        if (!auth.ok) return auth.response;
 
         const { id } = await params;
         const slideId = parseInt(id);
@@ -112,7 +115,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         }
 
         // Build update data
-        const updateData: any = {};
+        const updateData: Prisma.SlideUncheckedUpdateInput = {};
         if (data.title !== undefined) updateData.title = data.title;
         if (data.desktopImage !== undefined) updateData.desktopImage = data.desktopImage;
         if (data.mobileImage !== undefined) updateData.mobileImage = data.mobileImage;
@@ -149,7 +152,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
     try {
-        // TODO: Add admin authentication check
+        const auth = await requireAdmin(request);
+        if (!auth.ok) return auth.response;
 
         const { id } = await params;
         const slideId = parseInt(id);

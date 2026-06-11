@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { requireAdmin } from '@/lib/admin-auth';
 
+function getErrorCode(error: unknown): string | undefined {
+  return typeof error === 'object' && error !== null && 'code' in error
+    ? String(error.code)
+    : undefined;
+}
 
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
 
 // دریافت یک محصول
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -46,6 +55,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireAdmin(request);
+    if (!auth.ok) return auth.response;
+
     const { id } = await params;
     const productId = parseInt(id);
     const body = await request.json();
@@ -63,10 +75,10 @@ export async function PUT(
     });
 
     return NextResponse.json({ success: true, data: product });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('خطا در ویرایش محصول:', error);
 
-    if (error.code === 'P2025') {
+    if (getErrorCode(error) === 'P2025') {
       return NextResponse.json({
         success: false,
         message: 'محصول یافت نشد'
@@ -75,7 +87,7 @@ export async function PUT(
 
     return NextResponse.json({
       success: false,
-      message: error.message || 'خطا در ویرایش محصول'
+      message: getErrorMessage(error, 'خطا در ویرایش محصول')
     }, { status: 400 });
   }
 }
@@ -86,6 +98,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireAdmin(request);
+    if (!auth.ok) return auth.response;
+
     const { id } = await params;
     const productId = parseInt(id);
 
@@ -104,10 +119,10 @@ export async function DELETE(
       success: true,
       message: 'محصول حذف شد'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('خطا در حذف محصول:', error);
 
-    if (error.code === 'P2025') {
+    if (getErrorCode(error) === 'P2025') {
       return NextResponse.json({
         success: false,
         message: 'محصول یافت نشد'

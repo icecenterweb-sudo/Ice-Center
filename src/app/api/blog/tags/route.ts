@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { createTagSchema } from '@/lib/blog/validation';
 import { getBlogTags } from '@/lib/blog/queries';
+import { requireAdmin } from '@/lib/admin-auth';
 
 // GET /api/blog/tags - List all blog tags
 export async function GET() {
@@ -20,6 +21,9 @@ export async function GET() {
 // POST /api/blog/tags - Create new tag
 export async function POST(request: Request) {
     try {
+        const auth = await requireAdmin(request);
+        if (!auth.ok) return auth.response;
+
         const body = await request.json();
 
         // Validate input

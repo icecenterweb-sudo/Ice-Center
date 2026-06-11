@@ -7,9 +7,11 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { updateProductOfferFlag } from '@/lib/offers';
 import { z } from 'zod';
+import { requireAdmin } from '@/lib/admin-auth';
 
 // Product with optional custom discount
 const productEntrySchema = z.object({
@@ -106,7 +108,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
  */
 export async function PUT(request: NextRequest, { params }: RouteParams) {
     try {
-        // TODO: Add admin authentication check
+        const auth = await requireAdmin(request);
+        if (!auth.ok) return auth.response;
 
         const { id } = await params;
         const offerId = parseInt(id);
@@ -144,7 +147,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         }
 
         // Build update data
-        const updateData: any = {};
+        const updateData: Prisma.OfferUncheckedUpdateInput = {};
         if (data.name !== undefined) updateData.name = data.name;
         if (data.slug !== undefined) updateData.slug = data.slug;
         if (data.description !== undefined) updateData.description = data.description;
@@ -166,8 +169,6 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             : (data.productIds ? data.productIds.map(id => ({ productId: id, customDiscountValue: null })) : null);
 
         if (productEntries) {
-            const productIds = productEntries.map(p => p.productId);
-
             // Delete existing and create new
             await prisma.offerProduct.deleteMany({
                 where: { offerId },
@@ -223,7 +224,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
     try {
-        // TODO: Add admin authentication check
+        const auth = await requireAdmin(request);
+        if (!auth.ok) return auth.response;
 
         const { id } = await params;
         const offerId = parseInt(id);

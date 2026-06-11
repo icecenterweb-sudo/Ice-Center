@@ -140,6 +140,7 @@ model User {
   orders        Order[]
   wishlistItems WishlistItem[]
   notifications Notification[]
+  analyticsEvents AnalyticsEvent[]
 
   @@index([phone])
 }
@@ -196,6 +197,7 @@ model Admin {
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
   blogPosts BlogPost[]
+  analyticsEvents AnalyticsEvent[]
 
   @@index([phone])
 }
@@ -610,4 +612,40 @@ model Notification {
   @@index([userId])
   @@index([userId, readAt])  // For unread count queries
   @@index([createdAt])
+}
+
+// =============================================================================
+// FIRST-PARTY ANALYTICS
+// =============================================================================
+
+enum AnalyticsEventType {
+  PAGE_VIEW
+  USER_LOGIN
+  ADMIN_LOGIN
+}
+
+model AnalyticsEvent {
+  id        Int                @id @default(autoincrement())
+  type      AnalyticsEventType
+
+  path      String?
+  referrer  String?
+  source    String             @default("direct")
+  medium    String?
+  device    String?
+  userAgent String?
+  ipHash    String?
+
+  userId    Int?
+  user      User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  adminId   Int?
+  admin     Admin?             @relation(fields: [adminId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime           @default(now())
+
+  @@index([type, createdAt])
+  @@index([source, createdAt])
+  @@index([path, createdAt])
+  @@index([userId, createdAt])
+  @@index([adminId, createdAt])
 }

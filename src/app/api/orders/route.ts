@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { verifyUserToken } from '@/lib/user-jwt';
+import { verifyUserToken } from '@/lib/jwt';
 import { cookies } from 'next/headers';
 
 /**
@@ -144,6 +144,17 @@ export async function POST(request: NextRequest) {
             // Clear cart
             await tx.cartItem.deleteMany({
                 where: { userId: user.id },
+            });
+
+            // Create notification for user
+            await tx.notification.create({
+                data: {
+                    userId: user.id,
+                    type: 'ORDER',
+                    title: `سفارش ${orderNumber} ثبت شد`,
+                    message: `سفارش شما با ${newOrder.items.length} کالا و مبلغ ${subtotal.toLocaleString('fa-IR')} تومان ثبت شد.`,
+                    link: `/profile/orders/${newOrder.id}`,
+                },
             });
 
             return newOrder;

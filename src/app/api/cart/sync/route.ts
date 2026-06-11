@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse, connection } from 'next/server'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/db'
-import { verifyUserToken, USER_TOKEN_COOKIE } from '@/lib/user-jwt'
+import { verifyUserToken, USER_TOKEN_COOKIE } from '@/lib/jwt'
 
 interface LocalCartItem {
     productId: number
