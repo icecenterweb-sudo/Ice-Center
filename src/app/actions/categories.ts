@@ -3,20 +3,48 @@
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { requireAdminAction } from '@/lib/admin-auth';
+import { z } from 'zod';
+
+// ============================================
+// Validation Schemas
+// ============================================
+
+const categorySchema = z.object({
+    name: z.string().min(1, 'نام دسته‌بندی الزامی است'),
+    slug: z.string().min(1, 'اسلاگ الزامی است').regex(/^[a-z0-9-]+$/, 'اسلاگ فقط شامل حروف انگلیسی، اعداد و خط تیره باشد'),
+    description: z.string().optional(),
+    imageUrl: z.string().url().optional().nullable(),
+});
+
+const subcategorySchema = z.object({
+    name: z.string().min(1, 'نام زیردسته الزامی است'),
+    slug: z.string().min(1, 'اسلاگ الزامی است').regex(/^[a-z0-9-]+$/, 'اسلاگ فقط شامل حروف انگلیسی، اعداد و خط تیره باشد'),
+    description: z.string().optional(),
+    categoryId: z.number().int().positive('دسته‌بندی اصلی الزامی است'),
+});
 
 // ============================================
 // Category Actions
 // ============================================
 
 export async function createCategory(formData: FormData) {
-    const name = formData.get('name') as string;
-    const slug = formData.get('slug') as string;
-    const description = formData.get('description') as string;
-    const imageUrl = formData.get('imageUrl') as string | null;
+    // Auth check
+    await requireAdminAction();
 
-    if (!name || !slug) {
-        throw new Error('نام و اسلاگ الزامی است');
+    const raw = {
+        name: formData.get('name') as string,
+        slug: formData.get('slug') as string,
+        description: (formData.get('description') as string) || undefined,
+        imageUrl: (formData.get('imageUrl') as string) || null,
+    };
+
+    const result = categorySchema.safeParse(raw);
+    if (!result.success) {
+        throw new Error(result.error.issues.map(i => i.message).join('، '));
     }
+
+    const data = result.data;
 
     try {
         // Create category with default subcategory in a transaction
@@ -24,10 +52,10 @@ export async function createCategory(formData: FormData) {
             // Create the category
             const category = await tx.category.create({
                 data: {
-                    name,
-                    slug,
-                    description: description || undefined,
-                    image: imageUrl || undefined
+                    name: data.name,
+                    slug: data.slug,
+                    description: data.description || undefined,
+                    image: data.imageUrl || undefined
                 }
             });
 
@@ -37,18 +65,18 @@ export async function createCategory(formData: FormData) {
                 data: {
                     name: `عمومی`,  // "Public/General"
                     slug: `public`,  // Simple, reusable (unique per category)
-                    description: `زیردسته عمومی برای ${name}`,
+                    description: `زیردسته عمومی برای ${data.name}`,
                     categoryId: category.id
                 }
             });
         });
 
         revalidatePath('/admin/dashboard/categories');
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Failed to create category:', error);
 
         // Check for unique constraint violation
-        if (error.code === 'P2002') {
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
             throw new Error('این اسلاگ قبلاً استفاده شده است');
         }
 
@@ -59,23 +87,31 @@ export async function createCategory(formData: FormData) {
 }
 
 export async function updateCategory(id: number, formData: FormData) {
-    const name = formData.get('name') as string;
-    const slug = formData.get('slug') as string;
-    const description = formData.get('description') as string;
-    const imageUrl = formData.get('imageUrl') as string | null;
+    // Auth check
+    await requireAdminAction();
 
-    if (!name || !slug) {
-        throw new Error('نام و اسلاگ الزامی است');
+    const raw = {
+        name: formData.get('name') as string,
+        slug: formData.get('slug') as string,
+        description: (formData.get('description') as string) || undefined,
+        imageUrl: (formData.get('imageUrl') as string) || null,
+    };
+
+    const result = categorySchema.safeParse(raw);
+    if (!result.success) {
+        throw new Error(result.error.issues.map(i => i.message).join('، '));
     }
+
+    const data = result.data;
 
     try {
         await prisma.category.update({
             where: { id },
             data: {
-                name,
-                slug,
-                description: description || undefined,
-                ...(imageUrl && { image: imageUrl })
+                name: data.name,
+                slug: data.slug,
+                description: data.description || undefined,
+                ...(data.imageUrl && { image: data.imageUrl })
             }
         });
 
@@ -89,6 +125,9 @@ export async function updateCategory(id: number, formData: FormData) {
 }
 
 export async function deleteCategory(id: number) {
+    // Auth check
+    await requireAdminAction();
+
     try {
         // Check if category has subcategories
         const subcategoryCount = await prisma.subcategory.count({
@@ -105,9 +144,10 @@ export async function deleteCategory(id: number) {
 
         revalidatePath('/admin/dashboard/categories');
         return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Failed to delete category:', error);
-        throw new Error(error.message || 'خطا در حذف دسته‌بندی');
+        const message = error instanceof Error ? error.message : 'خطا در حذف دسته‌بندی';
+        throw new Error(message);
     }
 }
 
@@ -116,32 +156,39 @@ export async function deleteCategory(id: number) {
 // ============================================
 
 export async function createSubcategory(formData: FormData) {
-    const name = formData.get('name') as string;
-    const slug = formData.get('slug') as string;
-    const description = formData.get('description') as string;
-    const categoryId = formData.get('categoryId') as string;
+    // Auth check
+    await requireAdminAction();
 
-    if (!name || !slug || !categoryId) {
-        throw new Error('نام، اسلاگ و دسته‌بندی اصلی الزامی است');
+    const raw = {
+        name: formData.get('name') as string,
+        slug: formData.get('slug') as string,
+        description: (formData.get('description') as string) || undefined,
+        categoryId: formData.get('categoryId') ? parseInt(formData.get('categoryId') as string) : 0,
+    };
+
+    const result = subcategorySchema.safeParse(raw);
+    if (!result.success) {
+        throw new Error(result.error.issues.map(i => i.message).join('، '));
     }
+
+    const data = result.data;
 
     try {
         await prisma.subcategory.create({
             data: {
-                name,
-                slug,
-                description: description || undefined,
-                categoryId: parseInt(categoryId)
+                name: data.name,
+                slug: data.slug,
+                description: data.description || undefined,
+                categoryId: data.categoryId,
             }
         });
 
         revalidatePath('/admin/dashboard/categories');
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Failed to create subcategory:', error);
 
-        // Check for unique constraint violation
-        if (error.code === 'P2002') {
-            throw new Error(`این اسلاگ (${slug}) قبلاً استفاده شده است. لطفاً اسلاگ دیگری انتخاب کنید`);
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+            throw new Error(`این اسلاگ (${raw.slug}) قبلاً استفاده شده است. لطفاً اسلاگ دیگری انتخاب کنید`);
         }
 
         throw new Error('خطا در ایجاد زیردسته');
@@ -151,23 +198,31 @@ export async function createSubcategory(formData: FormData) {
 }
 
 export async function updateSubcategory(id: number, formData: FormData) {
-    const name = formData.get('name') as string;
-    const slug = formData.get('slug') as string;
-    const description = formData.get('description') as string;
-    const categoryId = formData.get('categoryId') as string;
+    // Auth check
+    await requireAdminAction();
 
-    if (!name || !slug || !categoryId) {
-        throw new Error('نام، اسلاگ و دسته‌بندی اصلی الزامی است');
+    const raw = {
+        name: formData.get('name') as string,
+        slug: formData.get('slug') as string,
+        description: (formData.get('description') as string) || undefined,
+        categoryId: formData.get('categoryId') ? parseInt(formData.get('categoryId') as string) : 0,
+    };
+
+    const result = subcategorySchema.safeParse(raw);
+    if (!result.success) {
+        throw new Error(result.error.issues.map(i => i.message).join('، '));
     }
+
+    const data = result.data;
 
     try {
         await prisma.subcategory.update({
             where: { id },
             data: {
-                name,
-                slug,
-                description: description || undefined,
-                categoryId: parseInt(categoryId)
+                name: data.name,
+                slug: data.slug,
+                description: data.description || undefined,
+                categoryId: data.categoryId,
             }
         });
 
@@ -181,6 +236,9 @@ export async function updateSubcategory(id: number, formData: FormData) {
 }
 
 export async function deleteSubcategory(id: number) {
+    // Auth check
+    await requireAdminAction();
+
     try {
         // Check if subcategory has products
         const productCount = await prisma.product.count({
@@ -197,8 +255,9 @@ export async function deleteSubcategory(id: number) {
 
         revalidatePath('/admin/dashboard/categories');
         return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Failed to delete subcategory:', error);
-        throw new Error(error.message || 'خطا در حذف زیردسته');
+        const message = error instanceof Error ? error.message : 'خطا در حذف زیردسته';
+        throw new Error(message);
     }
 }

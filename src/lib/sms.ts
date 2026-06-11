@@ -1,7 +1,13 @@
 import https from 'https'
 import type { IncomingMessage } from 'http'
 
-const MELIPAYAMAK_API_KEY = process.env.MELIPAYAMAK_API_KEY || 'c9e9786d954841d0a03bbab359faa072'
+function getMelipayamakApiKey(): string {
+    const key = process.env.MELIPAYAMAK_API_KEY;
+    if (!key) {
+        throw new Error('MELIPAYAMAK_API_KEY environment variable is required.');
+    }
+    return key;
+}
 
 interface SendOtpResponse {
     success: boolean
@@ -25,7 +31,7 @@ export async function sendOtp(phone: string): Promise<SendOtpResponse> {
         const options = {
             hostname: 'console.melipayamak.com',
             port: 443,
-            path: `/api/send/otp/${MELIPAYAMAK_API_KEY}`,
+            path: `/api/send/otp/${getMelipayamakApiKey()}`,
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

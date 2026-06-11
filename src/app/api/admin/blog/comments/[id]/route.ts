@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
+import { requireAdmin } from '@/lib/admin-auth';
 
 const updateStatusSchema = z.object({
     status: z.enum(['APPROVED', 'REJECTED', 'PENDING']),
@@ -12,6 +13,9 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const auth = await requireAdmin(request);
+        if (!auth.ok) return auth.response;
+
         const { id } = await params;
         const commentId = parseInt(id);
 
@@ -53,6 +57,9 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const auth = await requireAdmin(request);
+        if (!auth.ok) return auth.response;
+
         const { id } = await params;
         const commentId = parseInt(id);
 

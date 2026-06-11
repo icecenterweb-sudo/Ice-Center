@@ -3,8 +3,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Phone, Lock, Check, Edit2, Snowflake } from 'lucide-react'
+import { Phone, Lock, Check, Edit2, Snowflake, ArrowRight } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { toEnglishDigits } from '@/lib/numbers'
+import { getStoredAnalyticsSource } from '@/components/analytics/VisitTracker'
 
 type AuthStep = 'phone' | 'otp'
 
@@ -113,7 +115,7 @@ export default function AuthPage() {
             const response = await fetch('/api/auth/verify-otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone, code: otp }),
+                body: JSON.stringify({ phone, code: otp, source: getStoredAnalyticsSource() }),
             })
 
             const data = await response.json()
@@ -273,7 +275,7 @@ export default function AuthPage() {
                                     ) : (
                                         <>
                                             <span>ارسال کد تأیید</span>
-                                            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                                            <ArrowRight className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                                         </>
                                     )}
                                 </button>
@@ -307,7 +309,7 @@ export default function AuthPage() {
                                             ref={otpInputRef}
                                             type="text"
                                             value={otp}
-                                            onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                                            onChange={(e) => setOtp(toEnglishDigits(e.target.value).replace(/\D/g, '').slice(0, 4))}
                                             placeholder="• • • •"
                                             className="w-full bg-gray-50 border border-gray-200 text-gray-800 rounded-xl px-4 py-5 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-3xl text-center tracking-[0.5em] placeholder:tracking-normal placeholder:text-gray-300"
                                             required

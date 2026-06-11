@@ -7,6 +7,7 @@ import toast from 'react-hot-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { toPersianDigits, toEnglishDigits } from '@/lib/numbers'
 import OTPInputField from '@/components/ui/OTPInput'
+import { getStoredAnalyticsSource } from '@/components/analytics/VisitTracker'
 
 type AuthStep = 'phone' | 'otp'
 
@@ -130,7 +131,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
             const response = await fetch('/api/auth/verify-otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone, code: otp }),
+                body: JSON.stringify({ phone, code: otp, source: getStoredAnalyticsSource() }),
             })
 
             const data = await response.json()
@@ -298,7 +299,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
 
                                         <OTPInputField
                                             value={otp}
-                                            onChange={(value) => setOtp(value)}
+                                            onChange={(value) => setOtp(toEnglishDigits(value).replace(/[^0-9]/g, '').slice(0, 4))}
                                             maxLength={4}
                                             disabled={loading}
                                         />

@@ -3,57 +3,96 @@
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { requireAdminAction } from '@/lib/admin-auth';
+import { z } from 'zod';
+import { generateUniqueSlug } from '@/lib/slugify';
+
+// ============================================
+// Validation Schemas
+// ============================================
+
+const createProductSchema = z.object({
+    name: z.string().min(1, 'نام محصول الزامی است'),
+    description: z.string().optional(),
+    price: z.number().positive('قیمت باید عدد مثبت باشد'),
+    listPrice: z.number().positive().optional().nullable(),
+    stock: z.number().int().min(0).default(0),
+    brand: z.string().optional(),
+    sku: z.string().optional(),
+    subcategoryId: z.number().int().positive().optional().nullable(),
+    images: z.array(z.string()).default([]),
+    features: z.array(z.string()).default([]),
+    specifications: z.any().optional().nullable(),
+});
+
+const updateProductSchema = createProductSchema.extend({
+    isActive: z.boolean().default(true),
+});
+
+// ============================================
+// Helper: Parse FormData with Validation
+// ============================================
+
+function parseProductFormData(formData: FormData) {
+    const imagesData = formData.get('imagesData') as string | null;
+    const featuresData = formData.get('features') as string | null;
+    const specificationsData = formData.get('specifications') as string | null;
+
+    return {
+        name: formData.get('name') as string,
+        description: (formData.get('description') as string) || undefined,
+        price: parseFloat(formData.get('price') as string),
+        listPrice: formData.get('listPrice') ? parseFloat(formData.get('listPrice') as string) : null,
+        stock: parseInt(formData.get('stock') as string) || 0,
+        brand: (formData.get('brand') as string) || undefined,
+        sku: (formData.get('sku') as string) || undefined,
+        subcategoryId: formData.get('subcategoryId') ? parseInt(formData.get('subcategoryId') as string) : null,
+        images: imagesData ? JSON.parse(imagesData) : [],
+        features: featuresData ? JSON.parse(featuresData) : [],
+        specifications: specificationsData ? JSON.parse(specificationsData) : null,
+        isActive: formData.get('isActive') === 'true',
+    };
+}
 
 // ============================================
 // Product Actions
 // ============================================
 
 export async function createProduct(formData: FormData) {
-    const name = formData.get('name') as string;
-    const description = formData.get('description') as string;
-    const price = parseFloat(formData.get('price') as string);
-    const listPrice = formData.get('listPrice') ? parseFloat(formData.get('listPrice') as string) : null;
-    const stock = parseInt(formData.get('stock') as string) || 0;
-    const brand = formData.get('brand') as string;
-    const sku = formData.get('sku') as string;
-    const subcategoryId = formData.get('subcategoryId') as string;
-    const imagesData = formData.get('imagesData') as string | null;
-    const featuresData = formData.get('features') as string | null;
-    const specificationsData = formData.get('specifications') as string | null;
+    // Auth check
+    await requireAdminAction();
 
-    // Basic validation
-    if (!name || isNaN(price)) {
-        throw new Error('لطفاً نام و قیمت را وارد کنید');
+    // Parse and validate
+    const raw = parseProductFormData(formData);
+    const result = createProductSchema.safeParse(raw);
+
+    if (!result.success) {
+        throw new Error(result.error.issues.map(i => i.message).join('، '));
     }
 
+    const data = result.data;
+
     try {
-        // Generate a simple slug
-        const slug = name.toLowerCase().replace(/ /g, '-') + '-' + Date.now();
-
-        // Parse images array
-        const images = imagesData ? JSON.parse(imagesData) : [];
-        const thumbnail = images.length > 0 ? images[0] : null;
-
-        // Parse features and specifications
-        const features = featuresData ? JSON.parse(featuresData) : [];
-        const specifications = specificationsData ? JSON.parse(specificationsData) : null;
+        // Generate a clean, unique slug
+        const slug = await generateUniqueSlug(data.name, 'product');
+        const thumbnail = data.images.length > 0 ? data.images[0] : null;
 
         await prisma.product.create({
             data: {
-                name,
-                description,
-                price,
-                listPrice,
-                stock,
-                brand,
-                sku: sku || undefined,
+                name: data.name,
+                description: data.description,
+                price: data.price,
+                listPrice: data.listPrice,
+                stock: data.stock,
+                brand: data.brand,
+                sku: data.sku || undefined,
                 slug,
                 isActive: true,
-                subcategoryId: subcategoryId ? parseInt(subcategoryId) : undefined,
-                images: images,
-                thumbnail: thumbnail,
-                features: features,
-                specifications: specifications
+                subcategoryId: data.subcategoryId || undefined,
+                images: data.images,
+                thumbnail,
+                features: data.features,
+                specifications: data.specifications,
             }
         });
 
@@ -67,66 +106,64 @@ export async function createProduct(formData: FormData) {
 }
 
 export async function updateProduct(id: number, formData: FormData) {
-    const name = formData.get('name') as string;
-    const description = formData.get('description') as string;
-    const price = parseFloat(formData.get('price') as string);
-    const listPrice = formData.get('listPrice') ? parseFloat(formData.get('listPrice') as string) : null;
-    const stock = parseInt(formData.get('stock') as string) || 0;
-    const brand = formData.get('brand') as string;
-    const sku = formData.get('sku') as string;
-    const subcategoryId = formData.get('subcategoryId') as string;
-    const isActive = formData.get('isActive') === 'true';
-    const imagesData = formData.get('imagesData') as string | null;
-    const featuresData = formData.get('features') as string | null;
-    const specificationsData = formData.get('specifications') as string | null;
+    // Auth check
+    await requireAdminAction();
 
-    if (!name || isNaN(price)) {
-        throw new Error('لطفاً نام و قیمت را وارد کنید');
+    // Parse and validate
+    const raw = parseProductFormData(formData);
+    const result = updateProductSchema.safeParse(raw);
+
+    if (!result.success) {
+        throw new Error(result.error.issues.map(i => i.message).join('، '));
     }
 
+    const data = result.data;
+
     try {
-        // Parse images array if new images uploaded
-        const updateData: any = {
-            name,
-            description: description || undefined,
-            price,
-            listPrice,
-            stock,
-            brand: brand || undefined,
-            sku: sku || undefined,
-            isActive,
-            subcategoryId: subcategoryId ? parseInt(subcategoryId) : null
+        const updateData: Record<string, unknown> = {
+            name: data.name,
+            description: data.description,
+            price: data.price,
+            listPrice: data.listPrice,
+            stock: data.stock,
+            brand: data.brand,
+            sku: data.sku || undefined,
+            isActive: data.isActive,
+            subcategoryId: data.subcategoryId || null,
         };
 
-        if (imagesData) {
-            const images = JSON.parse(imagesData);
-            updateData.images = images;
-            updateData.thumbnail = images.length > 0 ? images[0] : null;
+        if (data.images.length > 0) {
+            updateData.images = data.images;
+            updateData.thumbnail = data.images[0];
         }
 
-        // Update features and specifications
-        if (featuresData) {
-            updateData.features = JSON.parse(featuresData);
+        if (data.features.length > 0) {
+            updateData.features = data.features;
         }
-        if (specificationsData) {
-            updateData.specifications = JSON.parse(specificationsData);
+
+        if (data.specifications) {
+            updateData.specifications = data.specifications;
         }
 
         await prisma.product.update({
             where: { id },
-            data: updateData
+            data: updateData,
         });
 
         revalidatePath('/admin/dashboard/products');
-    } catch (error) {
+    } catch (error: unknown) {
         console.error('Failed to update product:', error);
-        throw new Error('خطا در ویرایش محصول');
+        const message = error instanceof Error ? error.message : 'خطا در ویرایش محصول';
+        throw new Error(message);
     }
 
     redirect('/admin/dashboard/products');
 }
 
 export async function deleteProduct(id: number) {
+    // Auth check
+    await requireAdminAction();
+
     try {
         // Check if product has variants
         const variantCount = await prisma.productVariant.count({
@@ -143,13 +180,17 @@ export async function deleteProduct(id: number) {
 
         revalidatePath('/admin/dashboard/products');
         return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Failed to delete product:', error);
-        throw new Error(error.message || 'خطا در حذف محصول');
+        const message = error instanceof Error ? error.message : 'خطا در حذف محصول';
+        throw new Error(message);
     }
 }
 
 export async function toggleProductStatus(id: number) {
+    // Auth check
+    await requireAdminAction();
+
     try {
         const product = await prisma.product.findUnique({
             where: { id },
@@ -167,9 +208,10 @@ export async function toggleProductStatus(id: number) {
 
         revalidatePath('/admin/dashboard/products');
         return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Failed to toggle product status:', error);
-        throw new Error(error.message || 'خطا در تغییر وضعیت محصول');
+        const message = error instanceof Error ? error.message : 'خطا در تغییر وضعیت محصول';
+        throw new Error(message);
     }
 }
 
@@ -177,84 +219,112 @@ export async function toggleProductStatus(id: number) {
 // Product Variant Actions
 // ============================================
 
-export async function createProductVariant(productId: number, formData: FormData) {
-    const name = formData.get('name') as string;
-    const sku = formData.get('sku') as string;
-    const capacity = formData.get('capacity') as string;
-    const phase = formData.get('phase') as string;
-    const voltage = formData.get('voltage') as string;
-    const price = parseFloat(formData.get('price') as string);
-    const stock = parseInt(formData.get('stock') as string) || 0;
-    const isDefault = formData.get('isDefault') === 'true';
+const variantSchema = z.object({
+    name: z.string().min(1, 'نام واریانت الزامی است'),
+    sku: z.string().optional(),
+    capacity: z.string().optional(),
+    phase: z.number().int().optional().nullable(),
+    voltage: z.string().optional(),
+    price: z.number().positive('قیمت باید عدد مثبت باشد'),
+    stock: z.number().int().min(0).default(0),
+    isDefault: z.boolean().default(false),
+    isActive: z.boolean().default(true),
+});
 
-    if (!name || isNaN(price)) {
-        throw new Error('لطفاً نام و قیمت را وارد کنید');
+function parseVariantFormData(formData: FormData) {
+    return {
+        name: formData.get('name') as string,
+        sku: (formData.get('sku') as string) || undefined,
+        capacity: (formData.get('capacity') as string) || undefined,
+        phase: formData.get('phase') ? parseInt(formData.get('phase') as string) : null,
+        voltage: (formData.get('voltage') as string) || undefined,
+        price: parseFloat(formData.get('price') as string),
+        stock: parseInt(formData.get('stock') as string) || 0,
+        isDefault: formData.get('isDefault') === 'true',
+        isActive: formData.get('isActive') === 'true',
+    };
+}
+
+export async function createProductVariant(productId: number, formData: FormData) {
+    // Auth check
+    await requireAdminAction();
+
+    const raw = parseVariantFormData(formData);
+    const result = variantSchema.safeParse(raw);
+
+    if (!result.success) {
+        throw new Error(result.error.issues.map(i => i.message).join('، '));
     }
+
+    const data = result.data;
 
     try {
         await prisma.productVariant.create({
             data: {
                 productId,
-                name,
-                sku: sku || undefined,
-                capacity: capacity || undefined,
-                phase: phase ? parseInt(phase) : undefined,
-                voltage: voltage || undefined,
-                price,
-                stock,
-                isDefault,
-                isActive: true
+                name: data.name,
+                sku: data.sku || undefined,
+                capacity: data.capacity || undefined,
+                phase: data.phase || undefined,
+                voltage: data.voltage || undefined,
+                price: data.price,
+                stock: data.stock,
+                isDefault: data.isDefault,
+                isActive: true,
             }
         });
 
         revalidatePath('/admin/dashboard/products');
         return { success: true };
-    } catch (error) {
+    } catch (error: unknown) {
         console.error('Failed to create variant:', error);
-        throw new Error('خطا در ایجاد واریانت');
+        const message = error instanceof Error ? error.message : 'خطا در ایجاد واریانت';
+        throw new Error(message);
     }
 }
 
 export async function updateProductVariant(id: number, formData: FormData) {
-    const name = formData.get('name') as string;
-    const sku = formData.get('sku') as string;
-    const capacity = formData.get('capacity') as string;
-    const phase = formData.get('phase') as string;
-    const voltage = formData.get('voltage') as string;
-    const price = parseFloat(formData.get('price') as string);
-    const stock = parseInt(formData.get('stock') as string) || 0;
-    const isDefault = formData.get('isDefault') === 'true';
-    const isActive = formData.get('isActive') === 'true';
+    // Auth check
+    await requireAdminAction();
 
-    if (!name || isNaN(price)) {
-        throw new Error('لطفاً نام و قیمت را وارد کنید');
+    const raw = parseVariantFormData(formData);
+    const result = variantSchema.safeParse(raw);
+
+    if (!result.success) {
+        throw new Error(result.error.issues.map(i => i.message).join('، '));
     }
+
+    const data = result.data;
 
     try {
         await prisma.productVariant.update({
             where: { id },
             data: {
-                name,
-                sku: sku || undefined,
-                capacity: capacity || undefined,
-                phase: phase ? parseInt(phase) : undefined,
-                voltage: voltage || undefined,
-                price,
-                stock,
-                isDefault,
-                isActive
+                name: data.name,
+                sku: data.sku || undefined,
+                capacity: data.capacity || undefined,
+                phase: data.phase || undefined,
+                voltage: data.voltage || undefined,
+                price: data.price,
+                stock: data.stock,
+                isDefault: data.isDefault,
+                isActive: data.isActive,
             }
         });
 
         revalidatePath('/admin/dashboard/products');
         return { success: true };
-    } catch (error) {
+    } catch (error: unknown) {
         console.error('Failed to update variant:', error);
-        throw new Error('خطا در ویرایش واریانت');
+        const message = error instanceof Error ? error.message : 'خطا در ویرایش واریانت';
+        throw new Error(message);
     }
 }
 
 export async function deleteProductVariant(id: number) {
+    // Auth check
+    await requireAdminAction();
+
     try {
         await prisma.productVariant.delete({
             where: { id }
@@ -262,8 +332,9 @@ export async function deleteProductVariant(id: number) {
 
         revalidatePath('/admin/dashboard/products');
         return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Failed to delete variant:', error);
-        throw new Error(error.message || 'خطا در حذف واریانت');
+        const message = error instanceof Error ? error.message : 'خطا در حذف واریانت';
+        throw new Error(message);
     }
 }

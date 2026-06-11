@@ -1,47 +1,92 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
-import { verifyAdminToken } from '@/lib/jwt'
+import { NextRequest, NextResponse } from 'next/server'
+import { verifyAdminToken, verifyUserToken, ADMIN_TOKEN_COOKIE, USER_TOKEN_COOKIE } from '@/lib/jwt'
 
+/**
+ * Next.js Proxy Middleware — Edge-level route protection.
+ * Replaces middleware.ts to prevent Next.js config conflicts.
+ * 
+ * Protects:
+ * - /admin/dashboard/** — Requires valid admin token
+ * - /api/admin/** (except /api/admin/auth/**) — Requires valid admin token
+ * - /profile/** — Requires valid user token
+ * - /checkout/** — Requires valid user token
+ */
 export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl
 
-    // Only protect /admin/dashboard/* routes
+    // ============================================
+    // Admin Dashboard Pages — Redirect to login
+    // ============================================
     if (pathname.startsWith('/admin/dashboard')) {
-        const token = request.cookies.get('admin_token')?.value
+        const token = request.cookies.get(ADMIN_TOKEN_COOKIE)?.value
 
-        // No token - redirect to login
         if (!token) {
             return NextResponse.redirect(new URL('/admin/login', request.url))
         }
 
-        // Verify token
         const payload = await verifyAdminToken(token)
-
-        // Invalid token - redirect to login
         if (!payload) {
             const response = NextResponse.redirect(new URL('/admin/login', request.url))
-            response.cookies.delete('admin_token')
+            response.cookies.delete(ADMIN_TOKEN_COOKIE)
             return response
         }
 
-        // Token valid - allow access
         return NextResponse.next()
     }
 
-    // All other routes - allow access
+    // ============================================
+    // Admin API Routes — Return 401 JSON
+    // (skip /api/admin/auth/* so login works)
+    // ============================================
+    if (pathname.startsWith('/api/admin') && !pathname.startsWith('/api/admin/auth')) {
+        const token = request.cookies.get(ADMIN_TOKEN_COOKIE)?.value
+
+        if (!token) {
+            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+        }
+
+        const payload = await verifyAdminToken(token)
+        if (!payload) {
+            return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 })
+        }
+
+        return NextResponse.next()
+    }
+
+    // ============================================
+    // User Protected Pages — Redirect to auth
+    // ============================================
+    if (pathname.startsWith('/profile') || pathname.startsWith('/checkout')) {
+        const token = request.cookies.get(USER_TOKEN_COOKIE)?.value
+
+        if (!token) {
+            const loginUrl = new URL('/auth', request.url)
+            loginUrl.searchParams.set('redirect', pathname)
+            return NextResponse.redirect(loginUrl)
+        }
+
+        const payload = await verifyUserToken(token)
+        if (!payload) {
+            const loginUrl = new URL('/auth', request.url)
+            loginUrl.searchParams.set('redirect', pathname)
+            const response = NextResponse.redirect(loginUrl)
+            response.cookies.delete(USER_TOKEN_COOKIE)
+            return response
+        }
+
+        return NextResponse.next()
+    }
+
     return NextResponse.next()
 }
 
 export const config = {
     matcher: [
-        /*
-         * Match all request paths except:
-         * - api routes
-         * - _next/static (static files)
-         * - _next/image (image optimization files)
-         * - favicon.ico (favicon file)
-         * - public files
-         */
-        '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*$).*)',
+        // Admin routes
+        '/admin/dashboard/:path*',
+        '/api/admin/:path*',
+        // User protected routes
+        '/profile/:path*',
+        '/checkout/:path*',
     ],
 }

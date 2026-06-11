@@ -2,11 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { isValidIranianMobile, normalizePhone } from '@/lib/sms'
 import { verifyOtp } from '@/lib/otp'
-import { generateUserToken, USER_TOKEN_COOKIE, getUserTokenCookieOptions } from '@/lib/user-jwt'
+import { generateUserToken, USER_TOKEN_COOKIE, getTokenCookieOptions } from '@/lib/jwt'
+import { recordAnalyticsEvent } from '@/lib/analytics'
+import { toEnglishDigits } from '@/lib/numbers'
 
 export async function POST(request: NextRequest) {
     try {
-        const { phone, code } = await request.json()
+        const { phone, code, source } = await request.json()
+        const normalizedCode = typeof code === 'string' ? toEnglishDigits(code).replace(/\D/g, '') : ''
 
         // Validate input
         if (!phone || !code) {
@@ -25,7 +28,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Validate code format (4 digits)
-        if (!/^\d{4}$/.test(code)) {
+        if (!/^\d{4}$/.test(normalizedCode)) {
             return NextResponse.json(
                 { error: 'کد تأیید باید ۴ رقم باشد' },
                 { status: 400 }
@@ -35,7 +38,7 @@ export async function POST(request: NextRequest) {
         const normalizedPhone = normalizePhone(phone)
 
         // Verify OTP
-        const result = await verifyOtp(normalizedPhone, code)
+        const result = await verifyOtp(normalizedPhone, normalizedCode)
 
         if (!result.valid) {
             return NextResponse.json(
@@ -72,6 +75,15 @@ export async function POST(request: NextRequest) {
             )
         }
 
+        await recordAnalyticsEvent({
+            type: 'USER_LOGIN',
+            request,
+            path: '/auth',
+            referrer: request.headers.get('referer'),
+            source: typeof source === 'string' ? source : null,
+            userId: user.id,
+        })
+
         // Generate JWT token
         const token = await generateUserToken({
             userId: user.id,
@@ -95,7 +107,7 @@ export async function POST(request: NextRequest) {
         response.cookies.set(
             USER_TOKEN_COOKIE,
             token,
-            getUserTokenCookieOptions(isProduction)
+            getTokenCookieOptions(isProduction)
         )
 
         return response

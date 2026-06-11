@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { generateAdminToken } from '@/lib/jwt'
+import { recordAnalyticsEvent } from '@/lib/analytics'
 
 // Rate limiting: Track failed attempts per phone
 const failedAttempts = new Map<string, { count: number; lastAttempt: Date }>();
@@ -122,6 +123,14 @@ export async function POST(request: NextRequest) {
             sameSite: 'lax',
             maxAge: 60 * 60 * 24 * 30, // 30 days
             path: '/',
+        })
+
+        await recordAnalyticsEvent({
+            type: 'ADMIN_LOGIN',
+            request,
+            path: '/admin/login',
+            referrer: request.headers.get('referer'),
+            adminId: admin.id,
         })
 
         return response

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { requireAdmin } from '@/lib/admin-auth';
 
 type RouteContext = {
     params: Promise<{ id: string }>;
@@ -8,6 +9,9 @@ type RouteContext = {
 // GET - Get single banner
 export async function GET(request: NextRequest, context: RouteContext) {
     try {
+        const auth = await requireAdmin(request);
+        if (!auth.ok) return auth.response;
+
         const { id } = await context.params;
         const bannerId = parseInt(id);
 
@@ -46,6 +50,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
 // PUT - Update banner
 export async function PUT(request: NextRequest, context: RouteContext) {
     try {
+        const auth = await requireAdmin(request);
+        if (!auth.ok) return auth.response;
+
         const { id } = await context.params;
         const bannerId = parseInt(id);
 
@@ -114,6 +121,9 @@ export async function PUT(request: NextRequest, context: RouteContext) {
 // DELETE - Delete banner
 export async function DELETE(request: NextRequest, context: RouteContext) {
     try {
+        const auth = await requireAdmin(request);
+        if (!auth.ok) return auth.response;
+
         const { id } = await context.params;
         const bannerId = parseInt(id);
 

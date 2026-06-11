@@ -1,9 +1,15 @@
 import { SignJWT, jwtVerify } from 'jose'
 
 /**
- * Get JWT secret - validates at runtime, not module load
- * This allows build to succeed while still enforcing security at runtime
+ * Unified JWT utility for both Admin and User tokens.
+ * Uses a `type` claim to differentiate token audiences, preventing
+ * a user token from being accepted as an admin token and vice versa.
  */
+
+// ============================================
+// Secret & Config
+// ============================================
+
 function getJwtSecret(): Uint8Array {
     const secret = process.env.JWT_SECRET;
 
@@ -20,19 +26,43 @@ function getJwtSecret(): Uint8Array {
 
 const JWT_EXPIRY = '30d' // 30 days
 
+// ============================================
+// Token Types
+// ============================================
+
+export type TokenType = 'admin' | 'user'
+
 export interface AdminTokenPayload {
+    type: 'admin'
     adminId: number
     phone: string
     role: string
 }
 
-/**
- * Generate JWT token for admin
- */
-export async function generateAdminToken(payload: AdminTokenPayload): Promise<string> {
+export interface UserTokenPayload {
+    type: 'user'
+    userId: number
+    phone: string
+}
+
+type TokenPayloadMap = {
+    admin: AdminTokenPayload
+    user: UserTokenPayload
+}
+
+// ============================================
+// Generate Token
+// ============================================
+
+export async function generateToken<T extends TokenType>(
+    tokenType: T,
+    payload: Omit<TokenPayloadMap[T], 'type'>
+): Promise<string> {
     const JWT_SECRET = getJwtSecret();
 
-    const token = await new SignJWT({ ...payload })
+    const fullPayload = { ...payload, type: tokenType };
+
+    const token = await new SignJWT(fullPayload as unknown as Record<string, unknown>)
         .setProtectedHeader({ alg: 'HS256' })
         .setIssuedAt()
         .setExpirationTime(JWT_EXPIRY)
@@ -41,16 +71,62 @@ export async function generateAdminToken(payload: AdminTokenPayload): Promise<st
     return token
 }
 
-/**
- * Verify and decode JWT token
- * Returns payload if valid, null if invalid
- */
-export async function verifyAdminToken(token: string): Promise<AdminTokenPayload | null> {
+// ============================================
+// Verify Token
+// ============================================
+
+export async function verifyToken<T extends TokenType>(
+    tokenType: T,
+    token: string
+): Promise<TokenPayloadMap[T] | null> {
     try {
         const JWT_SECRET = getJwtSecret();
         const { payload } = await jwtVerify(token, JWT_SECRET)
-        return payload as unknown as AdminTokenPayload
+
+        // Ensure the token type matches what we expect
+        if (payload.type !== tokenType) {
+            return null
+        }
+
+        return payload as unknown as TokenPayloadMap[T]
     } catch {
         return null
+    }
+}
+
+// ============================================
+// Convenience functions (backward compatible)
+// ============================================
+
+export async function generateAdminToken(payload: Omit<AdminTokenPayload, 'type'>): Promise<string> {
+    return generateToken('admin', payload)
+}
+
+export async function verifyAdminToken(token: string): Promise<AdminTokenPayload | null> {
+    return verifyToken('admin', token)
+}
+
+export async function generateUserToken(payload: Omit<UserTokenPayload, 'type'>): Promise<string> {
+    return generateToken('user', payload)
+}
+
+export async function verifyUserToken(token: string): Promise<UserTokenPayload | null> {
+    return verifyToken('user', token)
+}
+
+// ============================================
+// Cookie Configuration
+// ============================================
+
+export const ADMIN_TOKEN_COOKIE = 'admin_token'
+export const USER_TOKEN_COOKIE = 'user_token'
+
+export function getTokenCookieOptions(isProduction: boolean) {
+    return {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: 'lax' as const,
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+        path: '/',
     }
 }

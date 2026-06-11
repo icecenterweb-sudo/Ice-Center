@@ -9,7 +9,9 @@ export const RATE_LIMIT_COOLDOWN_SECONDS = 60
  * Generate a random 4-digit OTP code
  */
 export function generateOtpCode(): string {
-    return Math.floor(1000 + Math.random() * 9000).toString()
+    const array = new Uint32Array(1)
+    crypto.getRandomValues(array)
+    return (1000 + (array[0] % 9000)).toString()
 }
 
 /**

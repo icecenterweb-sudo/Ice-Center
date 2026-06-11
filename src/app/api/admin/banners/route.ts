@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { requireAdmin } from '@/lib/admin-auth';
 
 // GET - List all banners (for admin)
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
+        const auth = await requireAdmin(request);
+        if (!auth.ok) return auth.response;
+
         const banners = await prisma.banner.findMany({
             include: {
                 product: { select: { id: true, name: true, slug: true } },
@@ -28,6 +32,9 @@ export async function GET() {
 // POST - Create new banner
 export async function POST(request: NextRequest) {
     try {
+        const auth = await requireAdmin(request);
+        if (!auth.ok) return auth.response;
+
         const body = await request.json();
         const {
             title,
