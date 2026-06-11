@@ -7,6 +7,7 @@ import { verifyAdminToken } from '@/lib/jwt';
 import { redirect } from 'next/navigation';
 import { connection } from 'next/server';
 import { Loader2 } from 'lucide-react';
+import { AdminSidebarProvider } from '@/context/AdminSidebarContext';
 
 function LoadingFallback() {
     return (
@@ -61,27 +62,29 @@ export default function AdminDashboardLayout({
     children: React.ReactNode;
 }) {
     return (
-        <div className="flex min-h-screen bg-gray-50">
-            {/* Sidebar */}
-            <Suspense fallback={<div className="w-20 lg:w-72 bg-gray-700 h-screen fixed right-0 top-0 transition-all duration-300" />}>
-                <Sidebar />
-            </Suspense>
-
-            {/* Main Content */}
-            <DashboardContent>
-                <Suspense fallback={<HeaderFallback />}>
-                    <DynamicHeader />
+        <AdminSidebarProvider>
+            <div className="flex min-h-screen bg-gray-50">
+                {/* Sidebar */}
+                <Suspense fallback={<div className="w-20 lg:w-72 bg-gray-700 h-screen fixed right-0 top-0 transition-all duration-300" />}>
+                    <Sidebar />
                 </Suspense>
 
-                <main className="p-4 md:p-6">
-                    <Suspense fallback={<LoadingFallback />}>
-                        <AuthGuard>
-                            {children}
-                        </AuthGuard>
+                {/* Main Content */}
+                <DashboardContent>
+                    <Suspense fallback={<HeaderFallback />}>
+                        <DynamicHeader />
                     </Suspense>
-                </main>
-            </DashboardContent>
-        </div>
+
+                    <main className="p-4 md:p-6">
+                        <Suspense fallback={<LoadingFallback />}>
+                            <AuthGuard>
+                                {children}
+                            </AuthGuard>
+                        </Suspense>
+                    </main>
+                </DashboardContent>
+            </div>
+        </AdminSidebarProvider>
     );
 }
 

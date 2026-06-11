@@ -89,13 +89,6 @@ const nextConfig: NextConfig = {
               chunks: 'all',
               priority: 10,
             },
-            // Separate Swiper into its own chunk (large library)
-            swiper: {
-              test: /[\\/]node_modules[\\/](swiper)[\\/]/,
-              name: 'swiper',
-              chunks: 'all',
-              priority: 20,
-            },
           },
         },
       };

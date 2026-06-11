@@ -2,7 +2,24 @@ import React from 'react';
 import Link from 'next/link';
 import { Phone, Mail, MapPin, Instagram, Send } from 'lucide-react';
 
+/**
+ * Get current Jalali (Persian) year.
+ * Simple conversion: Jalali year ≈ Gregorian year - 621
+ */
+function getJalaliYear(): number {
+    const now = new Date();
+    const gYear = now.getFullYear();
+    const gMonth = now.getMonth() + 1;
+    // Jalali new year is around March 20-21
+    if (gMonth < 3 || (gMonth === 3 && now.getDate() < 21)) {
+        return gYear - 622;
+    }
+    return gYear - 621;
+}
+
 const Footer: React.FC = () => {
+  const jalaliYear = getJalaliYear();
+
   return (
     <footer className="bg-gray-900 text-gray-300 mt-20">
       <div className="max-w-[1600px] mx-auto px-4 py-12">
@@ -27,6 +44,7 @@ const Footer: React.FC = () => {
               <li><Link href="/contact" className="hover:text-white transition">تماس با ما</Link></li>
               <li><Link href="/warranty" className="hover:text-white transition">گارانتی و خدمات</Link></li>
               <li><Link href="/corporate" className="hover:text-white transition">خرید سازمانی</Link></li>
+              <li><Link href="/blog" className="hover:text-white transition">وبلاگ</Link></li>
             </ul>
           </div>
 
@@ -47,24 +65,24 @@ const Footer: React.FC = () => {
             <ul className="space-y-3 text-sm">
               <li className="flex items-center gap-2">
                 <Phone size={16} />
-                <span>021-12345678</span>
+                <span dir="ltr">{process.env.NEXT_PUBLIC_PHONE || '021-12345678'}</span>
               </li>
               <li className="flex items-center gap-2">
                 <Mail size={16} />
-                <span>info@icecenter.ir</span>
+                <span>{process.env.NEXT_PUBLIC_EMAIL || 'info@icecenter.ir'}</span>
               </li>
               <li className="flex items-start gap-2">
                 <MapPin size={16} className="mt-1" />
-                <span>تهران، خیابان ولیعصر، پلاک 123</span>
+                <span>{process.env.NEXT_PUBLIC_ADDRESS || 'تهران، خیابان ولیعصر، پلاک 123'}</span>
               </li>
             </ul>
 
             {/* شبکه‌های اجتماعی */}
             <div className="flex gap-3 mt-4">
-              <a href="#" aria-label="اینستاگرام" className="w-9 h-9 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-blue-600 transition">
+              <a href={process.env.NEXT_PUBLIC_INSTAGRAM || '#'} aria-label="اینستاگرام" className="w-9 h-9 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-blue-600 transition">
                 <Instagram size={18} aria-hidden="true" />
               </a>
-              <a href="#" aria-label="تلگرام" className="w-9 h-9 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-blue-600 transition">
+              <a href={process.env.NEXT_PUBLIC_TELEGRAM || '#'} aria-label="تلگرام" className="w-9 h-9 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-blue-600 transition">
                 <Send size={18} aria-hidden="true" />
               </a>
             </div>
@@ -75,7 +93,7 @@ const Footer: React.FC = () => {
         {/* خط جداکننده */}
         <div className="border-t border-gray-800 pt-6">
           <p className="text-center text-sm text-gray-500">
-            © 1403 تمامی حقوق این سایت متعلق به <span className="text-white font-bold">آیس سنتر</span> می‌باشد.
+            © {jalaliYear} تمامی حقوق این سایت متعلق به <span className="text-white font-bold">آیس سنتر</span> می‌باشد.
           </p>
         </div>
 

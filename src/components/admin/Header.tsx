@@ -1,34 +1,10 @@
 'use client';
 
 import { Bell, Search, Menu, PanelRightClose, PanelRight } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useAdminSidebar } from '@/context/AdminSidebarContext';
 
 export default function Header({ adminName }: { adminName?: string }) {
-    const [isCollapsed, setIsCollapsed] = useState(false);
-
-    useEffect(() => {
-        const saved = localStorage.getItem('sidebarCollapsed');
-        if (saved) {
-            setIsCollapsed(JSON.parse(saved));
-        }
-
-        const handleStorage = () => {
-            const saved = localStorage.getItem('sidebarCollapsed');
-            if (saved) {
-                setIsCollapsed(JSON.parse(saved));
-            }
-        };
-
-        window.addEventListener('sidebarToggle', handleStorage);
-        return () => window.removeEventListener('sidebarToggle', handleStorage);
-    }, []);
-
-    const toggleSidebar = () => {
-        const newState = !isCollapsed;
-        setIsCollapsed(newState);
-        localStorage.setItem('sidebarCollapsed', JSON.stringify(newState));
-        window.dispatchEvent(new Event('sidebarToggle'));
-    };
+    const { isCollapsed, toggleSidebar } = useAdminSidebar();
 
     return (
         <header className="bg-white border-b border-gray-200 px-4 md:px-6 py-4 flex items-center justify-between sticky top-0 z-40 shadow-sm">

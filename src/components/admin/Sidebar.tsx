@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useAdminSidebar } from '@/context/AdminSidebarContext';
 import {
     LayoutDashboard,
     Package,
@@ -13,10 +13,10 @@ import {
     FileText,
     LogOut,
     ChevronRight,
-    ChevronLeft,
     X,
     Tag,
-    Palette
+    Palette,
+    BarChart3
 } from 'lucide-react';
 
 const menuItems = [
@@ -25,6 +25,7 @@ const menuItems = [
     { icon: Tag, label: 'پیشنهادها', href: '/admin/dashboard/offers' },
     { icon: FolderTree, label: 'دسته‌بندی‌ها', href: '/admin/dashboard/categories' },
     { icon: FileText, label: 'بلاگ', href: '/admin/dashboard/blog' },
+    { icon: BarChart3, label: 'سئو و آنالیتیکس', href: '/admin/dashboard/analytics' },
     { icon: Palette, label: 'ظاهر', href: '/admin/dashboard/appearance' },
     { icon: Users, label: 'کاربران', href: '/admin/dashboard/users' },
     { icon: ShoppingCart, label: 'سفارشات', href: '/admin/dashboard/orders' },
@@ -32,36 +33,7 @@ const menuItems = [
 
 export default function Sidebar() {
     const pathname = usePathname();
-    const [isMobileOpen, setIsMobileOpen] = useState(false);
-    const [isCollapsed, setIsCollapsed] = useState(false);
-
-    // Load collapsed state from localStorage
-    useEffect(() => {
-        const saved = localStorage.getItem('sidebarCollapsed');
-        if (saved) {
-            setIsCollapsed(JSON.parse(saved));
-        }
-
-        // Listen for toggle events from header
-        const handleToggle = () => {
-            const saved = localStorage.getItem('sidebarCollapsed');
-            if (saved) {
-                setIsCollapsed(JSON.parse(saved));
-            }
-        };
-
-        window.addEventListener('sidebarToggle', handleToggle);
-        return () => window.removeEventListener('sidebarToggle', handleToggle);
-    }, []);
-
-    // Save collapsed state to localStorage
-    const toggleCollapsed = () => {
-        const newState = !isCollapsed;
-        setIsCollapsed(newState);
-        localStorage.setItem('sidebarCollapsed', JSON.stringify(newState));
-        // Dispatch custom event for same-window updates
-        window.dispatchEvent(new Event('sidebarToggle'));
-    };
+    const { isCollapsed, isMobileOpen, setIsMobileOpen } = useAdminSidebar();
 
     const handleLogout = async () => {
         await fetch('/api/admin/auth/logout', { method: 'POST' });
@@ -89,7 +61,7 @@ export default function Sidebar() {
                 {/* Mobile Close Button */}
                 <button
                     onClick={() => setIsMobileOpen(false)}
-                    className="lg:hidden absolute left-4 top-4 p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors z-50"
+                    className="lg:hidden absolute left-4 top-4 p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors z-50 cursor-pointer"
                 >
                     <X className="w-5 h-5" />
                 </button>
@@ -172,7 +144,7 @@ export default function Sidebar() {
                     <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-4 border border-slate-700/50">
                         <button
                             onClick={handleLogout}
-                            className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} w-full text-red-400 hover:text-red-300 transition-colors group`}
+                            className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} w-full text-red-400 hover:text-red-300 transition-colors group cursor-pointer`}
                             title={isCollapsed ? 'خروج از حساب' : undefined}
                         >
                             <div className="p-2 bg-red-500/10 rounded-lg group-hover:bg-red-500/20 transition-colors flex-shrink-0">
