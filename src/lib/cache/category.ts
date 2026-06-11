@@ -10,7 +10,7 @@
  * ⚠️ Filters operate on top of cached data when possible
  */
 
-import { unstable_cache } from 'next/cache';
+import { cacheLife, cacheTag } from 'next/cache';
 import { prisma } from '@/lib/db';
 
 // ============================================
@@ -62,96 +62,96 @@ export interface CachedProduct {
  * Get category by slug (cached)
  * TTL: 30 minutes
  */
-export const getCachedCategoryBySlug = (slug: string) =>
-    unstable_cache(
-        async () => {
-            const category = await prisma.category.findFirst({
-                where: { slug },
-                select: {
-                    id: true,
-                    name: true,
-                    slug: true,
-                    description: true,
-                    image: true,
-                },
-            });
-            return category;
+export async function getCachedCategoryBySlug(slug: string): Promise<CachedCategory | null> {
+    'use cache';
+    cacheLife({
+        stale: CACHE_TTL_STATIC,
+        revalidate: CACHE_TTL_STATIC,
+        expire: CACHE_TTL_STATIC * 2
+    });
+    cacheTag(`category:${slug}`);
+
+    const category = await prisma.category.findFirst({
+        where: { slug },
+        select: {
+            id: true,
+            name: true,
+            slug: true,
+            description: true,
+            image: true,
         },
-        [`category:${slug}`],
-        {
-            revalidate: CACHE_TTL_STATIC,
-            tags: [`category:${slug}`],
-        }
-    )();
+    });
+    return category;
+}
 
 /**
  * Get subcategories with product counts (cached)
  * TTL: 30 minutes
  */
-export const getCachedSubcategories = (categoryId: number) =>
-    unstable_cache(
-        async () => {
-            const subcategories = await prisma.subcategory.findMany({
-                where: { categoryId },
-                select: { id: true, name: true, slug: true },
-            });
+export async function getCachedSubcategories(categoryId: number): Promise<CachedSubcategory[]> {
+    'use cache';
+    cacheLife({
+        stale: CACHE_TTL_STATIC,
+        revalidate: CACHE_TTL_STATIC,
+        expire: CACHE_TTL_STATIC * 2
+    });
+    cacheTag(`category:${categoryId}`, `subcategories:${categoryId}`);
 
-            const withCounts = await Promise.all(
-                subcategories.map(async (sub) => ({
-                    ...sub,
-                    productCount: await prisma.product.count({
-                        where: { subcategoryId: sub.id, isActive: true },
-                    }),
-                }))
-            );
+    const subcategories = await prisma.subcategory.findMany({
+        where: { categoryId },
+        select: { id: true, name: true, slug: true },
+    });
 
-            return withCounts;
-        },
-        [`subcategories:${categoryId}`],
-        {
-            revalidate: CACHE_TTL_STATIC,
-            tags: [`category:${categoryId}`, `subcategories:${categoryId}`],
-        }
-    )();
+    const withCounts = await Promise.all(
+        subcategories.map(async (sub) => ({
+            ...sub,
+            productCount: await prisma.product.count({
+                where: { subcategoryId: sub.id, isActive: true },
+            }),
+        }))
+    );
+
+    return withCounts;
+}
 
 /**
  * Get available brands for a category (cached)
  * TTL: 10 minutes
  */
-export const getCachedBrands = (categoryId: number, subcategoryId?: number) =>
-    unstable_cache(
-        async () => {
-            const where: any = { isActive: true, brand: { not: null } };
+export async function getCachedBrands(categoryId: number, subcategoryId?: number): Promise<string[]> {
+    'use cache';
+    cacheLife({
+        stale: CACHE_TTL_BRANDS,
+        revalidate: CACHE_TTL_BRANDS,
+        expire: CACHE_TTL_BRANDS * 2
+    });
+    cacheTag(`category:${categoryId}`, `brands:${categoryId}`);
 
-            if (subcategoryId) {
-                where.subcategoryId = subcategoryId;
-            } else {
-                const subcategoryIds = await prisma.subcategory
-                    .findMany({
-                        where: { categoryId },
-                        select: { id: true },
-                    })
-                    .then((subs) => subs.map((s) => s.id));
-                where.subcategoryId = { in: subcategoryIds };
-            }
+    const where: any = { isActive: true, brand: { not: null } };
 
-            const results = await prisma.product.findMany({
-                where,
-                select: { brand: true },
-                distinct: ['brand'],
-            });
+    if (subcategoryId) {
+        where.subcategoryId = subcategoryId;
+    } else {
+        const subcategoryIds = await prisma.subcategory
+            .findMany({
+                where: { categoryId },
+                select: { id: true },
+            })
+            .then((subs) => subs.map((s) => s.id));
+        where.subcategoryId = { in: subcategoryIds };
+    }
 
-            return results
-                .map((r) => r.brand)
-                .filter((b): b is string => b !== null)
-                .sort();
-        },
-        [`brands:${categoryId}:${subcategoryId || 'all'}`],
-        {
-            revalidate: CACHE_TTL_BRANDS,
-            tags: [`category:${categoryId}`, `brands:${categoryId}`],
-        }
-    )();
+    const results = await prisma.product.findMany({
+        where,
+        select: { brand: true },
+        distinct: ['brand'],
+    });
+
+    return results
+        .map((r) => r.brand)
+        .filter((b): b is string => b !== null)
+        .sort();
+}
 
 // ============================================
 // SEMI-DYNAMIC LAYER (5 min TTL)
@@ -163,113 +163,113 @@ export const getCachedBrands = (categoryId: number, subcategoryId?: number) =>
  * No filters applied - filters operate on this data
  * TTL: 5 minutes
  */
-export const getCachedBaseProducts = (categoryId: number) =>
-    unstable_cache(
-        async () => {
-            const now = new Date();
+export async function getCachedBaseProducts(categoryId: number): Promise<CachedProduct[]> {
+    'use cache';
+    cacheLife({
+        stale: CACHE_TTL_PRODUCTS,
+        revalidate: CACHE_TTL_PRODUCTS,
+        expire: CACHE_TTL_PRODUCTS * 2
+    });
+    cacheTag(`category:${categoryId}`, `products:category:${categoryId}`);
 
-            // Get all subcategory IDs for this category
-            const subcategoryIds = await prisma.subcategory
-                .findMany({
-                    where: { categoryId },
-                    select: { id: true },
-                })
-                .then((subs) => subs.map((s) => s.id));
+    const now = new Date();
 
-            // Fetch all products with STABLE SORT (createdAt desc)
-            const allProducts = await prisma.product.findMany({
+    // Get all subcategory IDs for this category
+    const subcategoryIds = await prisma.subcategory
+        .findMany({
+            where: { categoryId },
+            select: { id: true },
+        })
+        .then((subs) => subs.map((s) => s.id));
+
+    // Fetch all products with STABLE SORT (createdAt desc)
+    const allProducts = await prisma.product.findMany({
+        where: {
+            isActive: true,
+            subcategoryId: { in: subcategoryIds },
+        },
+        orderBy: { createdAt: 'desc' }, // Stable sort
+        select: {
+            id: true,
+            name: true,
+            slug: true,
+            price: true,
+            listPrice: true,
+            thumbnail: true,
+            inventoryStatus: true,
+            brand: true,
+            hasActiveOffer: true,
+            createdAt: true,
+            offerProducts: {
                 where: {
-                    isActive: true,
-                    subcategoryId: { in: subcategoryIds },
-                },
-                orderBy: { createdAt: 'desc' }, // Stable sort
-                select: {
-                    id: true,
-                    name: true,
-                    slug: true,
-                    price: true,
-                    listPrice: true,
-                    thumbnail: true,
-                    inventoryStatus: true,
-                    brand: true,
-                    hasActiveOffer: true,
-                    createdAt: true,
-                    offerProducts: {
-                        where: {
-                            offer: {
-                                isActive: true,
-                                startDate: { lte: now },
-                                endDate: { gt: now },
-                            },
-                        },
-                        select: {
-                            customDiscountValue: true,
-                            offer: {
-                                select: {
-                                    discountType: true,
-                                    discountValue: true,
-                                },
-                            },
-                        },
-                        orderBy: { offer: { priority: 'desc' } },
-                        take: 1,
+                    offer: {
+                        isActive: true,
+                        startDate: { lte: now },
+                        endDate: { gt: now },
                     },
                 },
-            });
-
-            // Calculate effective prices
-            const productsWithPricing: CachedProduct[] = allProducts.map((product) => {
-                const basePrice = product.listPrice || product.price;
-                const activeOfferProduct = product.offerProducts[0];
-                const activeOffer = activeOfferProduct?.offer;
-
-                let effectivePrice = product.price;
-                let discountPercent = 0;
-                let hasOffer = false;
-
-                if (activeOffer) {
-                    const discountValue =
-                        activeOfferProduct.customDiscountValue ?? activeOffer.discountValue;
-
-                    if (activeOffer.discountType === 'PERCENTAGE') {
-                        effectivePrice = basePrice * (1 - discountValue / 100);
-                        discountPercent = Math.round(discountValue);
-                    } else {
-                        effectivePrice = basePrice - discountValue;
-                        discountPercent = Math.round((discountValue / basePrice) * 100);
-                    }
-                    hasOffer = true;
-                } else if (product.listPrice && product.listPrice > product.price) {
-                    effectivePrice = product.price;
-                    discountPercent = Math.round(
-                        ((product.listPrice - product.price) / product.listPrice) * 100
-                    );
-                    hasOffer = true;
-                }
-
-                return {
-                    id: product.id,
-                    name: product.name,
-                    slug: product.slug,
-                    price: Math.round(effectivePrice),
-                    listPrice: hasOffer ? basePrice : null,
-                    thumbnail: product.thumbnail,
-                    inventoryStatus: product.inventoryStatus,
-                    brand: product.brand,
-                    discountPercent,
-                    hasOffer,
-                    createdAt: product.createdAt,
-                };
-            });
-
-            return productsWithPricing;
+                select: {
+                    customDiscountValue: true,
+                    offer: {
+                        select: {
+                            discountType: true,
+                            discountValue: true,
+                        },
+                    },
+                },
+                orderBy: { offer: { priority: 'desc' } },
+                take: 1,
+            },
         },
-        [`products:category:${categoryId}`],
-        {
-            revalidate: CACHE_TTL_PRODUCTS,
-            tags: [`category:${categoryId}`, `products:category:${categoryId}`],
+    });
+
+    // Calculate effective prices
+    const productsWithPricing: CachedProduct[] = allProducts.map((product) => {
+        const basePrice = product.listPrice || product.price;
+        const activeOfferProduct = product.offerProducts[0];
+        const activeOffer = activeOfferProduct?.offer;
+
+        let effectivePrice = product.price;
+        let discountPercent = 0;
+        let hasOffer = false;
+
+        if (activeOffer) {
+            const discountValue =
+                activeOfferProduct.customDiscountValue ?? activeOffer.discountValue;
+
+            if (activeOffer.discountType === 'PERCENTAGE') {
+                effectivePrice = basePrice * (1 - discountValue / 100);
+                discountPercent = Math.round(discountValue);
+            } else {
+                effectivePrice = basePrice - discountValue;
+                discountPercent = Math.round((discountValue / basePrice) * 100);
+            }
+            hasOffer = true;
+        } else if (product.listPrice && product.listPrice > product.price) {
+            effectivePrice = product.price;
+            discountPercent = Math.round(
+                ((product.listPrice - product.price) / product.listPrice) * 100
+            );
+            hasOffer = true;
         }
-    )();
+
+        return {
+            id: product.id,
+            name: product.name,
+            slug: product.slug,
+            price: Math.round(effectivePrice),
+            listPrice: hasOffer ? basePrice : null,
+            thumbnail: product.thumbnail,
+            inventoryStatus: product.inventoryStatus,
+            brand: product.brand,
+            discountPercent,
+            hasOffer,
+            createdAt: product.createdAt,
+        };
+    });
+
+    return productsWithPricing;
+}
 
 // ============================================
 // DYNAMIC LAYER (No Cache) - Filter Operations
@@ -309,10 +309,6 @@ export function applyFiltersToProducts(
 
     let filtered = [...products];
 
-    // Note: subcategoryId filtering requires fresh query if subcategory changes
-    // This is handled at the page level by passing subcategoryId to getCachedBaseProducts
-    // For now, this is a placeholder
-
     // Price filter
     if (minPrice !== undefined) {
         filtered = filtered.filter((p) => p.price >= minPrice);
@@ -342,7 +338,6 @@ export function applyFiltersToProducts(
     } else if (sort === 'price-desc') {
         filtered.sort((a, b) => b.price - a.price);
     }
-    // 'newest' is already the base sort, no additional sorting needed
 
     // Pagination
     const totalCount = filtered.length;

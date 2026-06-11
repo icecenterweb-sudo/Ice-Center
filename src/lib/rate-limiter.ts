@@ -1,7 +1,8 @@
+import redis from '@/lib/redis'
+
 /**
  * Rate Limiter Utility
- * Simple in-memory rate limiter for API endpoints
- * For production, consider Redis-based rate limiting
+ * Uses Upstash Redis as primary rate limiter with an in-memory Map fallback.
  */
 
 interface RateLimitEntry {
@@ -9,10 +10,10 @@ interface RateLimitEntry {
     resetTime: number;
 }
 
-// In-memory store for rate limiting
+// In-memory store fallback
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
-// Clean up old entries periodically
+// Clean up old in-memory entries periodically
 setInterval(() => {
     const now = Date.now();
     for (const [key, entry] of rateLimitStore.entries()) {
@@ -34,9 +35,58 @@ export interface RateLimitResult {
 }
 
 /**
- * Check rate limit for a given identifier (IP, userId, etc.)
+ * Check rate limit using Redis (Upstash)
  */
-export function checkRateLimit(
+async function checkRedisRateLimit(
+    key: string,
+    config: RateLimitConfig
+): Promise<RateLimitResult | null> {
+    if (!redis) return null
+
+    try {
+        const redisKey = `ratelimit:${key}`
+        const count = await redis.get<number>(redisKey)
+
+        if (count === null) {
+            // First request in the window. Set key to 1 and expire it after windowMs (converted to seconds)
+            const expireSeconds = Math.ceil(config.windowMs / 1000)
+            await redis.set(redisKey, 1, { ex: expireSeconds })
+            return {
+                allowed: true,
+                remaining: config.maxRequests - 1,
+                resetIn: expireSeconds,
+            }
+        }
+
+        if (count >= config.maxRequests) {
+            // Limit exceeded. Get TTL.
+            const ttl = await redis.ttl(redisKey)
+            return {
+                allowed: false,
+                remaining: 0,
+                resetIn: ttl > 0 ? ttl : Math.ceil(config.windowMs / 1000),
+            }
+        }
+
+        // Increment the key count
+        const newCount = await redis.incr(redisKey)
+        const ttl = await redis.ttl(redisKey)
+
+        return {
+            allowed: true,
+            remaining: Math.max(0, config.maxRequests - newCount),
+            resetIn: ttl > 0 ? ttl : Math.ceil(config.windowMs / 1000),
+        }
+    } catch (error) {
+        console.warn('Redis rate limit error, falling back to memory:', error)
+        return null // Fallback to in-memory
+    }
+}
+
+/**
+ * Check rate limit using in-memory Map
+ */
+function checkMemoryRateLimit(
     identifier: string,
     config: RateLimitConfig
 ): RateLimitResult {
@@ -71,6 +121,20 @@ export function checkRateLimit(
         remaining: config.maxRequests - entry.count,
         resetIn: Math.ceil((entry.resetTime - now) / 1000)
     };
+}
+
+/**
+ * Check rate limit for a given identifier (IP, userId, etc.)
+ */
+export async function checkRateLimit(
+    identifier: string,
+    config: RateLimitConfig
+): Promise<RateLimitResult> {
+    const redisResult = await checkRedisRateLimit(identifier, config)
+    if (redisResult !== null) {
+        return redisResult
+    }
+    return checkMemoryRateLimit(identifier, config)
 }
 
 /**

@@ -85,7 +85,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
         } catch (e) {
             console.error('Failed to fetch cart:', e)
         }
-        setIsLoading(false)
     }, [])
 
     // Sync local cart to server after login
@@ -123,8 +122,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         if (authLoading) return
 
         if (isAuthenticated) {
-            // First sync any local cart, then fetch
-            syncCart().then(() => fetchCart())
+            // Sync local cart and fetch server cart in parallel
+            Promise.allSettled([syncCart(), fetchCart()])
+                .then(() => setIsLoading(false))
         } else {
             loadLocalCart()
         }
@@ -185,9 +185,35 @@ export function CartProvider({ children }: { children: ReactNode }) {
         }
     }, [isAuthenticated, saveLocalCart])
 
+    const removeItem = useCallback(async (productId: number) => {
+        if (isAuthenticated) {
+            try {
+                const res = await fetch('/api/cart/remove', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ productId })
+                })
+
+                if (res.ok) {
+                    setItems(prev => prev.filter(i => i.productId !== productId))
+                    toast.success('از سبد حذف شد')
+                }
+            } catch {
+                toast.error('خطا در حذف')
+            }
+        } else {
+            setItems(prev => {
+                const updated = prev.filter(i => i.productId !== productId)
+                saveLocalCart(updated)
+                return updated
+            })
+            toast.success('از سبد حذف شد')
+        }
+    }, [isAuthenticated, saveLocalCart])
+
     const updateQuantity = useCallback(async (productId: number, quantity: number) => {
         if (quantity < 1) {
-            removeItem(productId)
+            await removeItem(productId)
             return
         }
 
@@ -217,33 +243,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 return updated
             })
         }
-    }, [isAuthenticated, saveLocalCart])
-
-    const removeItem = useCallback(async (productId: number) => {
-        if (isAuthenticated) {
-            try {
-                const res = await fetch('/api/cart/remove', {
-                    method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ productId })
-                })
-
-                if (res.ok) {
-                    setItems(prev => prev.filter(i => i.productId !== productId))
-                    toast.success('از سبد حذف شد')
-                }
-            } catch {
-                toast.error('خطا در حذف')
-            }
-        } else {
-            setItems(prev => {
-                const updated = prev.filter(i => i.productId !== productId)
-                saveLocalCart(updated)
-                return updated
-            })
-            toast.success('از سبد حذف شد')
-        }
-    }, [isAuthenticated, saveLocalCart])
+    }, [isAuthenticated, removeItem, saveLocalCart])
 
     const clearCart = useCallback(() => {
         setItems([])

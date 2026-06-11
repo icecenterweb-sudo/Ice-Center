@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     try {
         // Rate limiting for search (stricter than regular list)
         const clientIp = getClientIp(request);
-        const rateLimit = checkRateLimit(`search:${clientIp}`, RATE_LIMITS.normal);
+        const rateLimit = await checkRateLimit(`search:${clientIp}`, RATE_LIMITS.normal);
 
         if (!rateLimit.allowed) {
             return NextResponse.json({

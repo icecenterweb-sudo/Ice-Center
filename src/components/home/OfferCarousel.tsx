@@ -80,21 +80,19 @@ const mockProducts: OfferProduct[] = [
 ];
 
 const AmazingOfferCarousel = ({ offers }: AmazingOfferCarouselProps) => {
-  // Transform offers to product format, or use mock data
+  // Transform offers to product format
   const products: OfferProduct[] = useMemo(() => {
-    if (offers && offers.length > 0) {
-      return offers.map(offer => ({
-        id: offer.product.id,
-        title: offer.product.title,
-        slug: offer.product.slug,
-        price: offer.product.price,
-        oldPrice: offer.product.oldPrice,
-        discount: offer.product.discount,
-        image: offer.product.image,
-        inStock: offer.product.inStock,
-      }));
-    }
-    return mockProducts;
+    if (!offers || offers.length === 0) return [];
+    return offers.map(offer => ({
+      id: offer.product.id,
+      title: offer.product.title,
+      slug: offer.product.slug,
+      price: offer.product.price,
+      oldPrice: offer.product.oldPrice,
+      discount: offer.product.discount,
+      image: offer.product.image,
+      inStock: offer.product.inStock,
+    }));
   }, [offers]);
 
   // Get earliest end date for timer
@@ -108,26 +106,23 @@ const AmazingOfferCarousel = ({ offers }: AmazingOfferCarouselProps) => {
   }, [offers]);
 
   // --- Timer Logic ---
-  const [time, setTime] = useState({ hours: 14, minutes: 57, seconds: 27 });
+  const calculateTimeLeft = useCallback(() => {
+    const diff = Math.max(0, new Date(earliestEndDate).getTime() - Date.now());
+    return {
+      hours: Math.floor(diff / (1000 * 60 * 60)),
+      minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+      seconds: Math.floor((diff % (1000 * 60)) / 1000),
+    };
+  }, [earliestEndDate]);
+
+  const [time, setTime] = useState(calculateTimeLeft);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setTime((prev) => {
-        let { hours, minutes, seconds } = prev;
-        if (seconds > 0) seconds--;
-        else {
-          seconds = 59;
-          if (minutes > 0) minutes--;
-          else {
-            minutes = 59;
-            if (hours > 0) hours--;
-          }
-        }
-        return { hours, minutes, seconds };
-      });
+      setTime(calculateTimeLeft());
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [calculateTimeLeft]);
 
   const formatTime = (num: number) => num.toString().padStart(2, '0');
 
@@ -199,6 +194,9 @@ const AmazingOfferCarousel = ({ offers }: AmazingOfferCarouselProps) => {
     mobileEmblaApi.on('select', onMobileSelect);
     mobileEmblaApi.on('reInit', onMobileSelect);
   }, [mobileEmblaApi, onMobileSelect]);
+
+  // Don't render the section if there are no offers
+  if (products.length === 0) return null;
 
   return (
     <div className="w-full max-w-[1600px] mx-auto my-1 md:my-2 lg:my-12 select-none font-yekan" dir="rtl">

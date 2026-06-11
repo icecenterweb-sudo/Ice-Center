@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
   try {
     // Rate limiting for unauthenticated list requests
     const clientIp = getClientIp(request);
-    const rateLimit = checkRateLimit(`products:list:${clientIp}`, RATE_LIMITS.normal);
+    const rateLimit = await checkRateLimit(`products:list:${clientIp}`, RATE_LIMITS.normal);
 
     if (!rateLimit.allowed) {
       return NextResponse.json({

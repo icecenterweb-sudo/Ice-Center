@@ -40,7 +40,9 @@ export async function getProductsCached(options: {
 
     try {
         // 1. Try to get from cache
-        const cached = await redis.get<{ products: CachedProduct[]; total: number }>(cacheKey)
+        const cached = redis
+            ? await redis.get<{ products: CachedProduct[]; total: number }>(cacheKey)
+            : null
 
         if (cached) {
             console.log(`[Cache] HIT: ${cacheKey}`)
@@ -86,7 +88,9 @@ export async function getProductsCached(options: {
 
         // 3. Store in cache with TTL
         const data = { products, total }
-        await redis.set(cacheKey, data, { ex: PRODUCTS_CACHE_TTL })
+        if (redis) {
+            await redis.set(cacheKey, data, { ex: PRODUCTS_CACHE_TTL })
+        }
 
         return { ...data, fromCache: false }
 
@@ -145,6 +149,8 @@ export async function invalidateProductsCache(): Promise<void> {
  * SCAN is O(1) per call and iterates incrementally
  */
 async function cleanupOldCacheKeys(): Promise<void> {
+    if (!redis) return
+
     try {
         let cursor: number | string = 0;
         const keysToDelete: string[] = [];

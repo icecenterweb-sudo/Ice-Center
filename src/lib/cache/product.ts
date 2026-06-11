@@ -7,14 +7,8 @@
  * ⚠️ Cache keys include slug for per-product caching
  */
 
-import { unstable_cache } from 'next/cache';
+import { cacheLife, cacheTag } from 'next/cache';
 import { prisma } from '@/lib/db';
-
-// ============================================
-// Cache Configuration
-// ============================================
-
-const PRODUCT_CACHE_TTL = 60; // 60 seconds as suggested
 
 // ============================================
 // Types
@@ -95,71 +89,66 @@ export interface ProductDynamicData {
  * Cache key: ['product-static', slug] - unique per product
  * Tags: ['product', `product:${slug}`] - granular invalidation
  */
-export function getCachedProductStatic(slug: string) {
-    return unstable_cache(
-        async (): Promise<ProductStaticData | null> => {
-            if (process.env.NODE_ENV === 'development') {
-                console.log(`[CACHE] product-static:${slug} - fetching fresh data`);
-            }
+export async function getCachedProductStatic(slug: string): Promise<ProductStaticData | null> {
+    'use cache';
+    cacheLife('seconds'); // 60 seconds TTL profile
+    cacheTag('product', `product:${slug}`);
 
-            const product = await prisma.product.findUnique({
-                where: { slug },
+    if (process.env.NODE_ENV === 'development') {
+        console.log(`[CACHE] product-static:${slug} - fetching fresh data`);
+    }
+
+    const product = await prisma.product.findUnique({
+        where: { slug },
+        select: {
+            id: true,
+            name: true,
+            slug: true,
+            sku: true,
+            description: true,
+            brand: true,
+            model: true,
+            manufacturingCountry: true,
+            condition: true,
+            powerSource: true,
+            voltage: true,
+            phase: true,
+            power: true,
+            powerConsumption: true,
+            coolingSystem: true,
+            width: true,
+            depth: true,
+            height: true,
+            weightNet: true,
+            weightGross: true,
+            images: true,
+            thumbnail: true,
+            files: true,
+            tags: true,
+            specifications: true,
+            features: true,
+            warranty: true,
+            metaTitle: true,
+            metaDescription: true,
+            keywords: true,
+            subcategory: {
                 select: {
                     id: true,
                     name: true,
                     slug: true,
-                    sku: true,
-                    description: true,
-                    brand: true,
-                    model: true,
-                    manufacturingCountry: true,
-                    condition: true,
-                    powerSource: true,
-                    voltage: true,
-                    phase: true,
-                    power: true,
-                    powerConsumption: true,
-                    coolingSystem: true,
-                    width: true,
-                    depth: true,
-                    height: true,
-                    weightNet: true,
-                    weightGross: true,
-                    images: true,
-                    thumbnail: true,
-                    files: true,
-                    tags: true,
-                    specifications: true,
-                    features: true,
-                    warranty: true,
-                    metaTitle: true,
-                    metaDescription: true,
-                    keywords: true,
-                    subcategory: {
+                    category: {
                         select: {
                             id: true,
                             name: true,
                             slug: true,
-                            category: {
-                                select: {
-                                    id: true,
-                                    name: true,
-                                    slug: true,
-                                }
-                            }
                         }
                     }
                 }
-            });
-
-            return product;
-        },
-        ['product-static', slug],
-        {
-            revalidate: PRODUCT_CACHE_TTL,
-            tags: ['product', `product:${slug}`]
+            }
         }
-    )();
+    });
+
+    return product;
 }
 
 // ============================================
@@ -286,13 +275,3 @@ export async function getProductWithCaching(slug: string) {
         ...dynamicData,
     };
 }
-
-// ============================================
-// Cache Revalidation Helper
-// ============================================
-
-/**
- * Revalidate product cache when product is updated
- * Call this from admin product edit actions
- */
-
