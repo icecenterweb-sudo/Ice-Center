@@ -3,22 +3,23 @@ import Link from 'next/link';
 import { Phone, Mail, MapPin, Instagram, Send } from 'lucide-react';
 
 /**
- * Get current Jalali (Persian) year.
- * Simple conversion: Jalali year ≈ Gregorian year - 621
+ * Jalali year — computed once at module load time, not inside render.
+ * Fixes Next.js 15 prerender-current-time warning.
  */
-function getJalaliYear(): number {
+function computeJalaliYear(): number {
     const now = new Date();
     const gYear = now.getFullYear();
     const gMonth = now.getMonth() + 1;
-    // Jalali new year is around March 20-21
     if (gMonth < 3 || (gMonth === 3 && now.getDate() < 21)) {
         return gYear - 622;
     }
     return gYear - 621;
 }
 
+// Evaluated once at startup — safe for static rendering
+const JALALI_YEAR = computeJalaliYear();
+
 const Footer: React.FC = () => {
-  const jalaliYear = getJalaliYear();
 
   return (
     <footer className="bg-gray-900 text-gray-300 mt-20">
@@ -93,7 +94,7 @@ const Footer: React.FC = () => {
         {/* خط جداکننده */}
         <div className="border-t border-gray-800 pt-6">
           <p className="text-center text-sm text-gray-500">
-            © {jalaliYear} تمامی حقوق این سایت متعلق به <span className="text-white font-bold">آیس سنتر</span> می‌باشد.
+            © {JALALI_YEAR} تمامی حقوق این سایت متعلق به <span className="text-white font-bold">آیس سنتر</span> می‌باشد.
           </p>
         </div>
 

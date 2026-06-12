@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
 import { requireAdmin } from '@/lib/admin-auth';
+import { notifyCommentReply } from '@/lib/notifications';
 
 const updateStatusSchema = z.object({
     status: z.enum(['APPROVED', 'REJECTED', 'PENDING']),
@@ -36,10 +37,34 @@ export async function PATCH(
             );
         }
 
+        // Fetch comment before updating to get parent/post info
+        const existingComment = await prisma.blogComment.findUnique({
+            where: { id: commentId },
+            select: {
+                parentId: true,
+                authorName: true,
+                post: { select: { title: true, slug: true } },
+            },
+        });
+
         const comment = await prisma.blogComment.update({
             where: { id: commentId },
             data: { status: validation.data.status },
         });
+
+        // If this is a reply being approved, notify the parent comment author
+        if (
+            validation.data.status === 'APPROVED' &&
+            existingComment?.parentId &&
+            existingComment.post
+        ) {
+            notifyCommentReply(
+                existingComment.parentId,
+                existingComment.authorName || 'کاربر',
+                existingComment.post.title,
+                existingComment.post.slug
+            ).catch(console.error);
+        }
 
         return NextResponse.json({ success: true, comment });
     } catch (error) {

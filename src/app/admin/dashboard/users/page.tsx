@@ -1,7 +1,8 @@
-import { Users, Search, Phone, Calendar, ShieldCheck, ShieldX } from 'lucide-react';
+import { Users, Search, Phone, Calendar, ShieldCheck, ShieldX, Eye } from 'lucide-react';
 import { prisma } from '@/lib/db';
 import { connection } from 'next/server';
 import { Suspense } from 'react';
+import Link from 'next/link';
 
 async function getUsers() {
     await connection(); // Opt out of caching
@@ -135,6 +136,9 @@ async function UsersContent() {
                                     <th className="text-right px-4 py-3 text-sm font-semibold text-gray-600">
                                         تاریخ عضویت
                                     </th>
+                                    <th className="text-right px-4 py-3 text-sm font-semibold text-gray-600">
+                                        عملیات
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -186,6 +190,15 @@ async function UsersContent() {
                                                     <Calendar className="w-4 h-4 text-gray-400" />
                                                     {formatDate(user.createdAt)}
                                                 </div>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <Link
+                                                    href={`/admin/dashboard/users/${user.id}`}
+                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors text-xs font-medium"
+                                                >
+                                                    <Eye className="w-3.5 h-3.5" />
+                                                    پرونده
+                                                </Link>
                                             </td>
                                         </tr>
                                     );

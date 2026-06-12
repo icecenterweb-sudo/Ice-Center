@@ -8,6 +8,7 @@ import AuthWrapper from "@/components/auth/AuthWrapper";
 import { CartProvider } from "@/context/CartContext";
 import CartDrawer from "@/components/cart/CartDrawer";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
+import SupportChatWidget from "@/components/chat/SupportChatWidget";
 
 export default function ShopLayout({
   children,
@@ -30,6 +31,9 @@ export default function ShopLayout({
           <Footer />
           <Suspense fallback={null}>
             <CartDrawer />
+          </Suspense>
+          <Suspense fallback={null}>
+            <SupportChatWidget />
           </Suspense>
           <Suspense fallback={<div className="md:hidden h-16 fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200" />}>
             <MobileBottomNav />
