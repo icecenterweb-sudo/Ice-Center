@@ -16,7 +16,8 @@ import {
     X,
     Tag,
     Palette,
-    BarChart3
+    BarChart3,
+    MessageSquare
 } from 'lucide-react';
 
 const menuItems = [
@@ -29,6 +30,7 @@ const menuItems = [
     { icon: Palette, label: 'ظاهر', href: '/admin/dashboard/appearance' },
     { icon: Users, label: 'کاربران', href: '/admin/dashboard/users' },
     { icon: ShoppingCart, label: 'سفارشات', href: '/admin/dashboard/orders' },
+    { icon: MessageSquare, label: 'پشتیبانی آنلاین', href: '/admin/dashboard/support' },
 ];
 
 export default function Sidebar() {
