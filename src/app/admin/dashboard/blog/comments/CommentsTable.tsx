@@ -67,7 +67,7 @@ export default function CommentsTable({ comments }: CommentsTableProps) {
         <>
             {/* Comments Table */}
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto scrollbar-sleek">
                     <table className="w-full">
                         <thead className="bg-gray-50 border-b border-gray-200">
                             <tr>
@@ -174,7 +174,7 @@ export default function CommentsTable({ comments }: CommentsTableProps) {
                     onClick={() => setSelectedComment(null)}
                 >
                     <div
-                        className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-auto shadow-xl"
+                        className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-auto scrollbar-sleek shadow-xl"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Dialog Header */}

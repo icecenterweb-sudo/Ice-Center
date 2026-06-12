@@ -340,7 +340,7 @@ export default function AddOfferPage() {
 
                             {/* Search Results */}
                             {searchQuery && (
-                                <div className="max-h-48 overflow-y-auto border border-gray-100 rounded-xl">
+                                <div className="max-h-48 overflow-y-auto scrollbar-sleek border border-gray-100 rounded-xl">
                                     {isLoadingProducts ? (
                                         <p className="p-4 text-center text-gray-500">در حال بارگذاری...</p>
                                     ) : filteredProducts.length === 0 ? (
@@ -391,7 +391,7 @@ export default function AddOfferPage() {
                                             تخفیف سفارشی اختیاری
                                         </p>
                                     </div>
-                                    <div className="space-y-3 max-h-80 overflow-y-auto">
+                                    <div className="space-y-3 max-h-80 overflow-y-auto scrollbar-sleek">
                                         {selectedProducts.map(product => (
                                             <div
                                                 key={product.id}

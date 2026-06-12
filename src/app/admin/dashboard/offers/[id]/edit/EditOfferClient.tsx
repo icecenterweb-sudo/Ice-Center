@@ -344,7 +344,7 @@ export default function EditOfferClient({ id }: { id: string }) {
                             </div>
 
                             {searchQuery && (
-                                <div className="max-h-48 overflow-y-auto border border-gray-100 rounded-xl">
+                                <div className="max-h-48 overflow-y-auto scrollbar-sleek border border-gray-100 rounded-xl">
                                     {filteredProducts.slice(0, 10).map(product => (
                                         <button
                                             key={product.id}
@@ -375,7 +375,7 @@ export default function EditOfferClient({ id }: { id: string }) {
                             {selectedProducts.length > 0 && (
                                 <div className="space-y-3">
                                     <p className="text-sm text-gray-600">{selectedProducts.length} محصول انتخاب شده</p>
-                                    <div className="space-y-3 max-h-80 overflow-y-auto">
+                                    <div className="space-y-3 max-h-80 overflow-y-auto scrollbar-sleek">
                                         {selectedProducts.map(product => (
                                             <div key={product.id} className="p-3 bg-gray-50 rounded-xl space-y-2">
                                                 <div className="flex items-center gap-3">
