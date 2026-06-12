@@ -1,96 +1,162 @@
 // Complete database backup script
 // Run with: node prisma/backup-db.js
-// This exports all data to JSON for migration to new database
+// Exports all current Prisma models to JSON.
 
 const { PrismaClient } = require('@prisma/client')
 const { PrismaPg } = require('@prisma/adapter-pg')
 const { Pool } = require('pg')
 const fs = require('fs')
 const path = require('path')
-require('dotenv').config()
+const dotenv = require('dotenv')
+
+dotenv.config({ path: path.join(__dirname, '..', '.env.local') })
+dotenv.config({ path: path.join(__dirname, '..', '.env') })
 
 const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL
-const pool = new Pool({ connectionString })
+
+if (!connectionString) {
+    console.error('Missing POSTGRES_URL or DATABASE_URL.')
+    process.exit(1)
+}
+
+const pool = new Pool({
+    connectionString,
+    max: 5,
+    idleTimeoutMillis: 10000,
+    connectionTimeoutMillis: 10000,
+})
 const adapter = new PrismaPg(pool)
 const prisma = new PrismaClient({ adapter })
 
+const backupDir = path.join(__dirname, '..', 'backups')
+const outputPath = path.join(backupDir, 'db-backup.json')
+const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+const timestampedOutputPath = path.join(backupDir, `db-backup-${timestamp}.json`)
+
+const tables = [
+    ['admins', () => prisma.admin.findMany({ orderBy: { id: 'asc' } })],
+    ['users', () => prisma.user.findMany({ orderBy: { id: 'asc' } })],
+    ['categories', () => prisma.category.findMany({ orderBy: { id: 'asc' } })],
+    ['subcategories', () => prisma.subcategory.findMany({ orderBy: { id: 'asc' } })],
+    ['products', () => prisma.product.findMany({ orderBy: { id: 'asc' } })],
+    ['productVariants', () => prisma.productVariant.findMany({ orderBy: { id: 'asc' } })],
+    ['cartItems', () => prisma.cartItem.findMany({ orderBy: { id: 'asc' } })],
+    ['otpRequests', () => prisma.otpRequest.findMany({ orderBy: { id: 'asc' } })],
+    ['addresses', () => prisma.address.findMany({ orderBy: { id: 'asc' } })],
+    ['blogCategories', () => prisma.blogCategory.findMany({ orderBy: { id: 'asc' } })],
+    ['blogTags', () => prisma.blogTag.findMany({ orderBy: { id: 'asc' } })],
+    ['blogPosts', () => prisma.blogPost.findMany({ orderBy: { id: 'asc' } })],
+    ['blogPostTags', () => getBlogPostTags()],
+    ['blogComments', () => prisma.blogComment.findMany({ orderBy: { id: 'asc' } })],
+    ['campaigns', () => prisma.campaign.findMany({ orderBy: { id: 'asc' } })],
+    ['offers', () => prisma.offer.findMany({ orderBy: { id: 'asc' } })],
+    ['offerProducts', () => prisma.offerProduct.findMany({ orderBy: { id: 'asc' } })],
+    ['slides', () => prisma.slide.findMany({ orderBy: { id: 'asc' } })],
+    ['banners', () => prisma.banner.findMany({ orderBy: { id: 'asc' } })],
+    ['orders', () => prisma.order.findMany({ orderBy: { id: 'asc' } })],
+    ['orderItems', () => prisma.orderItem.findMany({ orderBy: { id: 'asc' } })],
+    ['wishlistItems', () => prisma.wishlistItem.findMany({ orderBy: { id: 'asc' } })],
+    ['notifications', () => prisma.notification.findMany({ orderBy: { id: 'asc' } })],
+    ['analyticsEvents', () => prisma.analyticsEvent.findMany({ orderBy: { id: 'asc' } })],
+]
+
 async function main() {
-    console.log('📦 Backing up all database tables...\n')
+    console.log('Backing up database tables...\n')
 
-    const backup = {}
-
-    // 1. Admins
-    console.log('  → Exporting admins...')
-    backup.admins = await prisma.admin.findMany()
-    console.log(`    ✅ ${backup.admins.length} admins`)
-
-    // 2. Categories
-    console.log('  → Exporting categories...')
-    backup.categories = await prisma.category.findMany()
-    console.log(`    ✅ ${backup.categories.length} categories`)
-
-    // 3. Subcategories
-    console.log('  → Exporting subcategories...')
-    backup.subcategories = await prisma.subcategory.findMany()
-    console.log(`    ✅ ${backup.subcategories.length} subcategories`)
-
-    // 4. Products (with all fields)
-    console.log('  → Exporting products...')
-    backup.products = await prisma.product.findMany()
-    console.log(`    ✅ ${backup.products.length} products`)
-
-    // 5. Product Variants
-    console.log('  → Exporting product variants...')
-    backup.productVariants = await prisma.productVariant.findMany()
-    console.log(`    ✅ ${backup.productVariants.length} variants`)
-
-    // 6. Users (if any)
-    console.log('  → Exporting users...')
-    try {
-        backup.users = await prisma.user.findMany()
-        console.log(`    ✅ ${backup.users.length} users`)
-    } catch {
-        backup.users = []
-        console.log(`    ⚠️  No users table or empty`)
+    const backup = {
+        metadata: {
+            createdAt: new Date().toISOString(),
+            schemaProvider: 'postgresql',
+            source: maskConnectionString(connectionString),
+        },
+        data: {},
+        counts: {},
     }
 
-    // 7. OTP codes (optional, might not want to migrate these)
-    console.log('  → Exporting OTP codes...')
-    try {
-        backup.otpCodes = await prisma.oTPCode.findMany()
-        console.log(`    ✅ ${backup.otpCodes.length} OTP codes`)
-    } catch {
-        backup.otpCodes = []
-        console.log(`    ⚠️  No OTP table or empty`)
+    for (const [key, loader] of tables) {
+        process.stdout.write(`  -> Exporting ${key}... `)
+        try {
+            const rows = await loadWithRetry(key, loader)
+            backup.data[key] = rows
+            backup.counts[key] = rows.length
+            console.log(`${rows.length}`)
+        } catch (error) {
+            console.log('failed')
+            throw new Error(`Could not export ${key}: ${error instanceof Error ? error.message : String(error)}`)
+        }
     }
 
-    // Save to file
-    const outputPath = path.join(__dirname, '..', 'db-backup.json')
-    fs.writeFileSync(outputPath, JSON.stringify(backup, null, 2), 'utf-8')
+    const json = JSON.stringify(backup, null, 2)
+    fs.mkdirSync(backupDir, { recursive: true })
+    fs.writeFileSync(outputPath, json, 'utf-8')
+    fs.writeFileSync(timestampedOutputPath, json, 'utf-8')
 
-    console.log('\n' + '═'.repeat(50))
-    console.log('📊 Backup Summary:')
-    console.log('═'.repeat(50))
-    console.log(`  Admins:       ${backup.admins.length}`)
-    console.log(`  Categories:   ${backup.categories.length}`)
-    console.log(`  Subcategories: ${backup.subcategories.length}`)
-    console.log(`  Products:     ${backup.products.length}`)
-    console.log(`  Variants:     ${backup.productVariants.length}`)
-    console.log(`  Users:        ${backup.users.length}`)
-    console.log('═'.repeat(50))
-    console.log(`\n✅ Saved to: db-backup.json`)
-    console.log('\n🔄 Next steps:')
-    console.log('  1. Update .env with Vercel Postgres DATABASE_URL')
-    console.log('  2. Run: npx prisma db push')
-    console.log('  3. Run: node prisma/restore-db.js')
-    console.log('')
+    console.log('\nBackup summary')
+    console.log('='.repeat(50))
+    for (const [key] of tables) {
+        console.log(`${key.padEnd(18)} ${String(backup.counts[key]).padStart(6)}`)
+    }
+    console.log('='.repeat(50))
+    console.log(`Saved latest: ${path.relative(process.cwd(), outputPath)}`)
+    console.log(`Saved copy:   ${path.relative(process.cwd(), timestampedOutputPath)}`)
+}
+
+async function loadWithRetry(key, loader, attempts = 3) {
+    let lastError
+
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+        try {
+            return await loader()
+        } catch (error) {
+            lastError = error
+            if (attempt < attempts) {
+                process.stdout.write(`retry ${attempt}/${attempts - 1}... `)
+                await wait(500 * attempt)
+            }
+        }
+    }
+
+    throw lastError || new Error(`Unknown error while exporting ${key}`)
+}
+
+function wait(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function getBlogPostTags() {
+    const posts = await prisma.blogPost.findMany({
+        select: {
+            id: true,
+            tags: { select: { id: true } },
+        },
+        orderBy: { id: 'asc' },
+    })
+
+    return posts.flatMap((post) =>
+        post.tags.map((tag) => ({
+            postId: post.id,
+            tagId: tag.id,
+        }))
+    )
+}
+
+function maskConnectionString(value) {
+    try {
+        const url = new URL(value)
+        if (url.password) url.password = '***'
+        if (url.username) url.username = '***'
+        return url.toString()
+    } catch {
+        return 'configured'
+    }
 }
 
 main()
-    .catch(e => {
-        console.error('❌ Error:', e)
-        process.exit(1)
+    .catch((error) => {
+        console.error('Backup failed:', error)
+        process.exitCode = 1
     })
     .finally(async () => {
         await prisma.$disconnect()
+        await pool.end()
     })
