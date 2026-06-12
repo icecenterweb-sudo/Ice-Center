@@ -134,13 +134,14 @@ model User {
   status     UserStatus @default(ACTIVE)
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
-  addresses     Address[]
-  cartItems     CartItem[]
-  blogComments  BlogComment[]
-  orders        Order[]
-  wishlistItems WishlistItem[]
-  notifications Notification[]
+  addresses       Address[]
+  cartItems       CartItem[]
+  blogComments    BlogComment[]
+  orders          Order[]
+  wishlistItems   WishlistItem[]
+  notifications   Notification[]
   analyticsEvents AnalyticsEvent[]
+  supportRooms    SupportRoom[]
 
   @@index([phone])
 }
@@ -196,8 +197,9 @@ model Admin {
   status    AdminStatus @default(ACTIVE)
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
-  blogPosts BlogPost[]
+  blogPosts       BlogPost[]
   analyticsEvents AnalyticsEvent[]
+  supportMessages SupportMessage[]
 
   @@index([phone])
 }
@@ -648,4 +650,50 @@ model AnalyticsEvent {
   @@index([path, createdAt])
   @@index([userId, createdAt])
   @@index([adminId, createdAt])
+}
+
+// =============================================================================
+// SUPPORT CHAT SYSTEM
+// =============================================================================
+
+enum SupportRoomStatus {
+  OPEN
+  CLOSED
+}
+
+enum MessageSender {
+  USER
+  ADMIN
+}
+
+model SupportRoom {
+  id        Int               @id @default(autoincrement())
+  phone     String
+  name      String
+  userId    Int?
+  user      User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  status    SupportRoomStatus @default(OPEN)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  messages  SupportMessage[]
+
+  @@index([phone])
+  @@index([userId])
+  @@index([status])
+  @@index([status, createdAt])
+}
+
+model SupportMessage {
+  id        Int           @id @default(autoincrement())
+  roomId    Int
+  room      SupportRoom   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender    MessageSender
+  text      String        @db.Text
+  createdAt DateTime      @default(now())
+
+  adminId   Int?
+  admin     Admin?        @relation(fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@index([roomId])
+  @@index([roomId, createdAt])
 }

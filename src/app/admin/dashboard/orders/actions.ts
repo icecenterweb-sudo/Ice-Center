@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/db';
 import { OrderStatus, Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
+import { notifyOrderStatusChange } from '@/lib/notifications';
 
 export async function getOrders({
     page = 1,
@@ -94,7 +95,7 @@ export async function getOrderDetails(id: number) {
 
 export async function updateOrderStatus(orderId: number, status: OrderStatus) {
     try {
-        await prisma.order.update({
+        const order = await prisma.order.update({
             where: { id: orderId },
             data: {
                 status,
@@ -103,7 +104,11 @@ export async function updateOrderStatus(orderId: number, status: OrderStatus) {
                 ...(status === 'SHIPPED' ? { shippedAt: new Date() } : {}),
                 ...(status === 'DELIVERED' ? { deliveredAt: new Date() } : {}),
             },
+            select: { id: true, orderNumber: true, userId: true },
         });
+
+        // Non-blocking: send notification to user
+        notifyOrderStatusChange(order.userId, order.id, order.orderNumber, status).catch(console.error);
 
         revalidatePath('/admin/dashboard/orders');
         revalidatePath(`/admin/dashboard/orders/${orderId}`);

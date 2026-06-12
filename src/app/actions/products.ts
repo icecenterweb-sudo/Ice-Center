@@ -6,6 +6,10 @@ import { redirect } from 'next/navigation';
 import { requireAdminAction } from '@/lib/admin-auth';
 import { z } from 'zod';
 import { generateUniqueSlug } from '@/lib/slugify';
+import {
+    notifyWishlistUsersOnPriceDrop,
+    notifyWishlistUsersOnRestock,
+} from '@/lib/notifications';
 
 // ============================================
 // Validation Schemas
@@ -120,6 +124,12 @@ export async function updateProduct(id: number, formData: FormData) {
     const data = result.data;
 
     try {
+        // Fetch current values to detect price/stock changes
+        const currentProduct = await prisma.product.findUnique({
+            where: { id },
+            select: { price: true, stock: true, name: true, slug: true, inventoryStatus: true },
+        });
+
         const updateData: Record<string, unknown> = {
             name: data.name,
             description: data.description,
@@ -149,6 +159,25 @@ export async function updateProduct(id: number, formData: FormData) {
             where: { id },
             data: updateData,
         });
+
+        // Non-blocking wishlist notifications
+        if (currentProduct) {
+            const wasOutOfStock = currentProduct.stock === 0 || currentProduct.inventoryStatus === 'OUT_OF_STOCK';
+            const nowInStock = data.stock > 0;
+            const priceDropped = data.price < currentProduct.price;
+
+            if (wasOutOfStock && nowInStock) {
+                notifyWishlistUsersOnRestock(id, currentProduct.name, currentProduct.slug).catch(console.error);
+            } else if (priceDropped) {
+                notifyWishlistUsersOnPriceDrop(
+                    id,
+                    currentProduct.name,
+                    currentProduct.slug,
+                    currentProduct.price,
+                    data.price
+                ).catch(console.error);
+            }
+        }
 
         revalidatePath('/admin/dashboard/products');
     } catch (error: unknown) {
