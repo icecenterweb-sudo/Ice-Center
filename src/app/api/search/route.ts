@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
 import { prisma } from '@/lib/db';
 import { checkRateLimit, getClientIp, RATE_LIMITS } from '@/lib/rate-limiter';
+import { recordAnalyticsEvent } from '@/lib/analytics';
 
 // Search limits
 const MAX_SEARCH_RESULTS = 20;
@@ -95,6 +96,15 @@ export async function GET(request: NextRequest) {
             price: product.price,
             image: product.thumbnail,
         }));
+
+        // Record search event in background
+        recordAnalyticsEvent({
+            type: 'SEARCH',
+            request,
+            path: `/api/search?q=${encodeURIComponent(sanitizedQuery)}`,
+            searchQuery: sanitizedQuery,
+            searchResultCount: products.length,
+        }).catch(err => console.error('[Analytics] Search log error:', err));
 
         return NextResponse.json({
             success: true,

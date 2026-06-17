@@ -4,6 +4,7 @@ import Footer from "@/components/layout/Footer";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 import Analytics from "@/components/analytics/GoogleAnalytics";
 import VisitTracker from "@/components/analytics/VisitTracker";
+import SpeedTracker from "@/components/analytics/SpeedTracker";
 import AuthWrapper from "@/components/auth/AuthWrapper";
 import { CartProvider } from "@/context/CartContext";
 import CartDrawer from "@/components/cart/CartDrawer";
@@ -41,6 +42,9 @@ export default function ShopLayout({
           <Analytics />
           <Suspense fallback={null}>
             <VisitTracker />
+          </Suspense>
+          <Suspense fallback={null}>
+            <SpeedTracker />
           </Suspense>
         </CartProvider>
       </AuthWrapper>

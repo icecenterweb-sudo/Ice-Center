@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
+import { recordClientEvent } from '@/lib/client-analytics'
 
 const CART_STORAGE_KEY = 'ice_center_cart'
 
@@ -136,6 +137,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const toggleCart = useCallback(() => setIsOpen(prev => !prev), [])
 
     const addItem = useCallback(async (product: CartProduct, quantity = 1) => {
+        recordClientEvent('ADD_TO_CART', { productId: product.id })
         if (isAuthenticated) {
             // API call
             try {

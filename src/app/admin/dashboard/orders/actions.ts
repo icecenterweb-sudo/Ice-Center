@@ -107,6 +107,29 @@ export async function updateOrderStatus(orderId: number, status: OrderStatus) {
             select: { id: true, orderNumber: true, userId: true },
         });
 
+        // Record PAYMENT_SUCCESS event if paid
+        if (status === 'PAID') {
+            const analyticsEventClient = (prisma as any).analyticsEvent;
+            if (analyticsEventClient) {
+                // Find original source/medium from ORDER_SUBMIT event for attribution
+                const originalEvent = await analyticsEventClient.findFirst({
+                    where: { orderId: order.id, type: 'ORDER_SUBMIT' },
+                    select: { source: true, medium: true }
+                }).catch(() => null);
+
+                await analyticsEventClient.create({
+                    data: {
+                        type: 'PAYMENT_SUCCESS',
+                        orderId: order.id,
+                        userId: order.userId,
+                        source: originalEvent?.source || 'direct',
+                        medium: originalEvent?.medium || 'direct',
+                        path: `/admin/dashboard/orders/${order.id}`,
+                    }
+                }).catch((err: any) => console.error('[Analytics] Failed to log PAYMENT_SUCCESS:', err));
+            }
+        }
+
         // Non-blocking: send notification to user
         notifyOrderStatusChange(order.userId, order.id, order.orderNumber, status).catch(console.error);
 

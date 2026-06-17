@@ -24,6 +24,7 @@ import {
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/hooks/useAuth';
 import { toPersianDigits } from '@/lib/numbers';
+import { recordClientEvent } from '@/lib/client-analytics';
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -242,6 +243,13 @@ export default function CheckoutPage() {
         }
     }, [cartLoading, items.length, router, orderId]);
 
+    // Track Checkout Start
+    useEffect(() => {
+        if (currentStep === 1) {
+            recordClientEvent('CHECKOUT_START');
+        }
+    }, [currentStep]);
+
     const formatPrice = (price: number) => {
         return toPersianDigits(price.toLocaleString('fa-IR'));
     };
@@ -314,6 +322,9 @@ export default function CheckoutPage() {
             setCurrentStep(4); // Move to success step
             window.scrollTo({ top: 0, behavior: 'smooth' });
             toast.success('سفارش شما با موفقیت ثبت شد!');
+            
+            // Track successful order submission
+            recordClientEvent('ORDER_SUBMIT', { orderId: data.order.id });
         } catch (error: any) {
             console.error('Order error:', error);
             toast.error(error.message || 'خطا در ثبت سفارش');

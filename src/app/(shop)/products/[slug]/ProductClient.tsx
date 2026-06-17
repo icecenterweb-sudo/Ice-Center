@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { recordClientEvent } from '@/lib/client-analytics';
 import ProductImageGallery from '@/components/product/ProductImageGallery';
 import ProductInfo from '@/components/product/ProductInfo';
 import PricingBox from '@/components/product/PricingBox';
@@ -48,6 +49,12 @@ type ProductClientProps = {
 
 export default function ProductClient({ product }: ProductClientProps) {
     const [activeTab, setActiveTab] = useState('desc');
+
+    useEffect(() => {
+        if (product?.id) {
+            recordClientEvent('PRODUCT_VIEW', { productId: product.id });
+        }
+    }, [product?.id]);
 
     // Build advantages from features array
     const icons = [Zap, Snowflake, Settings, Award];
