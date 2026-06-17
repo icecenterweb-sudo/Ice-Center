@@ -1,7 +1,17 @@
 import { createHash } from 'node:crypto'
 import { prisma } from '@/lib/db'
 
-export type AnalyticsEventKind = 'PAGE_VIEW' | 'USER_LOGIN' | 'ADMIN_LOGIN'
+export type AnalyticsEventKind =
+    | 'PAGE_VIEW'
+    | 'PRODUCT_VIEW'
+    | 'ADD_TO_CART'
+    | 'CHECKOUT_START'
+    | 'ORDER_SUBMIT'
+    | 'PAYMENT_SUCCESS'
+    | 'SEARCH'
+    | 'SPEED_LOG'
+    | 'USER_LOGIN'
+    | 'ADMIN_LOGIN'
 
 type EventInput = {
     type: AnalyticsEventKind
@@ -12,6 +22,14 @@ type EventInput = {
     medium?: string | null
     userId?: number | null
     adminId?: number | null
+    productId?: number | null
+    orderId?: number | null
+    searchQuery?: string | null
+    searchResultCount?: number | null
+    loadTime?: number | null
+    imageSize?: number | null
+    hasErrors?: boolean | null
+    browser?: string | null
 }
 
 const SOCIAL_SOURCES = new Map([
@@ -87,11 +105,23 @@ export function shouldSkipAnalytics(path?: string | null, userAgent?: string | n
     return getDevice(userAgent) === 'bot'
 }
 
+function parseBrowser(userAgent?: string | null): string | null {
+    if (!userAgent) return null
+    const ua = userAgent.toLowerCase()
+    if (ua.includes('firefox')) return 'Firefox'
+    if (ua.includes('opr/') || ua.includes('opera')) return 'Opera'
+    if (ua.includes('edg/')) return 'Edge'
+    if (ua.includes('chrome')) return 'Chrome'
+    if (ua.includes('safari')) return 'Safari'
+    return 'Other'
+}
+
 export async function recordAnalyticsEvent(input: EventInput): Promise<void> {
     try {
         const userAgent = input.request.headers.get('user-agent')
         if (input.type === 'PAGE_VIEW' && shouldSkipAnalytics(input.path, userAgent)) return
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const analyticsEventClient = (prisma as any).analyticsEvent;
         if (!analyticsEventClient) {
             return;
@@ -112,6 +142,14 @@ export async function recordAnalyticsEvent(input: EventInput): Promise<void> {
                 ipHash: hashIp(getClientIp(input.request)),
                 userId: input.userId || null,
                 adminId: input.adminId || null,
+                productId: input.productId || null,
+                orderId: input.orderId || null,
+                searchQuery: input.searchQuery || null,
+                searchResultCount: input.searchResultCount ?? null,
+                loadTime: input.loadTime || null,
+                imageSize: input.imageSize || null,
+                hasErrors: input.hasErrors ?? false,
+                browser: input.browser || parseBrowser(userAgent),
             },
         })
     } catch (error) {
