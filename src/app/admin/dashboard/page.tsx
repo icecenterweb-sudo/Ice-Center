@@ -5,19 +5,28 @@ import { Suspense } from 'react';
 
 async function DashboardContent() {
     await connection(); // Required for dynamic data access with cacheComponents
+    const now = new Date();
+    const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
     // Fetch real data from database
-    const [productCount, userCount, blogPostCount, pendingComments] = await Promise.all([
-        prisma.product.count(),
+    const [productCount, userCount, blogPostCount, pendingComments, ordersThisMonth, newOrdersCount, recentAuditLogs] = await Promise.all([
+        prisma.product.count({ where: { isActive: true } }),
         prisma.user.count(),
         prisma.blogPost.count({ where: { status: 'PUBLISHED' } }),
         prisma.blogComment.count({ where: { status: 'PENDING' } }),
+        prisma.order.findMany({
+            where: { createdAt: { gte: startOfCurrentMonth }, status: { not: 'CANCELLED' } },
+            select: { total: true },
+        }),
+        prisma.order.count({ where: { status: 'PENDING' } }),
+        ((prisma as any).auditLog ? (prisma as any).auditLog.findMany({
+            orderBy: { createdAt: 'desc' },
+            take: 5,
+            include: { admin: { select: { name: true } } },
+        }) : Promise.resolve([])),
     ]);
 
-    // Calculate monthly sales (placeholder - you'll need Order model for real data)
-    const monthlySales = 0; // Will be updated when Order model exists
-
-    // Get recent orders count (placeholder - you'll need Order model)
-    const newOrdersCount = 0; // Will be updated when Order model exists
+    const monthlySales = ordersThisMonth.reduce((sum, o) => sum + o.total, 0);
 
     return (
         <DashboardView
@@ -27,6 +36,8 @@ async function DashboardContent() {
             newOrdersCount={newOrdersCount}
             blogPostCount={blogPostCount}
             pendingComments={pendingComments}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            recentAuditLogs={recentAuditLogs as any[]}
         />
     );
 }
