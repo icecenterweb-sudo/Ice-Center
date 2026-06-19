@@ -9,6 +9,7 @@
 // ============================================
 
 import { Suspense } from 'react';
+import { connection } from 'next/server';
 
 // ✅ ONLY cached queries from isolated file
 import {
@@ -114,7 +115,9 @@ async function BlogSectionWrapper() {
 // Main Page Component with Streaming
 // ============================================
 
-export default function Home() {
+export default async function Home() {
+  await connection();
+
   return (
     <>
       {/* Hero: Lightweight, quick load */}

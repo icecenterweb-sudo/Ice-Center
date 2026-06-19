@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/sync-offers",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/abandoned-carts",
+      "schedule": "0 * * * *"
+    }
+  ]
+}

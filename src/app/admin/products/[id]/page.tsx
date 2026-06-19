@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -23,13 +23,7 @@ export default function EditProductPage() {
     isActive: true
   });
 
-  useEffect(() => {
-    if (id) {
-      fetchProduct();
-    }
-  }, [id]);
-
-  const fetchProduct = async () => {
+  const fetchProduct = useCallback(async () => {
     const res = await fetch(`/api/products/${id}`);
     const data = await res.json();
 
@@ -47,7 +41,13 @@ export default function EditProductPage() {
       });
     }
     setLoading(false);
-  };
+  }, [id]);
+
+  useEffect(() => {
+    if (id) {
+      fetchProduct();
+    }
+  }, [fetchProduct, id]);
 
   const handleChange = (e: any) => {
     const { name, value, type, checked } = e.target;

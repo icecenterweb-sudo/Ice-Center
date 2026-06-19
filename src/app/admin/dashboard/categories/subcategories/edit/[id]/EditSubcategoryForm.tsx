@@ -72,7 +72,7 @@ export default function EditSubcategoryForm({ subcategory, categories }: EditSub
                 </Link>
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">ویرایش زیردسته</h1>
-                    <p className="text-gray-500 text-sm mt-1">ویرایش اطلاعات زیردسته "{subcategory.name}"</p>
+                    <p className="text-gray-500 text-sm mt-1">ویرایش اطلاعات زیردسته &quot;{subcategory.name}&quot;</p>
                 </div>
             </div>
 

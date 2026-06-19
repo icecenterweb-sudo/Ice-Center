@@ -71,7 +71,7 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
                 </Link>
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">ویرایش دسته‌بندی</h1>
-                    <p className="text-gray-500 text-sm mt-1">ویرایش اطلاعات دسته‌بندی "{category.name}"</p>
+                    <p className="text-gray-500 text-sm mt-1">ویرایش اطلاعات دسته‌بندی &quot;{category.name}&quot;</p>
                 </div>
             </div>
 
