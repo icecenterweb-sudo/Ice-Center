@@ -1,4 +1,6 @@
 import { prisma } from '@/lib/db';
+import type { Prisma } from '@prisma/client';
+import { InventoryStatus } from '@prisma/client';
 
 // ============================================
 // TYPES
@@ -13,12 +15,23 @@ export interface ProductFilterParams {
     minPrice?: number;
     maxPrice?: number;
     brands?: string[];
-    availability?: string[];
+    availability?: InventoryStatus[];
     onlyDiscount?: boolean;
 }
 
 export interface ProductResult {
-    products: any[];
+    products: {
+        id: number;
+        name: string;
+        slug: string;
+        price: number;
+        listPrice: number | null;
+        thumbnail: string | null;
+        inventoryStatus: InventoryStatus;
+        brand: string | null;
+        discountPercent: number;
+        hasOffer: boolean;
+    }[];
     totalCount: number;
     totalPages: number;
     currentPage: number;
@@ -30,26 +43,48 @@ export interface ProductResult {
 
 /**
  * Get all categories with product counts
+ * Uses _count to avoid N+1 queries
  */
 export async function getAllCategories() {
-    const categories = await prisma.category.findMany({
-        select: { id: true, name: true, slug: true, image: true, description: true },
-        orderBy: { name: 'asc' }
-    });
-
-    const categoriesWithCounts = await Promise.all(
-        categories.map(async (cat) => ({
-            ...cat,
-            productCount: await prisma.product.count({
-                where: {
-                    subcategory: { categoryId: cat.id },
-                    isActive: true
+    return prisma.category.findMany({
+        select: {
+            id: true,
+            name: true,
+            slug: true,
+            image: true,
+            description: true,
+            _count: {
+                select: {
+                    subcategories: {
+                        where: {
+                            products: {
+                                some: { isActive: true }
+                            }
+                        }
+                    }
                 }
-            })
-        }))
-    );
-
-    return categoriesWithCounts;
+            },
+            subcategories: {
+                select: {
+                    _count: {
+                        select: {
+                            products: {
+                                where: { isActive: true }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        orderBy: { name: 'asc' }
+    }).then(categories => categories.map(cat => ({
+        id: cat.id,
+        name: cat.name,
+        slug: cat.slug,
+        image: cat.image,
+        description: cat.description,
+        productCount: cat.subcategories.reduce((sum, sub) => sum + sub._count.products, 0)
+    })));
 }
 
 /**
@@ -63,23 +98,29 @@ export async function getCategoryBySlug(slug: string) {
 
 /**
  * Get subcategories for a category with product counts
+ * Uses _count to avoid N+1 queries
  */
 export async function getSubcategoriesByCategoryId(categoryId: number) {
-    const subcategories = await prisma.subcategory.findMany({
+    return prisma.subcategory.findMany({
         where: { categoryId },
-        select: { id: true, name: true, slug: true }
-    });
-
-    const withCounts = await Promise.all(
-        subcategories.map(async (sub) => ({
-            ...sub,
-            productCount: await prisma.product.count({
-                where: { subcategoryId: sub.id, isActive: true }
-            })
-        }))
-    );
-
-    return withCounts;
+        select: {
+            id: true,
+            name: true,
+            slug: true,
+            _count: {
+                select: {
+                    products: {
+                        where: { isActive: true }
+                    }
+                }
+            }
+        }
+    }).then(subs => subs.map(sub => ({
+        id: sub.id,
+        name: sub.name,
+        slug: sub.slug,
+        productCount: sub._count.products
+    })));
 }
 
 // ============================================
@@ -106,7 +147,7 @@ export async function getProducts({
     const now = new Date();
 
     // Build where clause
-    const where: any = { isActive: true };
+    const where: Prisma.ProductWhereInput = { isActive: true };
 
     // Category filter (get all subcategories for that category)
     if (categoryId && !subcategoryId) {
@@ -148,12 +189,12 @@ export async function getProducts({
     }
 
     // Build orderBy
-    let orderBy: any = { createdAt: 'desc' };
+    let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: 'desc' };
     if (sort === 'price-asc') orderBy = { price: 'asc' };
     if (sort === 'price-desc') orderBy = { price: 'desc' };
 
     // Fetch products with offer data
-    let allProducts = await prisma.product.findMany({
+    const allProducts = await prisma.product.findMany({
         where,
         orderBy,
         select: {
@@ -255,7 +296,7 @@ export async function getProducts({
  * Get available brands for filtering
  */
 export async function getAvailableBrands(categoryId?: number, subcategoryId?: number) {
-    const where: any = { isActive: true, brand: { not: null } };
+    const where: Prisma.ProductWhereInput = { isActive: true, brand: { not: null } };
 
     if (subcategoryId) {
         where.subcategoryId = subcategoryId;

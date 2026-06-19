@@ -24,14 +24,17 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json({ error: 'شناسه محصول نامعتبر است' }, { status: 400 })
         }
 
-        await prisma.cartItem.delete({
+        // Use deleteMany to avoid error if item doesn't exist
+        const result = await prisma.cartItem.deleteMany({
             where: {
-                userId_productId: {
-                    userId: payload.userId,
-                    productId: productId
-                }
+                userId: payload.userId,
+                productId: productId
             }
         })
+
+        if (result.count === 0) {
+            return NextResponse.json({ error: 'آیتم در سبد خرید یافت نشد' }, { status: 404 })
+        }
 
         return NextResponse.json({ success: true })
     } catch (error) {

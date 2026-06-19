@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import CategoriesClient from './CategoriesClient';
 import { getAllCategories, getProducts, getAvailableBrands } from '@/lib/prisma/queries-category';
 import { generateCategoryJsonLd } from '@/lib/seo/jsonld';
+import { InventoryStatus } from '@prisma/client';
 
 type Props = {
     searchParams: Promise<{
@@ -37,7 +38,7 @@ export default async function CategoriesPage({ searchParams }: Props) {
     const minPrice = sp.minPrice ? parseFloat(sp.minPrice) : undefined;
     const maxPrice = sp.maxPrice ? parseFloat(sp.maxPrice) : undefined;
     const brands = sp.brands ? sp.brands.split(',').filter(Boolean) : undefined;
-    const availability = sp.availability ? sp.availability.split(',').filter(Boolean) : undefined;
+    const availability = sp.availability ? sp.availability.split(',').filter(Boolean) as InventoryStatus[] : undefined;
     const onlyDiscount = sp.discount === 'true';
 
     const [categories, availableBrands, { products, totalCount, totalPages, currentPage }] = await Promise.all([

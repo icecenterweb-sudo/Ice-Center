@@ -12,6 +12,7 @@
 
 import { cacheLife, cacheTag } from 'next/cache';
 import { prisma } from '@/lib/db';
+import { InventoryStatus, Prisma } from '@prisma/client';
 
 // ============================================
 // Cache Configuration (Configurable TTLs)
@@ -47,7 +48,7 @@ export interface CachedProduct {
     price: number;
     listPrice: number | null;
     thumbnail: string | null;
-    inventoryStatus: string;
+    inventoryStatus: InventoryStatus;
     brand: string | null;
     discountPercent: number;
     hasOffer: boolean;
@@ -127,7 +128,7 @@ export async function getCachedBrands(categoryId: number, subcategoryId?: number
     });
     cacheTag(`category:${categoryId}`, `brands:${categoryId}`);
 
-    const where: any = { isActive: true, brand: { not: null } };
+    const where: Prisma.ProductWhereInput = { isActive: true, brand: { not: null } };
 
     if (subcategoryId) {
         where.subcategoryId = subcategoryId;
@@ -280,7 +281,7 @@ export interface FilterParams {
     minPrice?: number;
     maxPrice?: number;
     brands?: string[];
-    availability?: string[];
+    availability?: InventoryStatus[];
     onlyDiscount?: boolean;
     sort?: string;
     page?: number;
@@ -379,7 +380,7 @@ export async function getFreshFilteredProducts(
     });
 
     // Transform to CachedProduct format
-    const products: CachedProduct[] = result.products.map((p: any) => ({
+    const products: CachedProduct[] = result.products.map((p) => ({
         id: p.id,
         name: p.name,
         slug: p.slug,

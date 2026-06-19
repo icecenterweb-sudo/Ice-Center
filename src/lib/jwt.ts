@@ -37,6 +37,7 @@ export interface AdminTokenPayload {
     adminId: number
     phone: string
     role: string
+    roles: string[]
 }
 
 export interface UserTokenPayload {

@@ -9,6 +9,7 @@ import {
     applyFiltersToProducts,
     getFreshFilteredProducts,
 } from '@/lib/cache/category';
+import { InventoryStatus } from '@prisma/client';
 
 type Props = {
     params: Promise<{ slug: string }>;
@@ -62,7 +63,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
     const minPrice = sp.minPrice ? parseFloat(sp.minPrice) : undefined;
     const maxPrice = sp.maxPrice ? parseFloat(sp.maxPrice) : undefined;
     const brands = sp.brands ? sp.brands.split(',').filter(Boolean) : undefined;
-    const availability = sp.availability ? sp.availability.split(',').filter(Boolean) : undefined;
+    const availability = sp.availability ? sp.availability.split(',').filter(Boolean) as InventoryStatus[] : undefined;
     const onlyDiscount = sp.discount === 'true';
 
     // STATIC LAYER: Cached brands (10 min TTL)

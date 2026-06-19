@@ -28,6 +28,22 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'تعداد نامعتبر است' }, { status: 400 })
         }
 
+        // Validate stock availability
+        const product = await prisma.product.findFirst({
+            where: { id: productId, isActive: true },
+            select: { stock: true }
+        })
+
+        if (!product) {
+            return NextResponse.json({ error: 'محصول یافت نشد' }, { status: 404 })
+        }
+
+        if (quantity > product.stock) {
+            return NextResponse.json({
+                error: `حداکثر موجودی: ${product.stock} عدد`
+            }, { status: 400 })
+        }
+
         const cartItem = await prisma.cartItem.update({
             where: {
                 userId_productId: {

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
+import { verifyUserToken, USER_TOKEN_COOKIE } from '@/lib/jwt';
+import { checkRateLimit, getClientIp, RATE_LIMITS } from '@/lib/rate-limiter';
 
 // Validation schema for creating a comment
 const createCommentSchema = z.object({
@@ -69,6 +71,16 @@ export async function GET(request: NextRequest) {
 // POST - Create a new comment
 export async function POST(request: NextRequest) {
     try {
+        // Rate limiting per IP
+        const clientIp = getClientIp(request);
+        const rateLimit = await checkRateLimit(`blog-comment:${clientIp}`, RATE_LIMITS.strict);
+        if (!rateLimit.allowed) {
+            return NextResponse.json(
+                { error: `تعداد درخواست زیاد است. ${rateLimit.resetIn} ثانیه صبر کنید.` },
+                { status: 429 }
+            );
+        }
+
         const body = await request.json();
         const validation = createCommentSchema.safeParse(body);
 
@@ -80,6 +92,21 @@ export async function POST(request: NextRequest) {
         }
 
         const { postId, content, authorName, authorEmail, parentId } = validation.data;
+
+        // Check if user is logged in (optional)
+        let userId: number | undefined;
+        try {
+            const cookieStore = await import('next/headers').then(m => m.cookies());
+            const token = cookieStore.get(USER_TOKEN_COOKIE)?.value;
+            if (token) {
+                const payload = await verifyUserToken(token);
+                if (payload) {
+                    userId = payload.userId;
+                }
+            }
+        } catch {
+            // Not logged in - that's fine for guest comments
+        }
 
         // Verify post exists and is published
         const post = await prisma.blogPost.findFirst({
@@ -119,8 +146,9 @@ export async function POST(request: NextRequest) {
             data: {
                 postId,
                 content,
-                authorName: authorName || 'کاربر مهمان',
-                authorEmail,
+                userId: userId || null,
+                authorName: userId ? null : (authorName || 'کاربر مهمان'),
+                authorEmail: userId ? null : authorEmail,
                 parentId,
                 status: 'PENDING', // Comments start as pending for moderation
             },

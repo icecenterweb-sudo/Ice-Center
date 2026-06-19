@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import prisma from '@/lib/db';
 import { verifyUserToken } from '@/lib/jwt';
+import type { Prisma } from '@prisma/client';
 
 /**
  * GET /api/notifications - List user's notifications
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
         const unreadOnly = searchParams.get('unreadOnly') === 'true';
 
         // Build where clause
-        const where: any = { userId: payload.userId };
+        const where: Prisma.NotificationWhereInput = { userId: payload.userId };
         if (unreadOnly) {
             where.readAt = null;
         }

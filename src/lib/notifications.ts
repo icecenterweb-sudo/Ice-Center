@@ -124,6 +124,10 @@ export async function notifyOrderStatusChange(
     status: string
 ) {
     const statusMessages: Record<string, { title: string; message: string }> = {
+        AWAITING_CONFIRMATION: {
+            title: `سفارش ${orderNumber} در انتظار تأیید است`,
+            message: 'سفارش شما ثبت شد و در انتظار تأیید کارشناس می‌باشد.',
+        },
         PAID: {
             title: `پرداخت سفارش ${orderNumber} تأیید شد ✅`,
             message: 'پرداخت شما با موفقیت تأیید شد و سفارش در حال پردازش است.',
@@ -132,17 +136,37 @@ export async function notifyOrderStatusChange(
             title: `سفارش ${orderNumber} در حال آماده‌سازی است`,
             message: 'تیم ما در حال آماده‌سازی سفارش شما است.',
         },
+        PREPARING: {
+            title: `سفارش ${orderNumber} در حال آماده‌سازی است 📦`,
+            message: 'سفارش شما در حال آماده‌سازی و بسته‌بندی است.',
+        },
+        READY_FOR_DELIVERY: {
+            title: `سفارش ${orderNumber} آماده تحویل است ✅`,
+            message: 'سفارش شما آماده شده و در انتظار ارسال است.',
+        },
         SHIPPED: {
             title: `سفارش ${orderNumber} ارسال شد 🚚`,
             message: 'سفارش شما ارسال شد و در راه است.',
+        },
+        HANDED_TO_CARRIER: {
+            title: `سفارش ${orderNumber} به باربری تحویل شد 🚛`,
+            message: 'سفارش شما به باربری تحویل داده شد. به زودی ارسال خواهد شد.',
         },
         DELIVERED: {
             title: `سفارش ${orderNumber} تحویل داده شد 📬`,
             message: 'سفارش شما با موفقیت تحویل داده شد. از خرید شما متشکریم!',
         },
+        RETURNED: {
+            title: `سفارش ${orderNumber} برگشت خورد ⚠️`,
+            message: 'سفارش شما برگشت خورده است. لطفاً با پشتیبانی تماس بگیرید.',
+        },
         CANCELLED: {
             title: `سفارش ${orderNumber} لغو شد`,
             message: 'متأسفانه سفارش شما لغو شد. برای اطلاعات بیشتر با پشتیبانی تماس بگیرید.',
+        },
+        NEEDS_CONTACT: {
+            title: `سفارش ${orderNumber} نیاز به تماس دارد 📞`,
+            message: 'برای تکمیل سفارش شما نیاز به هماهنگی است. لطفاً با ما تماس بگیرید.',
         },
     };
 

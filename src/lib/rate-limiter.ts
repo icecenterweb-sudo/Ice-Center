@@ -10,18 +10,19 @@ interface RateLimitEntry {
     resetTime: number;
 }
 
-// In-memory store fallback
+// In-memory store fallback (only used when Redis is unavailable)
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
-// Clean up old in-memory entries periodically
-setInterval(() => {
+// Lazy cleanup: prune expired entries when the store grows large
+function pruneExpiredEntries() {
+    if (rateLimitStore.size < 1000) return;
     const now = Date.now();
     for (const [key, entry] of rateLimitStore.entries()) {
         if (entry.resetTime < now) {
             rateLimitStore.delete(key);
         }
     }
-}, 60000); // Clean every minute
+}
 
 export interface RateLimitConfig {
     windowMs: number;      // Time window in milliseconds
@@ -36,6 +37,7 @@ export interface RateLimitResult {
 
 /**
  * Check rate limit using Redis (Upstash)
+ * Uses INCR + EXPIRE atomically to avoid TOCTOU race conditions.
  */
 async function checkRedisRateLimit(
     key: string,
@@ -45,37 +47,30 @@ async function checkRedisRateLimit(
 
     try {
         const redisKey = `ratelimit:${key}`
-        const count = await redis.get<number>(redisKey)
+        const expireSeconds = Math.ceil(config.windowMs / 1000)
 
-        if (count === null) {
-            // First request in the window. Set key to 1 and expire it after windowMs (converted to seconds)
-            const expireSeconds = Math.ceil(config.windowMs / 1000)
-            await redis.set(redisKey, 1, { ex: expireSeconds })
-            return {
-                allowed: true,
-                remaining: config.maxRequests - 1,
-                resetIn: expireSeconds,
-            }
+        // INCR is atomic: if key doesn't exist, Redis creates it with value 1
+        const count = await redis.incr(redisKey)
+
+        // Set expiry only on the first request (when count === 1)
+        if (count === 1) {
+            await redis.expire(redisKey, expireSeconds)
         }
 
-        if (count >= config.maxRequests) {
-            // Limit exceeded. Get TTL.
-            const ttl = await redis.ttl(redisKey)
+        const ttl = await redis.ttl(redisKey)
+
+        if (count > config.maxRequests) {
             return {
                 allowed: false,
                 remaining: 0,
-                resetIn: ttl > 0 ? ttl : Math.ceil(config.windowMs / 1000),
+                resetIn: ttl > 0 ? ttl : expireSeconds,
             }
         }
 
-        // Increment the key count
-        const newCount = await redis.incr(redisKey)
-        const ttl = await redis.ttl(redisKey)
-
         return {
             allowed: true,
-            remaining: Math.max(0, config.maxRequests - newCount),
-            resetIn: ttl > 0 ? ttl : Math.ceil(config.windowMs / 1000),
+            remaining: Math.max(0, config.maxRequests - count),
+            resetIn: ttl > 0 ? ttl : expireSeconds,
         }
     } catch (error) {
         console.warn('Redis rate limit error, falling back to memory:', error)
@@ -90,6 +85,7 @@ function checkMemoryRateLimit(
     identifier: string,
     config: RateLimitConfig
 ): RateLimitResult {
+    pruneExpiredEntries();
     const now = Date.now();
     const key = identifier;
 

@@ -2,11 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { generateAdminToken } from '@/lib/jwt'
 import { recordAnalyticsEvent } from '@/lib/analytics'
-
-// Rate limiting: Track failed attempts per phone
-const failedAttempts = new Map<string, { count: number; lastAttempt: Date }>();
-const MAX_ATTEMPTS = 5;
-const LOCKOUT_MINUTES = 15;
+import { checkRateLimit, getClientIp, RATE_LIMITS } from '@/lib/rate-limiter'
 
 export async function POST(request: NextRequest) {
     try {
@@ -20,22 +16,26 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // Rate limiting check
-        const attempts = failedAttempts.get(phone);
-        if (attempts && attempts.count >= MAX_ATTEMPTS) {
-            const timeSinceLastAttempt = Date.now() - attempts.lastAttempt.getTime();
-            const lockoutMs = LOCKOUT_MINUTES * 60 * 1000;
+        // Rate limiting per IP (Redis-backed, works in serverless)
+        const clientIp = getClientIp(request);
+        const ipRateLimit = await checkRateLimit(`admin-login:ip:${clientIp}`, RATE_LIMITS.strict);
+        if (!ipRateLimit.allowed) {
+            return NextResponse.json(
+                { error: `Too many attempts. Try again in ${ipRateLimit.resetIn} seconds.` },
+                { status: 429 }
+            )
+        }
 
-            if (timeSinceLastAttempt < lockoutMs) {
-                const remainingMinutes = Math.ceil((lockoutMs - timeSinceLastAttempt) / 60000);
-                return NextResponse.json(
-                    { error: `Too many failed attempts. Try again in ${remainingMinutes} minutes.` },
-                    { status: 429 }
-                )
-            } else {
-                // Reset after lockout period
-                failedAttempts.delete(phone);
-            }
+        // Rate limiting per phone (prevents brute force on a specific account)
+        const phoneRateLimit = await checkRateLimit(`admin-login:phone:${phone}`, {
+            windowMs: 15 * 60 * 1000, // 15 minutes
+            maxRequests: 5,
+        });
+        if (!phoneRateLimit.allowed) {
+            return NextResponse.json(
+                { error: `Too many failed attempts. Try again in ${phoneRateLimit.resetIn} seconds.` },
+                { status: 429 }
+            )
         }
 
         // Check if admin exists first
@@ -44,8 +44,6 @@ export async function POST(request: NextRequest) {
         })
 
         if (!admin) {
-            // Track failed attempt (don't reveal if phone exists)
-            trackFailedAttempt(phone);
             return NextResponse.json(
                 { error: 'Invalid credentials' },
                 { status: 401 }
@@ -63,9 +61,6 @@ export async function POST(request: NextRequest) {
         });
 
         if (!validOtp || validOtp.code !== otp) {
-            // Track failed attempt
-            trackFailedAttempt(phone);
-
             // Increment OTP attempts if exists
             if (validOtp) {
                 await prisma.otpRequest.update({
@@ -94,14 +89,13 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // Clear failed attempts on success
-        failedAttempts.delete(phone);
-
         // Generate JWT token
+        const primaryRole = admin.roles[0] || 'ADMIN';
         const token = await generateAdminToken({
             adminId: admin.id,
             phone: admin.phone,
-            role: admin.role,
+            role: primaryRole,
+            roles: admin.roles,
         })
 
         // Create response
@@ -111,7 +105,8 @@ export async function POST(request: NextRequest) {
                 id: admin.id,
                 name: admin.name,
                 phone: admin.phone,
-                role: admin.role,
+                role: primaryRole,
+                roles: admin.roles,
             },
         })
 
@@ -140,15 +135,5 @@ export async function POST(request: NextRequest) {
             { error: 'Internal server error' },
             { status: 500 }
         )
-    }
-}
-
-function trackFailedAttempt(phone: string) {
-    const attempts = failedAttempts.get(phone);
-    if (attempts) {
-        attempts.count++;
-        attempts.lastAttempt = new Date();
-    } else {
-        failedAttempts.set(phone, { count: 1, lastAttempt: new Date() });
     }
 }
