@@ -34,30 +34,22 @@ export default function NewProductPage() {
     setUploading(true);
     const uploadedUrls: string[] = [];
 
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const formDataUpload = new FormData();
       formDataUpload.append('file', file);
-      formDataUpload.append('upload_preset', uploadPreset || 'ice-center');
 
       try {
-        // Direct upload to Cloudinary (unsigned)
-        const res = await fetch(
-          `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-          {
-            method: 'POST',
-            body: formDataUpload,
-          }
-        );
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          body: formDataUpload,
+        });
         const data = await res.json();
 
-        if (data.secure_url) {
-          uploadedUrls.push(data.secure_url);
+        if (data.success && data.url) {
+          uploadedUrls.push(data.url);
         } else {
-          alert(`خطا در آپلود ${file.name}: ${data.error?.message || 'Unknown error'}`);
+          alert(`خطا در آپلود ${file.name}: ${data.message || 'Unknown error'}`);
         }
       } catch {
         alert(`خطا در آپلود ${file.name}`);

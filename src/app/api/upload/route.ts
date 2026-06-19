@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import cloudinary from '@/lib/cloudinary';
-import type { UploadApiResponse } from 'cloudinary';
+import { writeFile, mkdir } from 'fs/promises';
+import path from 'path';
+import crypto from 'crypto';
 import { requireAdmin } from '@/lib/admin-auth';
 
 const MAX_UPLOAD_SIZE = 5 * 1024 * 1024;
@@ -35,28 +36,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // تبدیل File به Buffer
+    // Ensure the uploads directory exists
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+    await mkdir(uploadDir, { recursive: true });
+
+    // Generate a unique filename
+    const ext = path.extname(file.name) || '.png';
+    const filename = `${crypto.randomUUID()}${ext}`;
+    const filePath = path.join(uploadDir, filename);
+
+    // Convert File to Buffer and write to disk
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-
-    // آپلود به Cloudinary
-    const result = await new Promise<UploadApiResponse>((resolve, reject) => {
-      cloudinary.uploader.upload_stream(
-        {
-          folder: 'ice-center-products', // پوشه در Cloudinary
-          resource_type: 'image',
-        },
-        (error, result) => {
-          if (error) reject(error);
-          else if (result) resolve(result);
-          else reject(new Error('Cloudinary upload returned no result'));
-        }
-      ).end(buffer);
-    });
+    await writeFile(filePath, buffer);
 
     return NextResponse.json({
       success: true,
-      url: result.secure_url,
+      url: `/uploads/${filename}`,
     });
   } catch (error: unknown) {
     console.error('خطا در آپلود:', error);
