@@ -194,15 +194,30 @@ model Admin {
   id        Int         @id @default(autoincrement())
   phone     String      @unique
   name      String?
-  role      AdminRole   @default(ADMIN)
+  roles     AdminRole[] @default([ADMIN])
   status    AdminStatus @default(ACTIVE)
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
   blogPosts       BlogPost[]
   analyticsEvents AnalyticsEvent[]
   supportMessages SupportMessage[]
+  auditLogs       AuditLog[]
 
   @@index([phone])
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  action    String   // e.g., "PRODUCT_CREATE", "PRICE_UPDATE", "STOCK_UPDATE", "ORDER_STATUS_UPDATE"
+  entity    String   // e.g., "Product", "Order"
+  entityId  Int
+  details   String?  // JSON string or summary of changes
+  adminId   Int
+  admin     Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([adminId])
+  @@index([entity, entityId])
 }
 
 enum ProductCondition {
@@ -237,6 +252,11 @@ enum UserStatus {
 }
 
 enum AdminRole {
+  SUPER_ADMIN
+  GENERAL_MANAGER
+  BLOG_WRITER
+  SUPPORT_ADMIN
+  INVENTORY_MANAGER
   ADMIN
   EDITOR
 }
@@ -500,12 +520,18 @@ model Banner {
 // =============================================================================
 
 enum OrderStatus {
-  PENDING      // در انتظار پرداخت
-  PAID         // پرداخت شده
-  PROCESSING   // در حال پردازش
-  SHIPPED      // ارسال شده
-  DELIVERED    // تحویل داده شده
-  CANCELLED    // لغو شده
+  PENDING              // در انتظار پرداخت
+  AWAITING_CONFIRMATION // در انتظار تأیید کارشناس
+  PAID                 // پرداخت شده
+  PROCESSING           // در حال پردازش
+  PREPARING            // آماده‌سازی
+  READY_FOR_DELIVERY   // آماده تحویل
+  SHIPPED              // ارسال شده
+  HANDED_TO_CARRIER    // تحویل به باربری
+  DELIVERED            // تحویل داده شده
+  RETURNED             // برگشت خورده
+  CANCELLED            // لغو شده
+  NEEDS_CONTACT        // نیازمند تماس
 }
 
 model Order {
@@ -541,8 +567,14 @@ model Order {
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
   paidAt          DateTime?   // زمان پرداخت
+  confirmedAt     DateTime?   // زمان تأیید کارشناس
+  preparingAt     DateTime?   // زمان شروع آماده‌سازی
+  readyAt         DateTime?   // زمان آماده تحویل
   shippedAt       DateTime?   // زمان ارسال
+  handedToCarrierAt DateTime? // زمان تحویل به باربری
   deliveredAt     DateTime?   // زمان تحویل
+  returnedAt      DateTime?   // زمان برگشت
+  cancelledAt     DateTime?   // زمان لغو
   
   @@index([userId])
   @@index([status])
@@ -720,3 +752,16 @@ model SupportMessage {
   @@index([roomId])
   @@index([roomId, createdAt])
 }
+
+model ErrorLog {
+  id        Int      @id @default(autoincrement())
+  message   String   @db.Text
+  stack     String?  @db.Text
+  path      String?
+  severity  String   @default("ERROR") // "INFO", "WARNING", "ERROR", "CRITICAL"
+  createdAt DateTime @default(now())
+
+  @@index([severity])
+  @@index([createdAt])
+}
+
