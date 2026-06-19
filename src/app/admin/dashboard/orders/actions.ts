@@ -4,6 +4,8 @@ import { prisma } from '@/lib/db';
 import { OrderStatus, Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { notifyOrderStatusChange } from '@/lib/notifications';
+import { requireAdminAction } from '@/lib/admin-auth';
+import { recordAudit } from '@/lib/audit';
 
 export async function getOrders({
     page = 1,
@@ -95,17 +97,53 @@ export async function getOrderDetails(id: number) {
 
 export async function updateOrderStatus(orderId: number, status: OrderStatus) {
     try {
+        const admin = await requireAdminAction();
+        // Build timestamp updates based on new status
+        const timestampUpdates: Record<string, Date> = {};
+        const now = new Date();
+
+        switch (status) {
+            case 'PAID':
+                timestampUpdates.paidAt = now;
+                break;
+            case 'AWAITING_CONFIRMATION':
+                timestampUpdates.confirmedAt = now;
+                break;
+            case 'PREPARING':
+            case 'PROCESSING':
+                timestampUpdates.preparingAt = now;
+                break;
+            case 'READY_FOR_DELIVERY':
+                timestampUpdates.readyAt = now;
+                break;
+            case 'SHIPPED':
+                timestampUpdates.shippedAt = now;
+                break;
+            case 'HANDED_TO_CARRIER':
+                timestampUpdates.handedToCarrierAt = now;
+                break;
+            case 'DELIVERED':
+                timestampUpdates.deliveredAt = now;
+                break;
+            case 'RETURNED':
+                timestampUpdates.returnedAt = now;
+                break;
+            case 'CANCELLED':
+                timestampUpdates.cancelledAt = now;
+                break;
+        }
+
         const order = await prisma.order.update({
             where: { id: orderId },
             data: {
                 status,
-                // Update timestamps based on status
-                ...(status === 'PAID' ? { paidAt: new Date() } : {}),
-                ...(status === 'SHIPPED' ? { shippedAt: new Date() } : {}),
-                ...(status === 'DELIVERED' ? { deliveredAt: new Date() } : {}),
+                ...timestampUpdates,
             },
             select: { id: true, orderNumber: true, userId: true },
         });
+
+        // Record Audit log
+        await recordAudit(admin.adminId, "ORDER_STATUS_UPDATE", "Order", order.id, `تغییر وضعیت سفارش ${order.orderNumber} به ${status}`);
 
         // Record PAYMENT_SUCCESS event if paid
         if (status === 'PAID') {
@@ -145,15 +183,114 @@ export async function updateOrderStatus(orderId: number, status: OrderStatus) {
 
 export async function updateAdminNotes(orderId: number, notes: string) {
     try {
-        await prisma.order.update({
+        const admin = await requireAdminAction();
+        const order = await prisma.order.update({
             where: { id: orderId },
             data: { adminNotes: notes },
+            select: { id: true, orderNumber: true },
         });
+
+        // Record Audit log
+        await recordAudit(admin.adminId, "ORDER_NOTES_UPDATE", "Order", order.id, `بروزرسانی یادداشت ادمین برای سفارش ${order.orderNumber}`);
 
         revalidatePath(`/admin/dashboard/orders/${orderId}`);
         return { success: true };
     } catch (error) {
         console.error('Error updating admin notes:', error);
         return { error: 'Failed to update notes' };
+    }
+}
+
+export async function bulkUpdateOrdersStatusAction(orderIds: number[], status: OrderStatus) {
+    try {
+        const admin = await requireAdminAction();
+        
+        if (!orderIds || orderIds.length === 0) {
+            throw new Error('هیچ سفارشی انتخاب نشده است.');
+        }
+
+        const now = new Date();
+        const timestampUpdates: Record<string, Date> = {};
+
+        switch (status) {
+            case 'PAID':
+                timestampUpdates.paidAt = now;
+                break;
+            case 'AWAITING_CONFIRMATION':
+                timestampUpdates.confirmedAt = now;
+                break;
+            case 'PREPARING':
+            case 'PROCESSING':
+                timestampUpdates.preparingAt = now;
+                break;
+            case 'READY_FOR_DELIVERY':
+                timestampUpdates.readyAt = now;
+                break;
+            case 'SHIPPED':
+                timestampUpdates.shippedAt = now;
+                break;
+            case 'HANDED_TO_CARRIER':
+                timestampUpdates.handedToCarrierAt = now;
+                break;
+            case 'DELIVERED':
+                timestampUpdates.deliveredAt = now;
+                break;
+            case 'RETURNED':
+                timestampUpdates.returnedAt = now;
+                break;
+            case 'CANCELLED':
+                timestampUpdates.cancelledAt = now;
+                break;
+        }
+
+        // Fetch orders before updating to log audit with numbers
+        const orders = await prisma.order.findMany({
+            where: { id: { in: orderIds } },
+            select: { id: true, orderNumber: true, userId: true },
+        });
+
+        // Bulk update status and timestamp in DB
+        await prisma.order.updateMany({
+            where: { id: { in: orderIds } },
+            data: {
+                status,
+                ...timestampUpdates,
+            },
+        });
+
+        // Record Audit log for bulk action
+        await recordAudit(
+            admin.adminId,
+            'ORDER_STATUS_UPDATE',
+            'Order',
+            orderIds[0],
+            `تغییر وضعیت گروهی ${orderIds.length} سفارش به ${status} (شناسه‌ها: ${orderIds.join(', ')})`
+        );
+
+        // Record Analytics and send notifications for each order in background
+        for (const order of orders) {
+            if (status === 'PAID') {
+                const analyticsEventClient = (prisma as any).analyticsEvent;
+                if (analyticsEventClient) {
+                    analyticsEventClient.create({
+                        data: {
+                            type: 'PAYMENT_SUCCESS',
+                            orderId: order.id,
+                            userId: order.userId,
+                            source: 'direct',
+                            medium: 'direct',
+                            path: `/admin/dashboard/orders/${order.id}`,
+                        }
+                    }).catch((err: any) => console.error('[Analytics] Failed to log bulk PAYMENT_SUCCESS:', err));
+                }
+            }
+            notifyOrderStatusChange(order.userId, order.id, order.orderNumber, status).catch(console.error);
+        }
+
+        revalidatePath('/admin/dashboard/orders');
+        return { success: true };
+    } catch (error: any) {
+        console.error('Failed bulk orders update:', error);
+        return { error: error.message || 'خطا در عملیات گروهی سفارشات' };
     }
 }

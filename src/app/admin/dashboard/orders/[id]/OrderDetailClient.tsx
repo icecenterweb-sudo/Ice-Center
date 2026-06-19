@@ -18,11 +18,17 @@ interface OrderDetailClientProps {
 
 const statusOptions: { value: OrderStatus; label: string; color: string }[] = [
     { value: 'PENDING', label: 'در انتظار پرداخت', color: 'bg-yellow-100 text-yellow-800' },
+    { value: 'AWAITING_CONFIRMATION', label: 'در انتظار تأیید', color: 'bg-orange-100 text-orange-800' },
     { value: 'PAID', label: 'پرداخت شده', color: 'bg-blue-100 text-blue-800' },
     { value: 'PROCESSING', label: 'در حال پردازش', color: 'bg-indigo-100 text-indigo-800' },
+    { value: 'PREPARING', label: 'آماده‌سازی', color: 'bg-violet-100 text-violet-800' },
+    { value: 'READY_FOR_DELIVERY', label: 'آماده تحویل', color: 'bg-teal-100 text-teal-800' },
     { value: 'SHIPPED', label: 'ارسال شده', color: 'bg-purple-100 text-purple-800' },
+    { value: 'HANDED_TO_CARRIER', label: 'تحویل به باربری', color: 'bg-cyan-100 text-cyan-800' },
     { value: 'DELIVERED', label: 'تحویل شده', color: 'bg-green-100 text-green-800' },
+    { value: 'RETURNED', label: 'برگشت خورده', color: 'bg-rose-100 text-rose-800' },
     { value: 'CANCELLED', label: 'لغو شده', color: 'bg-red-100 text-red-800' },
+    { value: 'NEEDS_CONTACT', label: 'نیازمند تماس', color: 'bg-amber-100 text-amber-800' },
 ];
 
 export default function OrderDetailClient({ order }: OrderDetailClientProps) {
@@ -183,6 +189,44 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
 
                 {/* Right Column - Info Cards */}
                 <div className="space-y-6">
+                    {/* Order Timeline */}
+                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+                        <h3 className="font-bold text-gray-800 border-b border-gray-100 pb-3 mb-4 flex items-center gap-2">
+                            <Calendar className="w-5 h-5 text-gray-500" />
+                            مراحل سفارش
+                        </h3>
+                        <div className="space-y-3">
+                            {[
+                                { label: 'ثبت سفارش', date: order.createdAt, icon: '📝' },
+                                { label: 'تأیید کارشناس', date: order.confirmedAt, icon: '✅' },
+                                { label: 'پرداخت', date: order.paidAt, icon: '💳' },
+                                { label: 'آماده‌سازی', date: order.preparingAt, icon: '📦' },
+                                { label: 'آماده تحویل', date: order.readyAt, icon: '✨' },
+                                { label: 'ارسال', date: order.shippedAt, icon: '🚚' },
+                                { label: 'تحویل به باربری', date: order.handedToCarrierAt, icon: '🚛' },
+                                { label: 'تحویل', date: order.deliveredAt, icon: '📬' },
+                                { label: 'برگشت', date: order.returnedAt, icon: '↩️' },
+                                { label: 'لغو', date: order.cancelledAt, icon: '❌' },
+                            ].filter(step => step.date).map((step, idx) => (
+                                <div key={idx} className="flex items-center gap-3 text-sm">
+                                    <span className="text-lg">{step.icon}</span>
+                                    <div className="flex-1">
+                                        <div className="font-medium text-gray-900">{step.label}</div>
+                                        <div className="text-xs text-gray-500">
+                                            {new Date(step.date!).toLocaleDateString('fa-IR')} ساعت {new Date(step.date!).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            {order.status === 'NEEDS_CONTACT' && (
+                                <div className="flex items-center gap-3 text-sm bg-amber-50 p-3 rounded-lg">
+                                    <span className="text-lg">📞</span>
+                                    <div className="font-medium text-amber-800">نیاز به تماس با مشتری</div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
                     {/* Customer Info */}
                     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
                         <h3 className="font-bold text-gray-800 border-b border-gray-100 pb-3 mb-4 flex items-center gap-2">

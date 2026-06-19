@@ -1,10 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Eye, Search, Filter, Phone, User, Calendar, MapPin } from 'lucide-react';
+import { 
+    Eye, 
+    Search, 
+    Filter, 
+    Phone, 
+    User, 
+    Calendar, 
+    MapPin, 
+    X, 
+    CheckSquare, 
+    Square, 
+    TrendingUp,
+    RefreshCw
+} from 'lucide-react';
 import { OrderStatus } from '@prisma/client';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
+import { toPersianNumber } from '@/utils/persian';
+import { bulkUpdateOrdersStatusAction } from './actions';
 
 interface Order {
     id: number;
@@ -25,19 +42,27 @@ interface OrdersClientProps {
     currentPage: number;
 }
 
-const statusMap: Record<string, { label: string; color: string }> = {
-    PENDING: { label: 'در انتظار پرداخت', color: 'bg-yellow-100 text-yellow-800' },
-    PAID: { label: 'پرداخت شده', color: 'bg-blue-100 text-blue-800' },
-    PROCESSING: { label: 'در حال پردازش', color: 'bg-indigo-100 text-indigo-800' },
-    SHIPPED: { label: 'ارسال شده', color: 'bg-purple-100 text-purple-800' },
-    DELIVERED: { label: 'تحویل شده', color: 'bg-green-100 text-green-800' },
-    CANCELLED: { label: 'لغو شده', color: 'bg-red-100 text-red-800' },
+const statusMap: Record<OrderStatus, { label: string; color: string }> = {
+    PENDING: { label: 'در انتظار پرداخت', color: 'bg-yellow-50 text-yellow-700 border border-yellow-100' },
+    AWAITING_CONFIRMATION: { label: 'تأیید کارشناس', color: 'bg-cyan-50 text-cyan-700 border border-cyan-100' },
+    PAID: { label: 'پرداخت شده', color: 'bg-emerald-50 text-emerald-700 border border-emerald-100' },
+    PROCESSING: { label: 'در حال پردازش', color: 'bg-indigo-50 text-indigo-700 border border-indigo-100' },
+    PREPARING: { label: 'آماده‌سازی', color: 'bg-blue-50 text-blue-700 border border-blue-100' },
+    READY_FOR_DELIVERY: { label: 'آماده تحویل', color: 'bg-sky-50 text-sky-700 border border-sky-100' },
+    SHIPPED: { label: 'ارسال شده', color: 'bg-purple-50 text-purple-700 border border-purple-100' },
+    HANDED_TO_CARRIER: { label: 'تحویل باربری', color: 'bg-violet-50 text-violet-700 border border-violet-100' },
+    DELIVERED: { label: 'تحویل شده', color: 'bg-green-50 text-green-700 border border-green-100' },
+    RETURNED: { label: 'برگشت خورده', color: 'bg-rose-50 text-rose-700 border border-rose-100' },
+    CANCELLED: { label: 'لغو شده', color: 'bg-red-50 text-red-700 border border-red-100' },
+    NEEDS_CONTACT: { label: 'نیازمند تماس', color: 'bg-orange-50 text-orange-700 border border-orange-100' },
 };
 
 export default function OrdersClient({ initialOrders, totalPages, currentPage }: OrdersClientProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [isPending, startTransition] = useTransition();
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -56,28 +81,76 @@ export default function OrdersClient({ initialOrders, totalPages, currentPage }:
         router.push(`?${params.toString()}`);
     };
 
+    // Toggle individual row checkbox
+    const handleSelectRow = (id: number) => {
+        setSelectedIds(prev => 
+            prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+        );
+    };
+
+    // Select all/deselect all
+    const handleSelectAll = () => {
+        const orderIds = initialOrders.map(o => o.id);
+        const allSelected = orderIds.every(id => selectedIds.includes(id));
+
+        if (allSelected) {
+            setSelectedIds(prev => prev.filter(id => !orderIds.includes(id)));
+        } else {
+            setSelectedIds(prev => {
+                const newSelection = [...prev];
+                orderIds.forEach(id => {
+                    if (!newSelection.includes(id)) {
+                        newSelection.push(id);
+                    }
+                });
+                return newSelection;
+            });
+        }
+    };
+
+    const isAllSelected = initialOrders.length > 0 && initialOrders.every(o => selectedIds.includes(o.id));
+    const isSomeSelected = initialOrders.length > 0 && initialOrders.some(o => selectedIds.includes(o.id)) && !isAllSelected;
+
+    // Handle bulk status update
+    const handleBulkStatusUpdate = async (status: OrderStatus) => {
+        if (selectedIds.length === 0) return;
+
+        startTransition(async () => {
+            const loadingToast = toast.loading('در حال به‌روزرسانی وضعیت سفارشات...');
+            const res = await bulkUpdateOrdersStatusAction(selectedIds, status);
+            
+            if (res.success) {
+                toast.success('وضعیت سفارشات با موفقیت به‌روزرسانی شد.', { id: loadingToast });
+                setSelectedIds([]);
+                router.refresh();
+            } else {
+                toast.error(res.error || 'خطایی رخ داد.', { id: loadingToast });
+            }
+        });
+    };
+
     return (
-        <div className="space-y-6">
+        <div className="space-y-6" dir="rtl">
             {/* Filters & Search */}
-            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
+            <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
                 <form onSubmit={handleSearch} className="relative w-full md:w-96">
                     <input
                         type="text"
                         placeholder="جستجو (شماره سفارش، نام، موبایل)..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                        className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200/50 rounded-2xl focus:ring-2 focus:ring-blue-100 focus:bg-white focus:border-blue-500 outline-none transition-all text-sm placeholder:text-gray-400"
                     />
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 </form>
 
-                <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
-                    <Filter className="w-5 h-5 text-gray-500 ml-2" />
+                <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-none">
+                    <Filter className="w-4 h-4 text-gray-400 ml-1" />
                     <button
                         onClick={() => handleStatusFilter('')}
-                        className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${!searchParams.get('status')
-                            ? 'bg-gray-900 text-white'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${!searchParams.get('status')
+                            ? 'bg-blue-600 text-white shadow-md shadow-blue-500/10'
+                            : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200/20'
                             }`}
                     >
                         همه
@@ -86,9 +159,9 @@ export default function OrdersClient({ initialOrders, totalPages, currentPage }:
                         <button
                             key={key}
                             onClick={() => handleStatusFilter(key)}
-                            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${searchParams.get('status') === key
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${searchParams.get('status') === key
+                                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/10'
+                                : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200/20'
                                 }`}
                         >
                             {label}
@@ -98,11 +171,28 @@ export default function OrdersClient({ initialOrders, totalPages, currentPage }:
             </div>
 
             {/* Orders Table */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-right">
-                        <thead className="bg-gray-50 text-gray-500 font-medium border-b border-gray-200">
+                        <thead className="bg-gray-50/50 text-gray-500 font-semibold border-b border-gray-100">
                             <tr>
+                                <th className="px-4 py-4 w-12 text-center">
+                                    <button
+                                        type="button"
+                                        onClick={handleSelectAll}
+                                        className="text-gray-400 hover:text-blue-500 transition-colors p-1"
+                                    >
+                                        {isAllSelected ? (
+                                            <CheckSquare className="w-5 h-5 text-blue-600" />
+                                        ) : isSomeSelected ? (
+                                            <span className="inline-block w-4 h-4 bg-blue-100 border border-blue-500 rounded flex items-center justify-center">
+                                                <span className="block w-2 h-0.5 bg-blue-600 rounded" />
+                                            </span>
+                                        ) : (
+                                            <Square className="w-5 h-5 text-gray-300" />
+                                        )}
+                                    </button>
+                                </th>
                                 <th className="px-6 py-4">شماره سفارش</th>
                                 <th className="px-6 py-4">مشتری</th>
                                 <th className="px-6 py-4">وضعیت</th>
@@ -112,63 +202,84 @@ export default function OrdersClient({ initialOrders, totalPages, currentPage }:
                                 <th className="px-6 py-4 text-center">عملیات</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-gray-50">
                             {initialOrders.length > 0 ? (
-                                initialOrders.map((order) => (
-                                    <tr key={order.id} className="hover:bg-gray-50 transition-colors group">
-                                        <td className="px-6 py-4 font-mono text-gray-600">
-                                            #{order.orderNumber}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex flex-col gap-1">
-                                                <div className="flex items-center gap-1.5 font-medium text-gray-900">
-                                                    <User className="w-3.5 h-3.5 text-gray-400" />
-                                                    {order.customerName}
-                                                </div>
-                                                <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                                                    <Phone className="w-3 h-3" />
-                                                    {order.customerPhone}
-                                                </div>
-                                                <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                                                    <MapPin className="w-3 h-3" />
-                                                    {order.shippingCity}
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusMap[order.status].color}`}>
-                                                {statusMap[order.status].label}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-gray-500">
-                                            <div className="flex items-center gap-1.5">
-                                                <Calendar className="w-3.5 h-3.5" />
-                                                {new Date(order.createdAt).toLocaleDateString('fa-IR')}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 font-bold text-gray-900">
-                                            {order.total.toLocaleString('fa-IR')}
-                                        </td>
-                                        <td className="px-6 py-4 text-gray-500 text-xs max-w-[200px] truncate">
-                                            {order.items.map(i => i.productName).join('، ')}
-                                            {order._count.items > 3 && ` و ${order._count.items - 3} مورد دیگر`}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex justify-center">
-                                                <Link
-                                                    href={`/admin/dashboard/orders/${order.id}`}
-                                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                    title="مشاهده جزئیات"
+                                initialOrders.map((order) => {
+                                    const isRowSelected = selectedIds.includes(order.id);
+                                    return (
+                                        <tr 
+                                            key={order.id} 
+                                            className={`transition-colors group ${
+                                                isRowSelected ? 'bg-blue-50/20' : 'hover:bg-blue-50/10'
+                                            }`}
+                                        >
+                                            <td className="px-4 py-3 text-center">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleSelectRow(order.id)}
+                                                    className="text-gray-400 hover:text-blue-500 transition-colors p-1"
                                                 >
-                                                    <Eye className="w-5 h-5" />
-                                                </Link>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
+                                                    {isRowSelected ? (
+                                                        <CheckSquare className="w-5 h-5 text-blue-600" />
+                                                    ) : (
+                                                        <Square className="w-5 h-5 text-gray-300 group-hover:border-gray-400" />
+                                                    )}
+                                                </button>
+                                            </td>
+                                            <td className="px-6 py-4 font-mono font-bold text-gray-700">
+                                                #{order.orderNumber}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex flex-col gap-1">
+                                                    <div className="flex items-center gap-1.5 font-bold text-gray-800">
+                                                        <User className="w-3.5 h-3.5 text-gray-400" />
+                                                        {order.customerName}
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 text-xs text-gray-500 font-mono">
+                                                        <Phone className="w-3 h-3 text-gray-400" />
+                                                        {order.customerPhone}
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                                                        <MapPin className="w-3 h-3 text-gray-400" />
+                                                        {order.shippingCity}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold ${statusMap[order.status].color}`}>
+                                                    {statusMap[order.status].label}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-gray-500">
+                                                <div className="flex items-center gap-1.5 text-xs font-medium">
+                                                    <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                                                    {new Date(order.createdAt).toLocaleDateString('fa-IR')}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 font-extrabold text-gray-800">
+                                                {order.total.toLocaleString('fa-IR')}
+                                            </td>
+                                            <td className="px-6 py-4 text-gray-500 text-xs max-w-[200px] truncate" title={order.items.map(i => i.productName).join('، ')}>
+                                                {order.items.map(i => i.productName).join('، ')}
+                                                {order._count.items > 3 && ` و ${toPersianNumber(order._count.items - 3)} مورد دیگر`}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex justify-center">
+                                                    <Link
+                                                        href={`/admin/dashboard/orders/${order.id}`}
+                                                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
+                                                        title="مشاهده جزئیات"
+                                                    >
+                                                        <Eye className="w-5 h-5" />
+                                                    </Link>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             ) : (
                                 <tr>
-                                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                                    <td colSpan={8} className="px-6 py-12 text-center text-gray-400">
                                         سفارشی یافت نشد
                                     </td>
                                 </tr>
@@ -179,9 +290,9 @@ export default function OrdersClient({ initialOrders, totalPages, currentPage }:
 
                 {/* Pagination */}
                 {totalPages > 1 && (
-                    <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-                        <div className="text-sm text-gray-500">
-                            صفحه {currentPage} از {totalPages}
+                    <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/20 flex items-center justify-between">
+                        <div className="text-xs text-gray-500 font-bold">
+                            صفحه {toPersianNumber(currentPage)} از {toPersianNumber(totalPages)}
                         </div>
                         <div className="flex gap-2">
                             <button
@@ -191,7 +302,7 @@ export default function OrdersClient({ initialOrders, totalPages, currentPage }:
                                     params.set('page', String(currentPage - 1));
                                     router.push(`?${params.toString()}`);
                                 }}
-                                className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 hover:bg-gray-50"
+                                className="px-4 py-2 border border-gray-200 bg-white rounded-xl text-xs font-bold disabled:opacity-50 hover:bg-gray-50 transition-colors"
                             >
                                 قبلی
                             </button>
@@ -202,7 +313,7 @@ export default function OrdersClient({ initialOrders, totalPages, currentPage }:
                                     params.set('page', String(currentPage + 1));
                                     router.push(`?${params.toString()}`);
                                 }}
-                                className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 hover:bg-gray-50"
+                                className="px-4 py-2 border border-gray-200 bg-white rounded-xl text-xs font-bold disabled:opacity-50 hover:bg-gray-50 transition-colors"
                             >
                                 بعدی
                             </button>
@@ -210,6 +321,56 @@ export default function OrdersClient({ initialOrders, totalPages, currentPage }:
                     </div>
                 )}
             </div>
+
+            {/* FLOATING ACTION BAR FOR ORDERS */}
+            <AnimatePresence>
+                {selectedIds.length > 0 && (
+                    <motion.div
+                        initial={{ y: 80, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: 80, opacity: 0 }}
+                        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-full max-w-4xl px-4"
+                    >
+                        <div className="bg-slate-900 border border-slate-800 text-white p-4 rounded-3xl shadow-2xl flex flex-col md:flex-row items-center justify-between gap-4 backdrop-blur-md bg-opacity-95">
+                            <div className="flex items-center gap-3">
+                                <span className="flex items-center justify-center bg-blue-500 text-white text-xs font-extrabold w-6 h-6 rounded-full">
+                                    {toPersianNumber(selectedIds.length)}
+                                </span>
+                                <span className="text-sm font-bold text-slate-300">سفارش انتخاب شده است</span>
+                                <button 
+                                    onClick={() => setSelectedIds([])}
+                                    className="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
+                                    title="لغو انتخاب"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            <div className="flex items-center gap-3 w-full md:w-auto">
+                                <div className="flex items-center gap-1.5 text-xs text-slate-400 whitespace-nowrap">
+                                    <RefreshCw className="w-4 h-4" />
+                                    تغییر وضعیت به:
+                                </div>
+                                <select
+                                    onChange={(e) => {
+                                        if (e.target.value) {
+                                            handleBulkStatusUpdate(e.target.value as OrderStatus);
+                                            e.target.value = ''; // Reset select
+                                        }
+                                    }}
+                                    disabled={isPending}
+                                    className="bg-slate-800 border border-slate-700 text-white rounded-2xl px-4 py-2 text-xs font-bold outline-none cursor-pointer hover:bg-slate-750 transition-colors flex-1 md:flex-none"
+                                >
+                                    <option value="" disabled selected>انتخاب وضعیت جدید...</option>
+                                    {Object.entries(statusMap).map(([key, { label }]) => (
+                                        <option key={key} value={key} className="bg-slate-900 text-white">{label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

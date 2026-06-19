@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { requireAdminAction } from '@/lib/admin-auth';
+import { recordAudit } from '@/lib/audit';
 import { z } from 'zod';
 import { generateUniqueSlug } from '@/lib/slugify';
 import {
@@ -64,7 +65,7 @@ function parseProductFormData(formData: FormData) {
 
 export async function createProduct(formData: FormData) {
     // Auth check
-    await requireAdminAction();
+    const admin = await requireAdminAction();
 
     // Parse and validate
     const raw = parseProductFormData(formData);
@@ -81,7 +82,7 @@ export async function createProduct(formData: FormData) {
         const slug = await generateUniqueSlug(data.name, 'product');
         const thumbnail = data.images.length > 0 ? data.images[0] : null;
 
-        await prisma.product.create({
+        const product = await prisma.product.create({
             data: {
                 name: data.name,
                 description: data.description,
@@ -100,6 +101,9 @@ export async function createProduct(formData: FormData) {
             }
         });
 
+        // Record Audit log
+        await recordAudit(admin.adminId, "PRODUCT_CREATE", "Product", product.id, `ایجاد محصول جدید "${product.name}" با قیمت ${product.price}`);
+
         revalidatePath('/admin/dashboard/products');
     } catch (error) {
         console.error('Failed to create product:', error);
@@ -111,7 +115,7 @@ export async function createProduct(formData: FormData) {
 
 export async function updateProduct(id: number, formData: FormData) {
     // Auth check
-    await requireAdminAction();
+    const admin = await requireAdminAction();
 
     // Parse and validate
     const raw = parseProductFormData(formData);
@@ -155,10 +159,13 @@ export async function updateProduct(id: number, formData: FormData) {
             updateData.specifications = data.specifications;
         }
 
-        await prisma.product.update({
+        const product = await prisma.product.update({
             where: { id },
             data: updateData,
         });
+
+        // Record Audit log
+        await recordAudit(admin.adminId, "PRODUCT_UPDATE", "Product", product.id, `بروزرسانی مشخصات محصول "${product.name}" (موجودی: ${product.stock}، قیمت: ${product.price})`);
 
         // Non-blocking wishlist notifications
         if (currentProduct) {
@@ -191,7 +198,7 @@ export async function updateProduct(id: number, formData: FormData) {
 
 export async function deleteProduct(id: number) {
     // Auth check
-    await requireAdminAction();
+    const admin = await requireAdminAction();
 
     try {
         // Check if product has variants
@@ -203,9 +210,12 @@ export async function deleteProduct(id: number) {
             throw new Error('این محصول دارای واریانت است. ابتدا واریانت‌ها را حذف کنید');
         }
 
-        await prisma.product.delete({
+        const product = await prisma.product.delete({
             where: { id }
         });
+
+        // Record Audit log
+        await recordAudit(admin.adminId, "PRODUCT_DELETE", "Product", product.id, `حذف محصول "${product.name}"`);
 
         revalidatePath('/admin/dashboard/products');
         return { success: true };
@@ -218,7 +228,7 @@ export async function deleteProduct(id: number) {
 
 export async function toggleProductStatus(id: number) {
     // Auth check
-    await requireAdminAction();
+    const admin = await requireAdminAction();
 
     try {
         const product = await prisma.product.findUnique({
@@ -230,10 +240,13 @@ export async function toggleProductStatus(id: number) {
             throw new Error('محصول یافت نشد');
         }
 
-        await prisma.product.update({
+        const updated = await prisma.product.update({
             where: { id },
             data: { isActive: !product.isActive }
         });
+
+        // Record Audit log
+        await recordAudit(admin.adminId, "PRODUCT_TOGGLE", "Product", updated.id, `تغییر وضعیت فعال بودن محصول "${updated.name}" به ${updated.isActive}`);
 
         revalidatePath('/admin/dashboard/products');
         return { success: true };
@@ -364,6 +377,55 @@ export async function deleteProductVariant(id: number) {
     } catch (error: unknown) {
         console.error('Failed to delete variant:', error);
         const message = error instanceof Error ? error.message : 'خطا در حذف واریانت';
+        throw new Error(message);
+    }
+}
+
+export async function bulkUpdateProductsAction(
+    productIds: number[],
+    action: 'ACTIVATE' | 'DEACTIVATE' | 'DELETE' | 'CHANGE_SUBCATEGORY',
+    subcategoryId?: number
+) {
+    const admin = await requireAdminAction();
+
+    if (!productIds || productIds.length === 0) {
+        throw new Error('هیچ محصولی انتخاب نشده است.');
+    }
+
+    try {
+        if (action === 'ACTIVATE') {
+            await prisma.product.updateMany({
+                where: { id: { in: productIds } },
+                data: { isActive: true }
+            });
+            await recordAudit(admin.adminId, 'PRODUCT_TOGGLE', 'Product', productIds[0], `فعال‌سازی گروهی ${productIds.length} محصول (شناسه‌ها: ${productIds.join(', ')})`);
+        } else if (action === 'DEACTIVATE') {
+            await prisma.product.updateMany({
+                where: { id: { in: productIds } },
+                data: { isActive: false }
+            });
+            await recordAudit(admin.adminId, 'PRODUCT_TOGGLE', 'Product', productIds[0], `غیرفعال‌سازی گروهی ${productIds.length} محصول (شناسه‌ها: ${productIds.join(', ')})`);
+        } else if (action === 'DELETE') {
+            await prisma.product.deleteMany({
+                where: { id: { in: productIds } }
+            });
+            await recordAudit(admin.adminId, 'PRODUCT_DELETE', 'Product', productIds[0], `حذف گروهی ${productIds.length} محصول (شناسه‌ها: ${productIds.join(', ')})`);
+        } else if (action === 'CHANGE_SUBCATEGORY') {
+            if (!subcategoryId) {
+                throw new Error('زیردسته جدید مشخص نشده است.');
+            }
+            await prisma.product.updateMany({
+                where: { id: { in: productIds } },
+                data: { subcategoryId }
+            });
+            await recordAudit(admin.adminId, 'PRODUCT_UPDATE', 'Product', productIds[0], `تغییر گروهی زیردسته ${productIds.length} محصول به زیردسته ${subcategoryId} (شناسه‌ها: ${productIds.join(', ')})`);
+        }
+
+        revalidatePath('/admin/dashboard/products');
+        return { success: true };
+    } catch (error: unknown) {
+        console.error('Failed bulk products update:', error);
+        const message = error instanceof Error ? error.message : 'خطا در عملیات گروهی محصولات';
         throw new Error(message);
     }
 }
