@@ -31,6 +31,7 @@ export interface ProductResult {
         brand: string | null;
         discountPercent: number;
         hasOffer: boolean;
+        subcategoryId: number | null;
     }[];
     totalCount: number;
     totalPages: number;
@@ -207,6 +208,7 @@ export async function getProducts({
             inventoryStatus: true,
             brand: true,
             hasActiveOffer: true,
+            subcategoryId: true,
             // Include active offers for price calculation
             offerProducts: {
                 where: {
@@ -272,6 +274,7 @@ export async function getProducts({
             brand: product.brand,
             discountPercent, // For badge display
             hasOffer, // For filtering/badges
+            subcategoryId: product.subcategoryId,
         };
     });
 

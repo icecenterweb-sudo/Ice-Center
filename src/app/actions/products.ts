@@ -146,18 +146,11 @@ export async function updateProduct(id: number, formData: FormData) {
             subcategoryId: data.subcategoryId || null,
         };
 
-        if (data.images.length > 0) {
-            updateData.images = data.images;
-            updateData.thumbnail = data.images[0];
-        }
-
-        if (data.features.length > 0) {
-            updateData.features = data.features;
-        }
-
-        if (data.specifications) {
-            updateData.specifications = data.specifications;
-        }
+        // Always include images/features/specs so they can be cleared
+        updateData.images = data.images;
+        updateData.thumbnail = data.images.length > 0 ? data.images[0] : null;
+        updateData.features = data.features;
+        updateData.specifications = data.specifications ?? null;
 
         const product = await prisma.product.update({
             where: { id },
@@ -406,10 +399,27 @@ export async function bulkUpdateProductsAction(
             });
             await recordAudit(admin.adminId, 'PRODUCT_TOGGLE', 'Product', productIds[0], `غیرفعال‌سازی گروهی ${productIds.length} محصول (شناسه‌ها: ${productIds.join(', ')})`);
         } else if (action === 'DELETE') {
-            await prisma.product.deleteMany({
-                where: { id: { in: productIds } }
+            // Check for products with variants (same as single delete)
+            const productsWithVariants = await prisma.productVariant.groupBy({
+                by: ['productId'],
+                where: { productId: { in: productIds } },
             });
-            await recordAudit(admin.adminId, 'PRODUCT_DELETE', 'Product', productIds[0], `حذف گروهی ${productIds.length} محصول (شناسه‌ها: ${productIds.join(', ')})`);
+            const blockedIds = new Set(productsWithVariants.map(v => v.productId));
+            const deletableIds = productIds.filter(id => !blockedIds.has(id));
+
+            if (deletableIds.length === 0) {
+                throw new Error('تمامی محصولات انتخاب شده دارای واریانت هستند. ابتدا واریانت‌ها را حذف کنید.');
+            }
+
+            await prisma.product.deleteMany({
+                where: { id: { in: deletableIds } }
+            });
+
+            const skippedCount = productIds.length - deletableIds.length;
+            const details = skippedCount > 0
+                ? `حذف گروهی ${deletableIds.length} محصول (${skippedCount} محصول دارای واریانت رد شد)`
+                : `حذف گروهی ${deletableIds.length} محصول (شناسه‌ها: ${deletableIds.join(', ')})`;
+            await recordAudit(admin.adminId, 'PRODUCT_DELETE', 'Product', deletableIds[0], details);
         } else if (action === 'CHANGE_SUBCATEGORY') {
             if (!subcategoryId) {
                 throw new Error('زیردسته جدید مشخص نشده است.');

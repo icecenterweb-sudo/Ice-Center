@@ -53,7 +53,7 @@ export async function requireAdmin(request: Request): Promise<AdminAuthResult> {
         return { ok: false, response }
     }
 
-    return { ok: true, payload }
+    return { ok: true, payload: { ...payload, roles: admin.roles } }
 }
 
 /**
@@ -84,7 +84,7 @@ export async function requireAdminAction(): Promise<AdminTokenPayload> {
         throw new Error('دسترسی غیرمجاز.')
     }
 
-    return payload
+    return { ...payload, roles: admin.roles }
 }
 
 /**

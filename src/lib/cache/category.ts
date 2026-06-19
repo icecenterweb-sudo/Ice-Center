@@ -53,6 +53,7 @@ export interface CachedProduct {
     discountPercent: number;
     hasOffer: boolean;
     createdAt: Date;
+    subcategoryId: number | null;
 }
 
 // ============================================
@@ -201,6 +202,7 @@ export async function getCachedBaseProducts(categoryId: number): Promise<CachedP
             brand: true,
             hasActiveOffer: true,
             createdAt: true,
+            subcategoryId: true,
             offerProducts: {
                 where: {
                     offer: {
@@ -266,6 +268,7 @@ export async function getCachedBaseProducts(categoryId: number): Promise<CachedP
             discountPercent,
             hasOffer,
             createdAt: product.createdAt,
+            subcategoryId: product.subcategoryId,
         };
     });
 
@@ -309,6 +312,11 @@ export function applyFiltersToProducts(
     } = params;
 
     let filtered = [...products];
+
+    // Subcategory filter
+    if (subcategoryId !== undefined) {
+        filtered = filtered.filter((p) => p.subcategoryId === subcategoryId);
+    }
 
     // Price filter
     if (minPrice !== undefined) {
@@ -392,6 +400,7 @@ export async function getFreshFilteredProducts(
         discountPercent: p.discountPercent || 0,
         hasOffer: p.hasOffer || false,
         createdAt: new Date(), // Not available from original query
+        subcategoryId: p.subcategoryId,
     }));
 
     return {

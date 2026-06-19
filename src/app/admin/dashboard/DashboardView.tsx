@@ -59,6 +59,7 @@ const auditActionLabels: Record<string, string> = {
     PRODUCT_TOGGLE: 'تغییر وضعیت کالا',
     ORDER_STATUS_UPDATE: 'تغییر وضعیت سفارش',
     ORDER_NOTES_UPDATE: 'بروزرسانی یادداشت سفارش',
+    ADMIN_UPDATE: 'تغییر نقش‌های مدیر',
 }
 
 const statusLabels: Record<string, string> = {
@@ -115,6 +116,24 @@ export default function DashboardView({
 
         return () => clearTimeout(delayDebounce)
     }, [searchQuery])
+
+    // Ctrl+K keyboard shortcut to open search
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault()
+                setShowSearchModal(prev => !prev)
+            }
+            // ESC to close search
+            if (e.key === 'Escape' && showSearchModal) {
+                setShowSearchModal(false)
+                setSearchQuery('')
+                setSearchResults(null)
+            }
+        }
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [showSearchModal])
 
     // Trigger report download
     const handleExport = async (type: string) => {

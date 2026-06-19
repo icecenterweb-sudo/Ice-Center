@@ -29,9 +29,9 @@ export async function getOrders({
         // Search by order number, customer name, or phone
         if (search) {
             where.OR = [
-                { orderNumber: { contains: search } }, // Case insensitive in Postgres? Need mode: 'insensitive' if using Postgres directly but prisma usually handles it
-                { customerName: { contains: search } },
-                { customerPhone: { contains: search } },
+                { orderNumber: { contains: search, mode: 'insensitive' } },
+                { customerName: { contains: search, mode: 'insensitive' } },
+                { customerPhone: { contains: search, mode: 'insensitive' } },
             ];
         }
 
