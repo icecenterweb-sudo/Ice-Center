@@ -23,22 +23,22 @@ interface HeroSliderProps {
 const fallbackSlides: Slide[] = [
   {
     id: 1,
-    desktopImage: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763996646/banner_8aea786e-9d20-4118-85ec-bcd9c03cdd1f_umupvr.jpg',
-    mobileImage: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763996646/banner_8aea786e-9d20-4118-85ec-bcd9c03cdd1f_umupvr.jpg',
+    desktopImage: '/uploads/sliders/banner_8aea786e-9d20-4118-85ec-bcd9c03cdd1f_umupvr.jpg',
+    mobileImage: '/uploads/sliders/banner_8aea786e-9d20-4118-85ec-bcd9c03cdd1f_umupvr.jpg',
     link: '/offers/ice-cream-maker',
     alt: 'تخفیف ویژه دستگاه بستنی ساز'
   },
   {
     id: 2,
-    desktopImage: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763997961/20250325151925_336_vsdvza.jpg',
-    mobileImage: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763997961/20250325151925_336_vsdvza.jpg',
+    desktopImage: '/uploads/sliders/20250325151925_336_vsdvza.jpg',
+    mobileImage: '/uploads/sliders/20250325151925_336_vsdvza.jpg',
     link: '/offers/freezer',
     alt: 'فریزر صنعتی با گارانتی'
   },
   {
     id: 3,
-    desktopImage: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763996706/20190226173421_988_mp1urf.jpg',
-    mobileImage: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763996706/20190226173421_988_mp1urf.jpg',
+    desktopImage: '/uploads/sliders/20190226173421_988_mp1urf.jpg',
+    mobileImage: '/uploads/sliders/20190226173421_988_mp1urf.jpg',
     link: '/offers/ice-maker',
     alt: 'دستگاه یخ‌ساز حرفه‌ای'
   },

@@ -38,6 +38,7 @@ export default function NewProductPage() {
       const file = files[i];
       const formDataUpload = new FormData();
       formDataUpload.append('file', file);
+      formDataUpload.append('folder', 'products');
 
       try {
         const res = await fetch('/api/upload', {

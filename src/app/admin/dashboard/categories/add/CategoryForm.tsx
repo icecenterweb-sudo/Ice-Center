@@ -127,7 +127,7 @@ export default function CategoryForm() {
                     </p>
                 </div>
 
-                <ImageUpload onImageChange={setImageUrl} />
+                <ImageUpload onImageChange={setImageUrl} folder="categories" />
 
                 <SubmitButton />
             </form>

@@ -25,7 +25,7 @@ const FAKE_PRODUCTS: Product[] = [
     price: 12500000,
     oldPrice: 15000000,
     discount: 17,
-    image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999156/711Jw2d2LuL_jwsd9x.jpg',
+    image: '/uploads/categories/711Jw2d2LuL_jwsd9x.jpg',
   },
   {
     id: 2,
@@ -33,7 +33,7 @@ const FAKE_PRODUCTS: Product[] = [
     price: 35000000,
     oldPrice: 42000000,
     discount: 17,
-    image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999174/yakhsaz-50kg-1232_adlyut.jpg',
+    image: '/uploads/products/yakhsaz-50kg-1232_adlyut.jpg',
   },
   {
     id: 3,
@@ -41,7 +41,7 @@ const FAKE_PRODUCTS: Product[] = [
     price: 28000000,
     oldPrice: 35000000,
     discount: 20,
-    image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999204/001-min-2_ip52ev.jpg',
+    image: '/uploads/products/001-min-2_ip52ev.jpg',
   },
   {
     id: 4,
@@ -49,7 +49,7 @@ const FAKE_PRODUCTS: Product[] = [
     price: 8500000,
     oldPrice: 11000000,
     discount: 23,
-    image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999218/dc2c39_kz3wpy.jpg',
+    image: '/uploads/products/dc2c39_kz3wpy.jpg',
   },
   {
     id: 5,
@@ -57,7 +57,7 @@ const FAKE_PRODUCTS: Product[] = [
     price: 22000000,
     oldPrice: 28000000,
     discount: 21,
-    image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999204/001-min-2_ip52ev.jpg',
+    image: '/uploads/products/001-min-2_ip52ev.jpg',
   },
   {
     id: 6,
@@ -65,7 +65,7 @@ const FAKE_PRODUCTS: Product[] = [
     price: 45000000,
     oldPrice: 55000000,
     discount: 18,
-    image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999309/D9_82_D9_87_D9_88_D9_87-_D8_B3_D8_A7_D8_B2-_DA_A9_D8_A7_D9_81_DB_8C-_D8_B4_D8_A7_D9_BE-_D8_AF_D9_88-_DA_AF_D8_B1_D9_88_D9_BE-_D9_81_D8_A7_D8_A6_D9_85_D8_A7-_D9_85_D8_AF_D9_84-Dieci-A2-Tall_i9vkgd.jpg',
+    image: '/uploads/products/D9_82_D9_87_D9_88_D9_87-_D8_B3_D8_A7_D8_B2-_DA_A9_.jpg',
   },
   {
     id: 7,
@@ -73,7 +73,7 @@ const FAKE_PRODUCTS: Product[] = [
     price: 68000000,
     oldPrice: 85000000,
     discount: 20,
-    image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999156/711Jw2d2LuL_jwsd9x.jpg',
+    image: '/uploads/categories/711Jw2d2LuL_jwsd9x.jpg',
   },
   {
     id: 8,
@@ -81,7 +81,7 @@ const FAKE_PRODUCTS: Product[] = [
     price: 1500000,
     oldPrice: 2000000,
     discount: 25,
-    image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999349/cp401-404-mobile-430in430-3_scz9sw.png',
+    image: '/uploads/products/cp401-404-mobile-430in430-3_scz9sw.png',
   }
 ];
 

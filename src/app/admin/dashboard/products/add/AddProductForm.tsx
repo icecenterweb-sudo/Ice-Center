@@ -204,7 +204,7 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
                         </div>
                     </div>
 
-                    <MultiImageUpload onImagesChange={setImageUrls} maxImages={5} />
+                    <MultiImageUpload onImagesChange={setImageUrls} maxImages={5} folder="products" />
 
                     {/* Features & Specifications */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">

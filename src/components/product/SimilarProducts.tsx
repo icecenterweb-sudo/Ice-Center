@@ -5,19 +5,19 @@ const similarProducts = [
         id: 1,
         name: 'بستنی ساز ایستاده مدل TS-50',
         price: 185000000,
-        image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999204/001-min-2_ip52ev.jpg'
+        image: '/uploads/products/001-min-2_ip52ev.jpg'
     },
     {
         id: 2,
         name: 'بار سفت کن صنعتی 12 لیتری',
         price: 145000000,
-        image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999218/dc2c39_kz3wpy.jpg'
+        image: '/uploads/products/dc2c39_kz3wpy.jpg'
     },
     {
         id: 3,
         name: 'یخ ساز 50 کیلویی صنعتی',
         price: 45000000,
-        image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999174/yakhsaz-50kg-1232_adlyut.jpg'
+        image: '/uploads/products/yakhsaz-50kg-1232_adlyut.jpg'
     }
 ];
 

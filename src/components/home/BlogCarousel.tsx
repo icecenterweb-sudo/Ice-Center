@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import useEmblaCarousel from 'embla-carousel-react';
 
 // Default fallback image
-const FALLBACK_IMAGE = 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1764859446/banner_ArticleBanners_bOE8Hn_a141732b-5dda-4bc6-af7f-c69e9191fdd2_dzm93j.png';
+const FALLBACK_IMAGE = '/uploads/blog-covers/banner_ArticleBanners_bOE8Hn_a141732b-5dda-4bc6-af.png';
 
 // Blog post type
 interface BlogPost {

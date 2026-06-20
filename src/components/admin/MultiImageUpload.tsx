@@ -7,12 +7,14 @@ interface MultiImageUploadProps {
     currentImages?: string[];
     onImagesChange?: (urls: string[]) => void;
     maxImages?: number;
+    folder?: string;
 }
 
 export default function MultiImageUpload({
     currentImages = [],
     onImagesChange,
-    maxImages = 5
+    maxImages = 5,
+    folder
 }: MultiImageUploadProps) {
     const [images, setImages] = useState<string[]>(currentImages);
     const [uploadingCount, setUploadingCount] = useState(0);
@@ -54,6 +56,9 @@ export default function MultiImageUpload({
         const uploadPromises = validFiles.map(async (file) => {
             const formData = new FormData();
             formData.append('file', file);
+            if (folder) {
+                formData.append('folder', folder);
+            }
 
             const response = await fetch('/api/upload', {
                 method: 'POST',

@@ -24,7 +24,7 @@ export default function BlogCard({
     category,
 }: BlogCardProps) {
     const imageUrl = thumbnail || coverImage;
-    const fallbackImage = 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1764859446/banner_ArticleBanners_bOE8Hn_a141732b-5dda-4bc6-af7f-c69e9191fdd2_dzm93j.png';
+    const fallbackImage = '/uploads/blog-covers/banner_ArticleBanners_bOE8Hn_a141732b-5dda-4bc6-af.png';
 
     const formattedDate = publishedAt
         ? new Date(publishedAt).toLocaleDateString('fa-IR', {

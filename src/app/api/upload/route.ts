@@ -36,8 +36,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const folder = (formData.get('folder') as string || '').replace(/[^a-zA-Z0-9_\-\/]/g, '');
+
     // Ensure the uploads directory exists
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads', folder);
     await mkdir(uploadDir, { recursive: true });
 
     // Generate a unique filename
@@ -50,9 +52,11 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(bytes);
     await writeFile(filePath, buffer);
 
+    const relativeUrl = folder ? `/uploads/${folder}/${filename}` : `/uploads/${filename}`;
+
     return NextResponse.json({
       success: true,
-      url: `/uploads/${filename}`,
+      url: relativeUrl,
     });
   } catch (error: unknown) {
     console.error('خطا در آپلود:', error);

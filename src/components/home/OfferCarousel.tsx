@@ -51,7 +51,7 @@ const mockProducts: OfferProduct[] = [
     price: 12500000,
     oldPrice: 15000000,
     discount: 17,
-    image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999156/711Jw2d2LuL_jwsd9x.jpg',
+    image: '/uploads/categories/711Jw2d2LuL_jwsd9x.jpg',
   },
   {
     id: 2,
@@ -59,7 +59,7 @@ const mockProducts: OfferProduct[] = [
     price: 35000000,
     oldPrice: 42000000,
     discount: 17,
-    image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999174/yakhsaz-50kg-1232_adlyut.jpg',
+    image: '/uploads/products/yakhsaz-50kg-1232_adlyut.jpg',
   },
   {
     id: 3,
@@ -67,7 +67,7 @@ const mockProducts: OfferProduct[] = [
     price: 28000000,
     oldPrice: 35000000,
     discount: 20,
-    image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999204/001-min-2_ip52ev.jpg',
+    image: '/uploads/products/001-min-2_ip52ev.jpg',
   },
   {
     id: 4,
@@ -75,7 +75,7 @@ const mockProducts: OfferProduct[] = [
     price: 8500000,
     oldPrice: 11000000,
     discount: 23,
-    image: 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999218/dc2c39_kz3wpy.jpg',
+    image: '/uploads/products/dc2c39_kz3wpy.jpg',
   },
 ];
 
@@ -343,7 +343,7 @@ const AmazingOfferCarousel = ({ offers }: AmazingOfferCarouselProps) => {
             <div className="mb-4">
               <div className="w-20 h-20 bg-white/30 rounded-full flex items-center justify-center">
                 <Image
-                  src="https://res.cloudinary.com/dxooxiqcz/image/upload/v1764050064/pngtree-snowflake-on-blue-ice-icon-vector-png-image_6699545_fknw7o.png"
+                  src="/uploads/banners/pngtree-snowflake-on-blue-ice-icon-vector-png-imag.png"
                   alt="Offer Icon"
                   width={95}
                   height={95}

@@ -139,7 +139,7 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
                     </p>
                 </div>
 
-                <ImageUpload currentImage={category.image} onImageChange={setImageUrl} />
+                <ImageUpload currentImage={category.image} onImageChange={setImageUrl} folder="categories" />
 
                 <SubmitButton />
             </form>

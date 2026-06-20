@@ -170,7 +170,7 @@ async function BlogPostContent({ params }: Props) {
                                         >
                                             <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
                                                 <Image
-                                                    src={p.thumbnail || p.coverImage || 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1764859446/banner_ArticleBanners_bOE8Hn_a141732b-5dda-4bc6-af7f-c69e9191fdd2_dzm93j.png'}
+                                                    src={p.thumbnail || p.coverImage || '/uploads/blog-covers/banner_ArticleBanners_bOE8Hn_a141732b-5dda-4bc6-af.png'}
                                                     alt={p.title}
                                                     fill
                                                     className="object-cover"

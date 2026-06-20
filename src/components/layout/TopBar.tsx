@@ -18,7 +18,7 @@ const TopBanner: React.FC = () => {
           {/* Desktop Banner */}
           <div className="hidden md:block">
             <Image
-              src="https://res.cloudinary.com/dxooxiqcz/image/upload/v1763988428/987cdc3bf9940e6b1a6b7cdef88ceb34053b0e45_1763452592_cvydy3.gif"
+              src="/uploads/banners/987cdc3bf9940e6b1a6b7cdef88ceb34053b0e45_176345259.gif"
               alt=""
               width={1600}
               height={80}
@@ -30,7 +30,7 @@ const TopBanner: React.FC = () => {
           {/* Mobile Banner - قد بیشتر */}
           <div className="md:hidden">
             <Image
-              src="https://res.cloudinary.com/dxooxiqcz/image/upload/v1763989840/e12050ea14c679eac7085a161b02d8b22cc695e4_1763452593_zac8ie.gif"
+              src="/uploads/banners/e12050ea14c679eac7085a161b02d8b22cc695e4_176345259.gif"
               alt=""
               width={600}
               height={50}

@@ -12,6 +12,7 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "seed": "node prisma/seed.js",
+    "db:backup": "tsx scripts/backup-db.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

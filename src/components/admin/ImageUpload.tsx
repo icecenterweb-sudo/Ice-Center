@@ -7,9 +7,10 @@ import Image from 'next/image';
 interface ImageUploadProps {
     currentImage?: string | null;
     onImageChange?: (url: string | null) => void;
+    folder?: string;
 }
 
-export default function ImageUpload({ currentImage, onImageChange }: ImageUploadProps) {
+export default function ImageUpload({ currentImage, onImageChange, folder }: ImageUploadProps) {
     const [preview, setPreview] = useState<string | null>(currentImage || null);
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -42,9 +43,11 @@ export default function ImageUpload({ currentImage, onImageChange }: ImageUpload
         setIsUploading(true);
 
         try {
-            // Upload to Cloudinary via API
             const formData = new FormData();
             formData.append('file', file);
+            if (folder) {
+                formData.append('folder', folder);
+            }
 
             const response = await fetch('/api/upload', {
                 method: 'POST',

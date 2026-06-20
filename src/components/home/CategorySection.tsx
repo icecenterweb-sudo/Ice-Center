@@ -21,7 +21,7 @@ interface CategorySectionProps {
 
 const CategorySection: React.FC<CategorySectionProps> = ({ categories }) => {
   // Fallback placeholder image for categories without images
-  const fallbackImage = 'https://res.cloudinary.com/dxooxiqcz/image/upload/v1763999156/711Jw2d2LuL_jwsd9x.jpg';
+  const fallbackImage = '/uploads/categories/711Jw2d2LuL_jwsd9x.jpg';
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
     align: 'start',

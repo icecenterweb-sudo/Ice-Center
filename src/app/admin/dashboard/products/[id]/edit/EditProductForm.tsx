@@ -184,6 +184,7 @@ export default function EditProductForm({ product, subcategories }: EditProductF
                         currentImages={product.images || []}
                         onImagesChange={setImageUrls}
                         maxImages={5}
+                        folder="products"
                     />
                 </div>
 

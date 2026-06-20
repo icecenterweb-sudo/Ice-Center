@@ -103,7 +103,7 @@ export default function EditSlideClient({ id }: { id: string }) {
         try {
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('folder', 'slides');
+            formData.append('folder', 'sliders');
 
             const response = await fetch('/api/upload', {
                 method: 'POST',
