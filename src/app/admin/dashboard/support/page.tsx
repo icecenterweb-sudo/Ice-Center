@@ -99,7 +99,7 @@ export default function AdminSupportPage() {
             pollIntervalRef.current = setInterval(() => {
                 fetchMessages(selectedRoomId);
                 fetchRooms();
-            }, 5000);
+            }, 12000);
         } else {
             if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
         }

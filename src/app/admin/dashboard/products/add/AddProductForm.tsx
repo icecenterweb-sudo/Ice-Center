@@ -301,7 +301,8 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
                                     <div className="relative inline-flex items-center cursor-pointer">
                                         <input
                                             type="checkbox"
-                                            name="active"
+                                            name="isActive"
+                                            value="true"
                                             className="peer h-6 w-11 cursor-pointer appearance-none rounded-full bg-gray-200 transition-colors checked:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2"
                                             defaultChecked
                                         />

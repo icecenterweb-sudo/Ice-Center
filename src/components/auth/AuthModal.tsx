@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Phone, Lock, Check, Edit2, ArrowLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '@/hooks/useAuth'
-import { toPersianDigits, toEnglishDigits } from '@/lib/numbers'
+import { toPersianDigits, toEnglishDigits } from '@/lib/persian'
 import OTPInputField from '@/components/ui/OTPInput'
 import { getStoredAnalyticsSource } from '@/components/analytics/VisitTracker'
 

@@ -21,7 +21,7 @@ import {
     Percent,
     AlertCircle
 } from 'lucide-react'
-import { toPersianDigits } from '@/lib/numbers'
+import { toPersianDigits } from '@/lib/persian'
 import { useState } from 'react'
 
 type FunnelData = {

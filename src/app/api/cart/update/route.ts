@@ -2,6 +2,7 @@ import { NextRequest, NextResponse, connection } from 'next/server'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/db'
 import { verifyUserToken, USER_TOKEN_COOKIE } from '@/lib/jwt'
+import { getCartItemPrices } from '@/lib/offers/queries';
 
 export async function POST(request: NextRequest) {
     await connection(); // Required for cookies() with cacheComponents
@@ -66,6 +67,12 @@ export async function POST(request: NextRequest) {
                 }
             }
         })
+
+        const freshPrices = await getCartItemPrices([cartItem.productId]);
+        const priceInfo = freshPrices.find(p => p.productId === cartItem.productId);
+        if (priceInfo) {
+            cartItem.product.price = priceInfo.effectivePrice;
+        }
 
         return NextResponse.json({ item: cartItem })
     } catch (error) {

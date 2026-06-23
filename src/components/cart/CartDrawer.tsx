@@ -5,7 +5,7 @@ import { X, Plus, Minus, Trash2, ShoppingBag, ArrowLeft } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useCart } from '@/context/CartContext'
-import { toPersianDigits } from '@/lib/numbers'
+import { toPersianDigits } from '@/lib/persian'
 
 export default function CartDrawer() {
     const {

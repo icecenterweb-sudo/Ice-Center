@@ -28,11 +28,10 @@ const createProductSchema = z.object({
     images: z.array(z.string()).default([]),
     features: z.array(z.string()).default([]),
     specifications: z.any().optional().nullable(),
-});
-
-const updateProductSchema = createProductSchema.extend({
     isActive: z.boolean().default(true),
 });
+
+const updateProductSchema = createProductSchema;
 
 // ============================================
 // Helper: Parse FormData with Validation
@@ -92,7 +91,7 @@ export async function createProduct(formData: FormData) {
                 brand: data.brand,
                 sku: data.sku || undefined,
                 slug,
-                isActive: true,
+                isActive: data.isActive,
                 subcategoryId: data.subcategoryId || undefined,
                 images: data.images,
                 thumbnail,

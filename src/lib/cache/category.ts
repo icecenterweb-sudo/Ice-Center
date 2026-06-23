@@ -13,6 +13,7 @@
 import { cacheLife, cacheTag } from 'next/cache';
 import { prisma } from '@/lib/db';
 import { InventoryStatus, Prisma } from '@prisma/client';
+import { getProductPricing } from '@/lib/offers/pricing';
 
 // ============================================
 // Cache Configuration (Configurable TTLs)
@@ -228,45 +229,19 @@ export async function getCachedBaseProducts(categoryId: number): Promise<CachedP
 
     // Calculate effective prices
     const productsWithPricing: CachedProduct[] = allProducts.map((product) => {
-        const basePrice = product.listPrice || product.price;
-        const activeOfferProduct = product.offerProducts[0];
-        const activeOffer = activeOfferProduct?.offer;
-
-        let effectivePrice = product.price;
-        let discountPercent = 0;
-        let hasOffer = false;
-
-        if (activeOffer) {
-            const discountValue =
-                activeOfferProduct.customDiscountValue ?? activeOffer.discountValue;
-
-            if (activeOffer.discountType === 'PERCENTAGE') {
-                effectivePrice = basePrice * (1 - discountValue / 100);
-                discountPercent = Math.round(discountValue);
-            } else {
-                effectivePrice = basePrice - discountValue;
-                discountPercent = Math.round((discountValue / basePrice) * 100);
-            }
-            hasOffer = true;
-        } else if (product.listPrice && product.listPrice > product.price) {
-            effectivePrice = product.price;
-            discountPercent = Math.round(
-                ((product.listPrice - product.price) / product.listPrice) * 100
-            );
-            hasOffer = true;
-        }
+        const pricing = getProductPricing(product);
 
         return {
             id: product.id,
             name: product.name,
             slug: product.slug,
-            price: Math.round(effectivePrice),
-            listPrice: hasOffer ? basePrice : null,
+            price: pricing.effectivePrice,
+            listPrice: pricing.hasOffer ? pricing.originalPrice : null,
             thumbnail: product.thumbnail,
             inventoryStatus: product.inventoryStatus,
             brand: product.brand,
-            discountPercent,
-            hasOffer,
+            discountPercent: pricing.discountPercent,
+            hasOffer: pricing.hasOffer,
             createdAt: product.createdAt,
             subcategoryId: product.subcategoryId,
         };

@@ -1,6 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { requireAdmin } from '@/lib/admin-auth';
+import { z } from 'zod';
+
+const updateProductSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  description: z.string().optional().nullable(),
+  price: z.number().positive().optional(),
+  listPrice: z.number().positive().optional().nullable(),
+  stock: z.number().int().min(0).optional(),
+  isActive: z.boolean().optional(),
+  brand: z.string().optional().nullable(),
+  sku: z.string().optional().nullable(),
+  subcategoryId: z.number().int().positive().optional().nullable(),
+  images: z.array(z.string()).optional(),
+  thumbnail: z.string().optional().nullable(),
+  features: z.array(z.string()).optional(),
+  specifications: z.any().optional().nullable(),
+}).strict();
 
 function getErrorCode(error: unknown): string | undefined {
   return typeof error === 'object' && error !== null && 'code' in error
@@ -60,7 +77,6 @@ export async function PUT(
 
     const { id } = await params;
     const productId = parseInt(id);
-    const body = await request.json();
 
     if (isNaN(productId)) {
       return NextResponse.json({
@@ -69,9 +85,19 @@ export async function PUT(
       }, { status: 400 });
     }
 
+    const body = await request.json();
+    const validation = updateProductSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json({
+        success: false,
+        message: 'اطلاعات ورودی نامعتبر است',
+        errors: validation.error.flatten().fieldErrors
+      }, { status: 400 });
+    }
+
     const product = await prisma.product.update({
       where: { id: productId },
-      data: body
+      data: validation.data
     });
 
     return NextResponse.json({ success: true, data: product });

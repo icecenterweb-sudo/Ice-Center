@@ -9,6 +9,7 @@
 
 import { cacheLife, cacheTag } from 'next/cache';
 import { prisma } from '@/lib/db';
+import { getProductPricing } from '@/lib/offers/pricing';
 
 // ============================================
 // Types
@@ -71,9 +72,9 @@ export interface ProductDynamicData {
     discountPercent: number;
     hasOffer: boolean;
     activeOffer: {
-        id: number;
-        name: string;
-        endDate: Date;
+        id: number | null;
+        name: string | null;
+        endDate: Date | null;
         badgeText: string | null;
     } | null;
 }
@@ -91,7 +92,11 @@ export interface ProductDynamicData {
  */
 export async function getCachedProductStatic(slug: string): Promise<ProductStaticData | null> {
     'use cache';
-    cacheLife('seconds'); // 60 seconds TTL profile
+    cacheLife({
+        stale: 60,
+        revalidate: 60,
+        expire: 120,
+    });
     cacheTag('product', `product:${slug}`);
 
     if (process.env.NODE_ENV === 'development') {
@@ -202,32 +207,7 @@ export async function getProductDynamicData(productId: number): Promise<ProductD
 
     if (!product) return null;
 
-    // Calculate effective pricing
-    const basePrice = product.listPrice || product.price;
-    const activeOfferProduct = product.offerProducts[0];
-    const activeOffer = activeOfferProduct?.offer;
-
-    let effectivePrice = product.price;
-    let discountPercent = 0;
-    let hasOffer = false;
-
-    if (activeOffer) {
-        const discountValue = activeOfferProduct.customDiscountValue ?? activeOffer.discountValue;
-
-        if (activeOffer.discountType === 'PERCENTAGE') {
-            effectivePrice = basePrice * (1 - Number(discountValue) / 100);
-            discountPercent = Math.round(Number(discountValue));
-        } else {
-            effectivePrice = basePrice - Number(discountValue);
-            discountPercent = Math.round((Number(discountValue) / basePrice) * 100);
-        }
-        hasOffer = true;
-    } else if (product.listPrice && product.listPrice > product.price) {
-        // Legacy discount (listPrice > price)
-        effectivePrice = product.price;
-        discountPercent = Math.round(((product.listPrice - product.price) / product.listPrice) * 100);
-        hasOffer = true;
-    }
+    const pricing = getProductPricing(product);
 
     return {
         id: product.id,
@@ -237,16 +217,11 @@ export async function getProductDynamicData(productId: number): Promise<ProductD
         inventoryStatus: product.inventoryStatus,
         rating: product.rating,
         reviewCount: product.reviewCount,
-        effectivePrice: Math.round(effectivePrice),
-        originalPrice: hasOffer ? basePrice : product.price,
-        discountPercent,
-        hasOffer,
-        activeOffer: activeOffer ? {
-            id: activeOffer.id,
-            name: activeOffer.name,
-            endDate: activeOffer.endDate,
-            badgeText: activeOffer.badgeText,
-        } : null,
+        effectivePrice: pricing.effectivePrice,
+        originalPrice: pricing.originalPrice,
+        discountPercent: pricing.discountPercent,
+        hasOffer: pricing.hasOffer,
+        activeOffer: pricing.activeOffer,
     };
 }
 

@@ -5,8 +5,6 @@ import crypto from 'crypto';
 import { requireAdmin } from '@/lib/admin-auth';
 import { getUploadStorageRoot, sanitizeUploadFolder } from '@/lib/uploads';
 
-export const runtime = 'nodejs';
-
 const MAX_UPLOAD_SIZE = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 

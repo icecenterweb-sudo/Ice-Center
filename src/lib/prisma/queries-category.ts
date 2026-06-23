@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db';
 import type { Prisma } from '@prisma/client';
 import { InventoryStatus } from '@prisma/client';
+import { getProductPricing } from '@/lib/offers/pricing';
 
 // ============================================
 // TYPES
@@ -235,45 +236,19 @@ export async function getProducts({
 
     // Calculate effective prices for each product
     const productsWithPricing = allProducts.map(product => {
-        // Base price is listPrice (original) or price
-        const basePrice = product.listPrice || product.price;
-        const activeOfferProduct = product.offerProducts[0];
-        const activeOffer = activeOfferProduct?.offer;
-
-        let effectivePrice = product.price; // Default to current price
-        let discountPercent = 0;
-        let hasOffer = false;
-
-        if (activeOffer) {
-            // Calculate from offer
-            const discountValue = activeOfferProduct.customDiscountValue ?? activeOffer.discountValue;
-
-            if (activeOffer.discountType === 'PERCENTAGE') {
-                effectivePrice = basePrice * (1 - discountValue / 100);
-                discountPercent = Math.round(discountValue);
-            } else {
-                effectivePrice = basePrice - discountValue;
-                discountPercent = Math.round((discountValue / basePrice) * 100);
-            }
-            hasOffer = true;
-        } else if (product.listPrice && product.listPrice > product.price) {
-            // Legacy discount (listPrice > price)
-            effectivePrice = product.price;
-            discountPercent = Math.round(((product.listPrice - product.price) / product.listPrice) * 100);
-            hasOffer = true;
-        }
+        const pricing = getProductPricing(product as any);
 
         return {
             id: product.id,
             name: product.name,
             slug: product.slug,
-            price: Math.round(effectivePrice), // Effective/selling price
-            listPrice: hasOffer ? basePrice : null, // Original price (for strikethrough)
+            price: pricing.effectivePrice, // Effective/selling price
+            listPrice: pricing.hasOffer ? pricing.originalPrice : null, // Original price (for strikethrough)
             thumbnail: product.thumbnail,
             inventoryStatus: product.inventoryStatus,
             brand: product.brand,
-            discountPercent, // For badge display
-            hasOffer, // For filtering/badges
+            discountPercent: pricing.discountPercent, // For badge display
+            hasOffer: pricing.hasOffer, // For filtering/badges
             subcategoryId: product.subcategoryId,
         };
     });

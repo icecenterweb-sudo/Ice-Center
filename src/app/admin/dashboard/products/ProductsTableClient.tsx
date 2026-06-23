@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { formatPersianNumber, toPersianNumber } from '@/utils/persian';
+import { formatPersianNumber, toPersianNumber } from '@/lib/persian';
 import { bulkUpdateProductsAction } from '@/app/actions/products';
 import DeleteProductButton from './DeleteProductButton';
 

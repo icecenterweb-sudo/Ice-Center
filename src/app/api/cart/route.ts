@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { prisma } from '@/lib/db'
 import { verifyUserToken, USER_TOKEN_COOKIE } from '@/lib/jwt'
 import { connection } from 'next/server'
+import { getCartItemPrices } from '@/lib/offers/queries';
 
 export async function GET() {
     await connection(); // Required for cookies() with cacheComponents
@@ -38,7 +39,17 @@ export async function GET() {
             orderBy: { createdAt: 'desc' }
         })
 
-        return NextResponse.json({ items: cartItems })
+        const productIds = cartItems.map(item => item.productId);
+        const freshPrices = await getCartItemPrices(productIds);
+        const updatedCartItems = cartItems.map(item => {
+            const priceInfo = freshPrices.find(p => p.productId === item.productId);
+            if (priceInfo) {
+                item.product.price = priceInfo.effectivePrice;
+            }
+            return item;
+        });
+
+        return NextResponse.json({ items: updatedCartItems })
     } catch (error) {
         console.error('Cart fetch error:', error)
         return NextResponse.json({ error: 'خطا در دریافت سبد خرید' }, { status: 500 })

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import useEmblaCarousel from 'embla-carousel-react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { toPersianNumber } from '@/utils/persian';
+import { toPersianNumber } from '@/lib/persian';
 
 interface Category {
   id: number;

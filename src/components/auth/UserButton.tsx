@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { toPersianDigits } from '@/lib/numbers'
+import { toPersianDigits } from '@/lib/persian'
 import Link from 'next/link'
 import { User, LogOut, Package, MapPin, ChevronDown } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'

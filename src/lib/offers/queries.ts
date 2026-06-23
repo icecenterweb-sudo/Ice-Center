@@ -7,7 +7,7 @@
 
 import { prisma } from '@/lib/db';
 import { connection } from 'next/server';
-import { calculateEffectivePrice, isOfferActive, type OfferDiscount } from './pricing';
+import { calculateEffectivePrice, isOfferActive, type OfferDiscount, getProductPricing } from './pricing';
 
 /**
  * Get active offers for the homepage carousel
@@ -77,19 +77,18 @@ export async function getCarouselOffers(limit = 12) {
             // Skip inactive products
             if (!product.isActive) continue;
 
-            // Use listPrice if available, otherwise use price as base
-            const basePrice = product.listPrice || product.price;
-
-            const offerDiscount: OfferDiscount = {
-                discountType: offer.discountType,
-                discountValue: Number(offerProduct.customDiscountValue ?? offer.discountValue),
-                maxDiscountCap: offer.maxDiscountCap ? Number(offer.maxDiscountCap) : null,
-            };
-
-            const pricing = calculateEffectivePrice({
-                basePrice,
-                activeOffer: offerDiscount,
-            });
+            const pricing = getProductPricing({
+                price: product.price,
+                listPrice: product.listPrice,
+                offerProducts: [{
+                    customDiscountValue: offerProduct.customDiscountValue,
+                    offer: {
+                        discountType: offer.discountType,
+                        discountValue: offer.discountValue,
+                        maxDiscountCap: offer.maxDiscountCap
+                    }
+                }]
+            } as any);
 
             items.push({
                 id: offer.id,
@@ -166,34 +165,18 @@ export async function getProductWithActiveOffer(productId: number) {
     const activeOfferProduct = product.offerProducts[0];
     const activeOffer = activeOfferProduct?.offer;
 
-    // Calculate effective price
-    const basePrice = product.listPrice || product.price;
-
-    let pricing;
-    if (activeOffer) {
-        const offerDiscount: OfferDiscount = {
-            discountType: activeOffer.discountType,
-            discountValue: Number(activeOfferProduct.customDiscountValue ?? activeOffer.discountValue),
-            maxDiscountCap: activeOffer.maxDiscountCap ? Number(activeOffer.maxDiscountCap) : null,
-        };
-        pricing = calculateEffectivePrice({ basePrice, activeOffer: offerDiscount });
-    } else {
-        pricing = calculateEffectivePrice({ basePrice, activeOffer: null });
-    }
+    const pricing = getProductPricing(product as any);
 
     return {
         ...product,
         effectivePrice: pricing.effectivePrice,
         originalPrice: pricing.originalPrice,
         discountPercent: pricing.discountPercent,
-        discountAmount: pricing.discountAmount,
+        discountAmount: pricing.originalPrice - pricing.effectivePrice,
         hasOffer: pricing.hasOffer,
-        activeOffer: activeOffer ? {
-            id: activeOffer.id,
-            name: activeOffer.name,
-            endDate: activeOffer.endDate,
-            badgeText: activeOffer.badgeText,
-            badgeColor: activeOffer.badgeColor,
+        activeOffer: pricing.activeOffer ? {
+            ...pricing.activeOffer,
+            badgeColor: activeOffer?.badgeColor || null,
         } : null,
     };
 }
@@ -252,21 +235,7 @@ export async function getCategoryProductsWithPrices(
 
     // Calculate effective prices
     return products.map(product => {
-        const basePrice = product.listPrice || product.price;
-        const activeOfferProduct = product.offerProducts[0];
-        const activeOffer = activeOfferProduct?.offer;
-
-        let pricing;
-        if (activeOffer) {
-            const offerDiscount: OfferDiscount = {
-                discountType: activeOffer.discountType,
-                discountValue: Number(activeOfferProduct.customDiscountValue ?? activeOffer.discountValue),
-                maxDiscountCap: activeOffer.maxDiscountCap ? Number(activeOffer.maxDiscountCap) : null,
-            };
-            pricing = calculateEffectivePrice({ basePrice, activeOffer: offerDiscount });
-        } else {
-            pricing = calculateEffectivePrice({ basePrice, activeOffer: null });
-        }
+        const pricing = getProductPricing(product as any);
 
         return {
             id: product.id,
@@ -325,21 +294,7 @@ export async function getCartItemPrices(productIds: number[]) {
     });
 
     return products.map(product => {
-        const basePrice = product.listPrice || product.price;
-        const activeOfferProduct = product.offerProducts[0];
-        const activeOffer = activeOfferProduct?.offer;
-
-        let pricing;
-        if (activeOffer) {
-            const offerDiscount: OfferDiscount = {
-                discountType: activeOffer.discountType,
-                discountValue: Number(activeOfferProduct.customDiscountValue ?? activeOffer.discountValue),
-                maxDiscountCap: activeOffer.maxDiscountCap ? Number(activeOffer.maxDiscountCap) : null,
-            };
-            pricing = calculateEffectivePrice({ basePrice, activeOffer: offerDiscount });
-        } else {
-            pricing = calculateEffectivePrice({ basePrice, activeOffer: null });
-        }
+        const pricing = getProductPricing(product as any);
 
         return {
             productId: product.id,
@@ -348,8 +303,8 @@ export async function getCartItemPrices(productIds: number[]) {
             originalPrice: pricing.originalPrice,
             discountPercent: pricing.discountPercent,
             hasOffer: pricing.hasOffer,
-            offerId: activeOffer?.id || null,
-            offerEndDate: activeOffer?.endDate || null,
+            offerId: pricing.activeOffer?.id || null,
+            offerEndDate: pricing.activeOffer?.endDate || null,
             inStock: product.stock > 0,
         };
     });

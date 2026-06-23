@@ -3,6 +3,29 @@
 import { useEffect } from 'react'
 import Link from 'next/link'
 import { RefreshCw, Home, AlertTriangle } from 'lucide-react'
+import localFont from 'next/font/local'
+
+const yekan = localFont({
+    src: [
+        {
+            path: "./fonts/YekanBakhFamily/webfonts/woff2/YekanBakh-Regular.woff2",
+            weight: "400",
+            style: "normal",
+        },
+        {
+            path: "./fonts/YekanBakhFamily/webfonts/woff2/YekanBakh-SemiBold.woff2",
+            weight: "600",
+            style: "normal",
+        },
+        {
+            path: "./fonts/YekanBakhFamily/webfonts/woff2/YekanBakh-Bold.woff2",
+            weight: "700",
+            style: "normal",
+        },
+    ],
+    variable: "--font-yekan",
+    display: "swap",
+});
 
 export default function GlobalError({
     error,
@@ -16,8 +39,9 @@ export default function GlobalError({
     }, [error])
 
     return (
-        <html lang="fa" dir="rtl">
-            <body className="min-h-screen bg-gray-50 flex items-center justify-center p-4 font-sans">
+        <html lang="fa" dir="rtl" className={yekan.variable}>
+            <body className="min-h-screen bg-gray-50 flex items-center justify-center p-4"
+                style={{ fontFamily: 'var(--font-yekan), sans-serif' }}>
                 <div className="max-w-md w-full text-center space-y-6">
                     <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
                         <AlertTriangle className="w-8 h-8 text-red-500" />

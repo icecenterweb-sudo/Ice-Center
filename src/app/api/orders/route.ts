@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { verifyUserToken } from '@/lib/jwt';
 import { cookies } from 'next/headers';
+import { getCartItemPrices } from '@/lib/offers/queries';
 
 /**
  * GET /api/orders - Get user's order history
@@ -92,10 +93,12 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'لطفا یک آدرس انتخاب کنید' }, { status: 400 });
         }
 
-        // Calculate totals
+        // Calculate totals with active offers
+        const cartPrices = await getCartItemPrices(user.cartItems.map(c => c.productId));
         let subtotal = 0;
         const orderItems = user.cartItems.map((cartItem) => {
-            const unitPrice = cartItem.product.price;
+            const priceInfo = cartPrices.find(p => p.productId === cartItem.product.id);
+            const unitPrice = priceInfo?.effectivePrice || cartItem.product.price;
             const totalPrice = unitPrice * cartItem.quantity;
             subtotal += totalPrice;
 

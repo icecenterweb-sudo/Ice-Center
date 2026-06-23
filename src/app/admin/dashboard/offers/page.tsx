@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Tag, Plus, Clock, Calendar, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { prisma } from '@/lib/db';
-import { formatPersianNumber } from '@/utils/persian';
+import { formatPersianNumber } from '@/lib/persian';
 import DeleteOfferButton from './DeleteOfferButton';
 import { connection } from 'next/server';
 import { Suspense } from 'react';

@@ -105,7 +105,7 @@ export default function SupportChatWidget() {
     useEffect(() => {
         if (chatState === 'chat' && room) {
             fetchMessages(room);
-            pollIntervalRef.current = setInterval(() => fetchMessages(room), 5000);
+            pollIntervalRef.current = setInterval(() => fetchMessages(room), 12000);
         } else {
             if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
         }

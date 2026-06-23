@@ -19,7 +19,7 @@ import {
     Loader2
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { toPersianDigits } from '@/lib/numbers';
+import { toPersianDigits } from '@/lib/persian';
 
 interface MenuItem {
     id: string;

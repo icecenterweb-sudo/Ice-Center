@@ -136,3 +136,78 @@ export function getEarliestEndDate(offers: Array<{ endDate: Date | string }>): D
 
     return new Date(earliest);
 }
+
+export interface DbProductForPricing {
+    price: number;
+    listPrice: number | null;
+    offerProducts?: Array<{
+        customDiscountValue?: number | null;
+        offer: {
+            id?: number;
+            name?: string;
+            discountType: DiscountType;
+            discountValue: number;
+            maxDiscountCap?: number | null;
+            endDate?: Date;
+            badgeText?: string | null;
+        };
+    }>;
+}
+
+export interface CalculatedPricing {
+    effectivePrice: number;
+    originalPrice: number;
+    discountPercent: number;
+    hasOffer: boolean;
+    activeOffer: {
+        id: number | null;
+        name: string | null;
+        endDate: Date | null;
+        badgeText: string | null;
+    } | null;
+}
+
+export function getProductPricing(product: DbProductForPricing): CalculatedPricing {
+    const basePrice = product.listPrice || product.price;
+    const activeOfferProduct = product.offerProducts?.[0];
+    const activeOffer = activeOfferProduct?.offer;
+
+    if (activeOffer) {
+        const offerDiscount: OfferDiscount = {
+            discountType: activeOffer.discountType,
+            discountValue: Number(activeOfferProduct.customDiscountValue ?? activeOffer.discountValue),
+            maxDiscountCap: activeOffer.maxDiscountCap ? Number(activeOffer.maxDiscountCap) : null,
+        };
+        const pricing = calculateEffectivePrice({ basePrice, activeOffer: offerDiscount });
+        return {
+            effectivePrice: pricing.effectivePrice,
+            originalPrice: pricing.originalPrice,
+            discountPercent: pricing.discountPercent,
+            hasOffer: true,
+            activeOffer: {
+                id: activeOffer.id || null,
+                name: activeOffer.name || null,
+                endDate: activeOffer.endDate || null,
+                badgeText: activeOffer.badgeText || null,
+            }
+        };
+    }
+
+    if (product.listPrice && product.listPrice > product.price) {
+        return {
+            effectivePrice: product.price,
+            originalPrice: product.listPrice,
+            discountPercent: Math.round(((product.listPrice - product.price) / product.listPrice) * 100),
+            hasOffer: true,
+            activeOffer: null
+        };
+    }
+
+    return {
+        effectivePrice: product.price,
+        originalPrice: product.price,
+        discountPercent: 0,
+        hasOffer: false,
+        activeOffer: null
+    };
+}

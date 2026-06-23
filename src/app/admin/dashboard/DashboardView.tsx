@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { toPersianNumber, formatPersianNumber } from '@/utils/persian';
+import { toPersianNumber, formatPersianNumber } from '@/lib/persian';
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 

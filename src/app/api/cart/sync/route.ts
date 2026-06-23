@@ -2,6 +2,7 @@ import { NextRequest, NextResponse, connection } from 'next/server'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/db'
 import { verifyUserToken, USER_TOKEN_COOKIE } from '@/lib/jwt'
+import { getCartItemPrices } from '@/lib/offers/queries';
 
 interface LocalCartItem {
     productId: number
@@ -80,7 +81,17 @@ export async function POST(request: NextRequest) {
             orderBy: { createdAt: 'desc' }
         })
 
-        return NextResponse.json({ items: cartItems })
+        const productIds = cartItems.map(item => item.productId);
+        const freshPrices = await getCartItemPrices(productIds);
+        const updatedCartItems = cartItems.map(item => {
+            const priceInfo = freshPrices.find(p => p.productId === item.productId);
+            if (priceInfo) {
+                item.product.price = priceInfo.effectivePrice;
+            }
+            return item;
+        });
+
+        return NextResponse.json({ items: updatedCartItems })
     } catch (error) {
         console.error('Cart sync error:', error)
         return NextResponse.json({ error: 'خطا در همگام‌سازی سبد خرید' }, { status: 500 })

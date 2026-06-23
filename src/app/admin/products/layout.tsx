@@ -1,13 +1,5 @@
-import { Suspense } from 'react';
+import { redirect } from 'next/navigation';
 
-export default function AdminProductsLayout({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
-    return (
-        <Suspense fallback={<div className="p-8 text-center">در حال بارگذاری...</div>}>
-            {children}
-        </Suspense>
-    );
+export default function AdminProductsLayout() {
+    redirect('/admin/dashboard/products');
 }

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Phone, Lock, Check, Edit2, Snowflake, ArrowRight } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { toEnglishDigits } from '@/lib/numbers'
+import { toEnglishDigits } from '@/lib/persian'
 import { getStoredAnalyticsSource } from '@/components/analytics/VisitTracker'
 
 type AuthStep = 'phone' | 'otp'

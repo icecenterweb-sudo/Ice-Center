@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Search, X, Loader2 } from 'lucide-react';
-import { toPersianDigits } from '@/lib/numbers';
+import { toPersianDigits } from '@/lib/persian';
 
 // Simple price formatter
 const formatPrice = (price: number): string => {

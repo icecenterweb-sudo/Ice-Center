@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import useEmblaCarousel from 'embla-carousel-react';
@@ -64,6 +64,7 @@ export default function CategoriesClient({
 }: Props) {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const pathname = usePathname();
 
     // Embla Carousel for categories
     const [emblaRef, emblaApi] = useEmblaCarousel({
@@ -125,8 +126,8 @@ export default function CategoriesClient({
             else current.delete(key);
         });
         const query = current.toString();
-        router.push(`/categories${query ? `?${query}` : ''}`, { scroll: false });
-    }, [searchParams, router]);
+        router.push(`${pathname}${query ? `?${query}` : ''}`, { scroll: false });
+    }, [searchParams, router, pathname]);
 
     const handleSortChange = (newSort: string) => updateURL({ sort: newSort, page: undefined });
 
@@ -165,13 +166,155 @@ export default function CategoriesClient({
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const clearFilters = () => router.push('/categories');
+    const clearFilters = () => router.push(pathname);
 
     const hasActiveFilters = selectedCategoryId || currentFilters.minPrice || currentFilters.maxPrice ||
         currentFilters.brands.length > 0 || currentFilters.availability.length > 0 || currentFilters.onlyDiscount;
 
     const activeFilterCount = (selectedCategoryId ? 1 : 0) + (currentFilters.minPrice || currentFilters.maxPrice ? 1 : 0) +
         currentFilters.brands.length + currentFilters.availability.length + (currentFilters.onlyDiscount ? 1 : 0);
+
+    const renderFilterContent = () => (
+        <div className="max-h-[calc(100vh-140px)] overflow-y-auto">
+            {/* Categories */}
+            <div className="border-b border-neutral-100">
+                <button onClick={() => setCategoryExpanded(!categoryExpanded)}
+                    className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-neutral-700 hover:text-blue-600 transition-colors">
+                    <div className="flex items-center gap-2">
+                        <Grid3X3 size={16} />
+                        <span>دسته‌بندی</span>
+                    </div>
+                    {categoryExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+
+                {categoryExpanded && (
+                    <div className="px-4 pb-4 space-y-1">
+                        <label className="flex items-center gap-2.5 py-2 px-2 cursor-pointer hover:bg-blue-50 rounded-lg transition-colors group">
+                            <input type="radio" name="category" checked={!selectedCategoryId}
+                                onChange={() => handleCategoryFilter(null)}
+                                className="w-4 h-4 text-blue-500 border-neutral-300 focus:ring-blue-500" />
+                            <span className={`text-sm flex-1 ${!selectedCategoryId ? 'text-blue-600 font-medium' : 'text-neutral-600'}`}>
+                                همه دسته‌ها
+                            </span>
+                        </label>
+                        {categories.map((cat) => (
+                            <label key={cat.id}
+                                className="flex items-center gap-2.5 py-2 px-2 cursor-pointer hover:bg-blue-50 rounded-lg transition-colors group">
+                                <input type="radio" name="category" checked={selectedCategoryId === cat.id}
+                                    onChange={() => handleCategoryFilter(cat.id)}
+                                    className="w-4 h-4 text-blue-500 border-neutral-300 focus:ring-blue-500" />
+                                <span className={`text-sm flex-1 ${selectedCategoryId === cat.id ? 'text-blue-600 font-medium' : 'text-neutral-600'}`}>
+                                    {cat.name}
+                                </span>
+                                <span className="text-[10px] text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded-full">
+                                    {cat.productCount}
+                                </span>
+                            </label>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Price Range */}
+            <div className="border-b border-neutral-100">
+                <button onClick={() => setPriceExpanded(!priceExpanded)}
+                    className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-neutral-700 hover:text-blue-600 transition-colors">
+                    <div className="flex items-center gap-2">
+                        <DollarSign size={16} />
+                        <span>محدوده قیمت</span>
+                    </div>
+                    {priceExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+
+                {priceExpanded && (
+                    <div className="px-4 pb-4 space-y-2">
+                        {PRICE_RANGES.map((range, idx) => {
+                            const isActive = parseInt(currentFilters.minPrice || '0') === range.min &&
+                                (range.max === Infinity ? !currentFilters.maxPrice : parseInt(currentFilters.maxPrice || '0') === range.max);
+                            return (
+                                <button key={idx} onClick={() => handlePriceRange(range.min, range.max)}
+                                    className={`w-full text-right px-3 py-2 text-sm rounded-lg transition-all ${isActive ? 'bg-blue-50 text-blue-600 font-medium border border-blue-200' : 'text-neutral-600 hover:bg-neutral-50'
+                                        }`}>
+                                    {range.label}
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+
+            {/* Brands */}
+            {availableBrands.length > 0 && (
+                <div className="border-b border-neutral-100">
+                    <button onClick={() => setBrandExpanded(!brandExpanded)}
+                        className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-neutral-700 hover:text-blue-600 transition-colors">
+                        <div className="flex items-center gap-2">
+                            <Tag size={16} />
+                            <span>برند</span>
+                        </div>
+                        {brandExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+
+                    {brandExpanded && (
+                        <div className="px-4 pb-4 space-y-1 max-h-48 overflow-y-auto">
+                            {availableBrands.map((brand) => (
+                                <label key={brand}
+                                    className="flex items-center gap-2.5 py-2 px-2 cursor-pointer hover:bg-blue-50 rounded-lg transition-colors group">
+                                    <input type="checkbox" checked={currentFilters.brands.includes(brand)}
+                                        onChange={() => handleBrandToggle(brand)}
+                                        className="w-4 h-4 text-blue-500 border-neutral-300 rounded focus:ring-blue-500" />
+                                    <span className={`text-sm flex-1 ${currentFilters.brands.includes(brand) ? 'text-blue-600 font-medium' : 'text-neutral-600'}`}>
+                                        {brand}
+                                    </span>
+                                </label>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Availability */}
+            <div className="border-b border-neutral-100">
+                <button onClick={() => setAvailabilityExpanded(!availabilityExpanded)}
+                    className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-neutral-700 hover:text-blue-600 transition-colors">
+                    <div className="flex items-center gap-2">
+                        <Package size={16} />
+                        <span>وضعیت موجودی</span>
+                    </div>
+                    {availabilityExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+
+                {availabilityExpanded && (
+                    <div className="px-4 pb-4 space-y-1">
+                        {AVAILABILITY_OPTIONS.map((option) => (
+                            <label key={option.value}
+                                className="flex items-center gap-2.5 py-2 px-2 cursor-pointer hover:bg-blue-50 rounded-lg transition-colors group">
+                                <input type="checkbox" checked={currentFilters.availability.includes(option.value)}
+                                    onChange={() => handleAvailabilityToggle(option.value)}
+                                    className="w-4 h-4 text-blue-500 border-neutral-300 rounded focus:ring-blue-500" />
+                                <span className={`text-sm flex-1 ${currentFilters.availability.includes(option.value) ? 'text-blue-600 font-medium' : 'text-neutral-600'}`}>
+                                    {option.label}
+                                </span>
+                                <div className={`w-2 h-2 rounded-full ${option.color}`} />
+                            </label>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Discount */}
+            <div className="p-4">
+                <label className="flex items-center gap-3 py-2 px-2 cursor-pointer hover:bg-blue-50 rounded-lg transition-colors">
+                    <input type="checkbox" checked={currentFilters.onlyDiscount}
+                        onChange={handleDiscountToggle}
+                        className="w-4 h-4 text-blue-500 border-neutral-300 rounded focus:ring-blue-500" />
+                    <span className={`text-sm font-medium ${currentFilters.onlyDiscount ? 'text-rose-600' : 'text-neutral-700'}`}>
+                        فقط کالاهای تخفیف‌دار
+                    </span>
+                </label>
+            </div>
+        </div>
+    );
 
     return (
         <div className="min-h-screen bg-neutral-50" dir="rtl">
@@ -335,147 +478,7 @@ export default function CategoriesClient({
                             )}
 
                             {/* Expanded State - Full Filters */}
-                            {!sidebarCollapsed && (
-                                <div className="max-h-[calc(100vh-140px)] overflow-y-auto">
-                                    {/* Categories */}
-                                    <div className="border-b border-neutral-100">
-                                        <button onClick={() => setCategoryExpanded(!categoryExpanded)}
-                                            className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-neutral-700 hover:text-blue-600 transition-colors">
-                                            <div className="flex items-center gap-2">
-                                                <Grid3X3 size={16} />
-                                                <span>دسته‌بندی</span>
-                                            </div>
-                                            {categoryExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                        </button>
-
-                                        {categoryExpanded && (
-                                            <div className="px-4 pb-4 space-y-1">
-                                                <label className="flex items-center gap-2.5 py-2 px-2 cursor-pointer hover:bg-blue-50 rounded-lg transition-colors group">
-                                                    <input type="radio" name="category" checked={!selectedCategoryId}
-                                                        onChange={() => handleCategoryFilter(null)}
-                                                        className="w-4 h-4 text-blue-500 border-neutral-300 focus:ring-blue-500" />
-                                                    <span className={`text-sm flex-1 ${!selectedCategoryId ? 'text-blue-600 font-medium' : 'text-neutral-600'}`}>
-                                                        همه دسته‌ها
-                                                    </span>
-                                                </label>
-                                                {categories.map((cat) => (
-                                                    <label key={cat.id}
-                                                        className="flex items-center gap-2.5 py-2 px-2 cursor-pointer hover:bg-blue-50 rounded-lg transition-colors group">
-                                                        <input type="radio" name="category" checked={selectedCategoryId === cat.id}
-                                                            onChange={() => handleCategoryFilter(cat.id)}
-                                                            className="w-4 h-4 text-blue-500 border-neutral-300 focus:ring-blue-500" />
-                                                        <span className={`text-sm flex-1 ${selectedCategoryId === cat.id ? 'text-blue-600 font-medium' : 'text-neutral-600'}`}>
-                                                            {cat.name}
-                                                        </span>
-                                                        <span className="text-[10px] text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded-full">
-                                                            {cat.productCount}
-                                                        </span>
-                                                    </label>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Price Range */}
-                                    <div className="border-b border-neutral-100">
-                                        <button onClick={() => setPriceExpanded(!priceExpanded)}
-                                            className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-neutral-700 hover:text-blue-600 transition-colors">
-                                            <div className="flex items-center gap-2">
-                                                <DollarSign size={16} />
-                                                <span>محدوده قیمت</span>
-                                            </div>
-                                            {priceExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                        </button>
-
-                                        {priceExpanded && (
-                                            <div className="px-4 pb-4 space-y-2">
-                                                {PRICE_RANGES.map((range, idx) => {
-                                                    const isActive = parseInt(currentFilters.minPrice || '0') === range.min &&
-                                                        (range.max === Infinity ? !currentFilters.maxPrice : parseInt(currentFilters.maxPrice || '0') === range.max);
-                                                    return (
-                                                        <button key={idx} onClick={() => handlePriceRange(range.min, range.max)}
-                                                            className={`w-full text-right px-3 py-2 text-sm rounded-lg transition-all ${isActive ? 'bg-blue-50 text-blue-600 font-medium border border-blue-200' : 'text-neutral-600 hover:bg-neutral-50'
-                                                                }`}>
-                                                            {range.label}
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Brands */}
-                                    {availableBrands.length > 0 && (
-                                        <div className="border-b border-neutral-100">
-                                            <button onClick={() => setBrandExpanded(!brandExpanded)}
-                                                className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-neutral-700 hover:text-blue-600 transition-colors">
-                                                <div className="flex items-center gap-2">
-                                                    <Tag size={16} />
-                                                    <span>برند</span>
-                                                </div>
-                                                {brandExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                            </button>
-
-                                            {brandExpanded && (
-                                                <div className="px-4 pb-4 space-y-1 max-h-48 overflow-y-auto">
-                                                    {availableBrands.map((brand) => (
-                                                        <label key={brand}
-                                                            className="flex items-center gap-2.5 py-2 px-2 cursor-pointer hover:bg-blue-50 rounded-lg transition-colors group">
-                                                            <input type="checkbox" checked={currentFilters.brands.includes(brand)}
-                                                                onChange={() => handleBrandToggle(brand)}
-                                                                className="w-4 h-4 text-blue-500 border-neutral-300 rounded focus:ring-blue-500" />
-                                                            <span className={`text-sm flex-1 ${currentFilters.brands.includes(brand) ? 'text-blue-600 font-medium' : 'text-neutral-600'}`}>
-                                                                {brand}
-                                                            </span>
-                                                        </label>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {/* Availability */}
-                                    <div className="border-b border-neutral-100">
-                                        <button onClick={() => setAvailabilityExpanded(!availabilityExpanded)}
-                                            className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-neutral-700 hover:text-blue-600 transition-colors">
-                                            <div className="flex items-center gap-2">
-                                                <Package size={16} />
-                                                <span>وضعیت موجودی</span>
-                                            </div>
-                                            {availabilityExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                        </button>
-
-                                        {availabilityExpanded && (
-                                            <div className="px-4 pb-4 space-y-1">
-                                                {AVAILABILITY_OPTIONS.map((option) => (
-                                                    <label key={option.value}
-                                                        className="flex items-center gap-2.5 py-2 px-2 cursor-pointer hover:bg-blue-50 rounded-lg transition-colors group">
-                                                        <input type="checkbox" checked={currentFilters.availability.includes(option.value)}
-                                                            onChange={() => handleAvailabilityToggle(option.value)}
-                                                            className="w-4 h-4 text-blue-500 border-neutral-300 rounded focus:ring-blue-500" />
-                                                        <span className={`text-sm flex-1 ${currentFilters.availability.includes(option.value) ? 'text-blue-600 font-medium' : 'text-neutral-600'}`}>
-                                                            {option.label}
-                                                        </span>
-                                                        <div className={`w-2 h-2 rounded-full ${option.color}`} />
-                                                    </label>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Discount */}
-                                    <div className="p-4">
-                                        <label className="flex items-center gap-3 py-2 px-2 cursor-pointer hover:bg-blue-50 rounded-lg transition-colors">
-                                            <input type="checkbox" checked={currentFilters.onlyDiscount}
-                                                onChange={handleDiscountToggle}
-                                                className="w-4 h-4 text-blue-500 border-neutral-300 rounded focus:ring-blue-500" />
-                                            <span className={`text-sm font-medium ${currentFilters.onlyDiscount ? 'text-rose-600' : 'text-neutral-700'}`}>
-                                                فقط کالاهای تخفیف‌دار
-                                            </span>
-                                        </label>
-                                    </div>
-                                </div>
-                            )}
+                            {!sidebarCollapsed && renderFilterContent()}
                         </div>
                     </aside>
 
@@ -648,14 +651,24 @@ export default function CategoriesClient({
             {mobileFiltersOpen && (
                 <div className="fixed inset-0 z-50 lg:hidden">
                     <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMobileFiltersOpen(false)} />
-                    <div className="absolute right-0 top-0 bottom-0 w-[85%] max-w-[320px] bg-white shadow-2xl overflow-y-auto">
+                    <div className="absolute right-0 top-0 bottom-0 w-[85%] max-w-[320px] bg-white shadow-2xl overflow-y-auto flex flex-col">
                         <div className="sticky top-0 bg-white border-b border-neutral-200 p-4 flex items-center justify-between z-10">
                             <h2 className="font-bold text-neutral-800">فیلترها</h2>
                             <button onClick={() => setMobileFiltersOpen(false)} className="text-neutral-400 hover:text-neutral-600">
                                 <X size={24} />
                             </button>
                         </div>
-                        <div className="p-4 text-sm text-neutral-500">فیلترهای موبایل به زودی...</div>
+                        <div className="flex-1 overflow-y-auto p-2">
+                            {renderFilterContent()}
+                        </div>
+                        <div className="p-4 border-t border-neutral-100 sticky bottom-0 bg-white">
+                            <button
+                                onClick={() => setMobileFiltersOpen(false)}
+                                className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition"
+                            >
+                                مشاهده نتایج ({totalCount.toLocaleString('fa-IR')} کالا)
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

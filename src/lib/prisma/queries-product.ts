@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { getProductPricing } from '@/lib/offers/pricing';
 
 // ============================================
 // PRODUCT QUERIES
@@ -47,46 +48,16 @@ export async function getProductBySlug(slug: string) {
 
         if (!product) return null;
 
-        // Calculate effective price
-        const basePrice = product.listPrice || product.price;
-        const activeOfferProduct = product.offerProducts[0];
-        const activeOffer = activeOfferProduct?.offer;
-
-        let effectivePrice = product.price;
-        let discountPercent = 0;
-        let hasOffer = false;
-
-        if (activeOffer) {
-            const discountValue = activeOfferProduct.customDiscountValue ?? activeOffer.discountValue;
-
-            if (activeOffer.discountType === 'PERCENTAGE') {
-                effectivePrice = basePrice * (1 - Number(discountValue) / 100);
-                discountPercent = Math.round(Number(discountValue));
-            } else {
-                effectivePrice = basePrice - Number(discountValue);
-                discountPercent = Math.round((Number(discountValue) / basePrice) * 100);
-            }
-            hasOffer = true;
-        } else if (product.listPrice && product.listPrice > product.price) {
-            // Legacy discount
-            effectivePrice = product.price;
-            discountPercent = Math.round(((product.listPrice - product.price) / product.listPrice) * 100);
-            hasOffer = true;
-        }
+        const pricing = getProductPricing(product as any);
 
         // Return product with pricing info
         return {
             ...product,
-            effectivePrice: Math.round(effectivePrice),
-            originalPrice: hasOffer ? basePrice : product.price,
-            discountPercent,
-            hasOffer,
-            activeOffer: activeOffer ? {
-                id: activeOffer.id,
-                name: activeOffer.name,
-                endDate: activeOffer.endDate,
-                badgeText: activeOffer.badgeText,
-            } : null,
+            effectivePrice: pricing.effectivePrice,
+            originalPrice: pricing.originalPrice,
+            discountPercent: pricing.discountPercent,
+            hasOffer: pricing.hasOffer,
+            activeOffer: pricing.activeOffer,
         };
     } catch (error) {
         console.error('Error fetching product:', error);

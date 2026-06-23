@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { toPersianNumber } from '@/utils/persian';
+import { toPersianNumber } from '@/lib/persian';
 import { deleteErrorLogAction, bulkDeleteErrorLogsAction, clearAllErrorLogsAction } from './actions';
 
 interface ErrorLog {

@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/hooks/useAuth';
-import { toPersianDigits } from '@/lib/numbers';
+import { toPersianDigits } from '@/lib/persian';
 import { recordClientEvent } from '@/lib/client-analytics';
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';

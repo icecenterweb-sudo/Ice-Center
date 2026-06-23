@@ -1,8 +1,9 @@
 import Link from 'next/link';
-import { Plus, Edit, Trash2, Eye, MessageCircle } from 'lucide-react';
+import { Plus, Edit, Eye, MessageCircle } from 'lucide-react';
 import { prisma } from '@/lib/db';
 import { connection } from 'next/server';
 import { Suspense } from 'react';
+import DeletePostButton from './DeletePostButton';
 
 async function getBlogPosts() {
     await connection();
@@ -176,12 +177,7 @@ async function BlogContent() {
                                                 >
                                                     <Edit className="w-4 h-4" />
                                                 </Link>
-                                                <button
-                                                    className="p-2 text-gray-500 hover:text-red-500 transition-colors"
-                                                    title="حذف"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
+                                                <DeletePostButton slug={post.slug} />
                                             </div>
                                         </td>
                                     </tr>

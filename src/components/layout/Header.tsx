@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import UserButton from '@/components/auth/UserButton';
 import { useCart } from '@/context/CartContext';
-import { toPersianDigits } from '@/lib/numbers';
+import { toPersianDigits } from '@/lib/persian';
 import SearchBar from './SearchBar';
 import NotificationBell from './NotificationBell';
 import DesktopNav from './DesktopNav';

@@ -10,6 +10,7 @@
 import { cacheLife, cacheTag } from 'next/cache';
 import { prisma } from '@/lib/db';
 import { BannerPosition } from '@prisma/client';
+import { getProductPricing } from '@/lib/offers/pricing';
 
 // ============================================
 // Types
@@ -86,31 +87,14 @@ export interface BlogPostForDisplay {
 
 function transformProducts(products: DBProduct[]): ProductForDisplay[] {
     return products.map((p) => {
-        let effectivePrice = p.price;
-        let originalPrice = p.listPrice || p.price;
-        let hasDiscount = false;
-
-        const activeOffer = p.offerProducts?.[0]?.offer;
-        if (activeOffer) {
-            const discountValue = p.offerProducts![0].customDiscountValue ?? activeOffer.discountValue;
-            if (activeOffer.discountType === 'PERCENTAGE') {
-                effectivePrice = originalPrice * (1 - discountValue / 100);
-            } else {
-                effectivePrice = originalPrice - discountValue;
-            }
-            hasDiscount = true;
-        } else if (p.listPrice && p.listPrice > p.price) {
-            effectivePrice = p.price;
-            originalPrice = p.listPrice;
-            hasDiscount = true;
-        }
+        const pricing = getProductPricing(p as any);
 
         return {
             id: p.id,
             title: p.name,
             image: p.thumbnail || 'https://via.placeholder.com/300x300?text=No+Image',
-            price: Math.round(effectivePrice),
-            oldPrice: hasDiscount ? originalPrice : undefined,
+            price: pricing.effectivePrice,
+            oldPrice: pricing.hasOffer ? pricing.originalPrice : undefined,
             href: `/products/${p.slug}`,
         };
     });
@@ -136,7 +120,11 @@ function resolveLink(banner: {
  */
 export async function getCachedSlides(): Promise<SlideForDisplay[]> {
     'use cache';
-    cacheLife('minutes');
+    cacheLife({
+        stale: 300,
+        revalidate: 300,
+        expire: 600,
+    });
     cacheTag('homepage', 'slides');
 
     if (process.env.NODE_ENV === 'development') {
@@ -168,7 +156,11 @@ export async function getCachedSlides(): Promise<SlideForDisplay[]> {
  */
 export async function getCachedCategories(): Promise<CategoryForDisplay[]> {
     'use cache';
-    cacheLife('minutes');
+    cacheLife({
+        stale: 300,
+        revalidate: 300,
+        expire: 600,
+    });
     cacheTag('homepage', 'categories');
 
     if (process.env.NODE_ENV === 'development') {
@@ -205,7 +197,11 @@ export async function getCachedCategories(): Promise<CategoryForDisplay[]> {
  */
 export async function getCachedOffers() {
     'use cache';
-    cacheLife('minutes');
+    cacheLife({
+        stale: 300,
+        revalidate: 300,
+        expire: 600,
+    });
     cacheTag('homepage', 'offers');
 
     if (process.env.NODE_ENV === 'development') {
@@ -251,11 +247,18 @@ export async function getCachedOffers() {
             .filter(op => op.product.isActive && op.product.stock > 0)
             .map(op => {
                 const product = op.product;
-                const basePrice = product.listPrice || product.price;
-                const discountValue = op.customDiscountValue ?? offer.discountValue;
-                const finalPrice = offer.discountType === 'PERCENTAGE'
-                    ? basePrice * (1 - discountValue / 100)
-                    : basePrice - discountValue;
+                const pricing = getProductPricing({
+                    price: product.price,
+                    listPrice: product.listPrice,
+                    offerProducts: [{
+                        customDiscountValue: op.customDiscountValue,
+                        offer: {
+                            discountType: offer.discountType,
+                            discountValue: offer.discountValue,
+                            maxDiscountCap: offer.maxDiscountCap
+                        }
+                    }]
+                } as any);
 
                 return {
                     id: offer.id,
@@ -267,9 +270,9 @@ export async function getCachedOffers() {
                         title: product.name,
                         slug: product.slug,
                         image: product.thumbnail,
-                        price: Math.round(finalPrice),
-                        oldPrice: basePrice,
-                        discount: Math.round(((basePrice - finalPrice) / basePrice) * 100),
+                        price: pricing.effectivePrice,
+                        oldPrice: pricing.originalPrice,
+                        discount: pricing.discountPercent,
                         inStock: product.stock > 0,
                     }
                 };
@@ -285,7 +288,11 @@ export async function getCachedOffers() {
  */
 export async function getCachedCategoryProducts(): Promise<{ categories: CategoryWithProducts[]; newestProducts: ProductForDisplay[] }> {
     'use cache';
-    cacheLife('minutes');
+    cacheLife({
+        stale: 300,
+        revalidate: 300,
+        expire: 600,
+    });
     cacheTag('homepage', 'products');
 
     if (process.env.NODE_ENV === 'development') {
@@ -393,7 +400,11 @@ async function getBannersByPosition(position: BannerPosition): Promise<BannerFor
 
 export async function getCachedSingleBanners(): Promise<BannerForDisplay[]> {
     'use cache';
-    cacheLife('minutes');
+    cacheLife({
+        stale: 300,
+        revalidate: 300,
+        expire: 600,
+    });
     cacheTag('homepage', 'banners');
 
     if (process.env.NODE_ENV === 'development') {
@@ -404,7 +415,11 @@ export async function getCachedSingleBanners(): Promise<BannerForDisplay[]> {
 
 export async function getCachedDoubleBanners(): Promise<BannerForDisplay[]> {
     'use cache';
-    cacheLife('minutes');
+    cacheLife({
+        stale: 300,
+        revalidate: 300,
+        expire: 600,
+    });
     cacheTag('homepage', 'banners');
 
     if (process.env.NODE_ENV === 'development') {
@@ -419,7 +434,11 @@ export async function getCachedDoubleBanners(): Promise<BannerForDisplay[]> {
  */
 export async function getCachedBlogPosts(limit = 6): Promise<BlogPostForDisplay[]> {
     'use cache';
-    cacheLife('minutes');
+    cacheLife({
+        stale: 300,
+        revalidate: 300,
+        expire: 600,
+    });
     cacheTag('homepage', 'blog');
 
     if (process.env.NODE_ENV === 'development') {

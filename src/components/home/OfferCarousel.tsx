@@ -7,7 +7,7 @@ import useEmblaCarousel from 'embla-carousel-react';
 import Autoplay from 'embla-carousel-autoplay';
 import { ChevronLeft, ChevronRight, Percent } from 'lucide-react';
 import DiscountBadge from '../ui/DiscountBadge';
-import { toPersianDigits } from '@/lib/numbers';
+import { toPersianDigits } from '@/lib/persian';
 
 // Product type for carousel display
 interface OfferProduct {

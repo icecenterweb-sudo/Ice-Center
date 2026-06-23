@@ -4,7 +4,7 @@ import { isValidIranianMobile, normalizePhone } from '@/lib/sms'
 import { verifyOtp } from '@/lib/otp'
 import { generateUserToken, USER_TOKEN_COOKIE, getTokenCookieOptionsForRequest } from '@/lib/jwt'
 import { recordAnalyticsEvent } from '@/lib/analytics'
-import { toEnglishDigits } from '@/lib/numbers'
+import { toEnglishDigits } from '@/lib/persian'
 
 export async function POST(request: NextRequest) {
     try {

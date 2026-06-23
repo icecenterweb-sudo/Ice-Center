@@ -20,7 +20,7 @@ import { OrderStatus } from '@prisma/client';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { toPersianNumber } from '@/utils/persian';
+import { toPersianNumber } from '@/lib/persian';
 import { bulkUpdateOrdersStatusAction } from './actions';
 
 interface Order {

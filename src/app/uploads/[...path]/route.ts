@@ -7,7 +7,6 @@ import {
     resolveUploadPath,
 } from '@/lib/uploads';
 
-export const runtime = 'nodejs';
 
 async function findUploadFile(segments: string[]) {
     const roots = [getUploadStorageRoot(), getLegacyPublicUploadRoot()];

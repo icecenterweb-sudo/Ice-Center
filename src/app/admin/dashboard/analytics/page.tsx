@@ -21,53 +21,135 @@ export default async function AdminAnalyticsPage() {
     }
 
     try {
-        // 1. Fetch raw events in the last 30 days
-        const events = await analyticsEventClient.findMany({
-            where: { createdAt: { gte: start30 } },
-            orderBy: { createdAt: 'asc' },
-            take: 30000,
-        }) as any[];
-
         const totalUsers = await prisma.user.count()
 
-        // 2. Summary & Funnel Calculations
-        const visits30 = events.filter((e) => e.type === 'PAGE_VIEW')
-        const visits7Days = visits30.filter((e) => e.createdAt >= start7).length
-        const visitsToday = visits30.filter((e) => e.createdAt >= startToday).length
+        // 1. Check if there are any events at all
+        const totalEvents30Days = await analyticsEventClient.count({
+            where: { createdAt: { gte: start30 } }
+        })
+        const hasData = totalEvents30Days > 0;
 
-        const productViews = events.filter((e) => e.type === 'PRODUCT_VIEW').length
-        const cartAdds = events.filter((e) => e.type === 'ADD_TO_CART').length
-        const checkoutStarts = events.filter((e) => e.type === 'CHECKOUT_START').length
-        const orderSubmits = events.filter((e) => e.type === 'ORDER_SUBMIT').length
-        const paidOrders = events.filter((e) => e.type === 'PAYMENT_SUCCESS').length
-
-        const logins30 = events.filter((e) => e.type === 'USER_LOGIN')
-        const socialVisits30 = visits30.filter((e) => e.medium === 'social').length
-        const searchVisits30 = visits30.filter((e) => e.medium === 'search').length
-
-        // Conversion Rate: paid orders / total visits
-        const conversionRate = visits30.length > 0 ? (paidOrders / visits30.length) * 100 : 0
-
-        // 3. Traffic to Purchase & Social Media Attributions
-        // Fetch orders in the last 30 days to calculate revenue
-        const orders = await prisma.order.findMany({
+        // 2. Fetch event counts grouped by type (for funnel and basic summary metrics)
+        const typeCounts = await analyticsEventClient.groupBy({
+            by: ['type'],
             where: { createdAt: { gte: start30 } },
-            select: { id: true, total: true, status: true },
+            _count: { _all: true }
+        })
+        const counts = typeCounts.reduce((acc: any, curr: any) => {
+            acc[curr.type] = curr._count._all;
+            return acc;
+        }, {} as Record<string, number>);
+
+        const visits30Days = counts['PAGE_VIEW'] || 0;
+        const productViews = counts['PRODUCT_VIEW'] || 0;
+        const cartAdds = counts['ADD_TO_CART'] || 0;
+        const checkoutStarts = counts['CHECKOUT_START'] || 0;
+        const orderSubmits = counts['ORDER_SUBMIT'] || 0;
+        const paidOrders = counts['PAYMENT_SUCCESS'] || 0;
+        const userLogins30Days = counts['USER_LOGIN'] || 0;
+
+        // Fetch counts for page views today and in the last 7 days
+        const visitsToday = await analyticsEventClient.count({
+            where: {
+                type: 'PAGE_VIEW',
+                createdAt: { gte: startToday }
+            }
+        })
+        const visits7Days = await analyticsEventClient.count({
+            where: {
+                type: 'PAGE_VIEW',
+                createdAt: { gte: start7 }
+            }
         })
 
-        // Group events by source for social media metrics
-        const socialSources = ['instagram', 'telegram', 'whatsapp', 'bale', 'eitaa', 'rubika', 'linkedin', 'youtube', 'aparat', 'facebook', 'x']
-        const socialMetrics = socialSources.map(src => {
-            const platformEvents = events.filter(e => e.source === src)
-            const visits = platformEvents.filter(e => e.type === 'PAGE_VIEW' || e.type === 'PRODUCT_VIEW').length
-            const cartAdds = platformEvents.filter(e => e.type === 'ADD_TO_CART').length
-            
-            // Find order IDs associated with this platform's events
-            const orderIds = platformEvents.filter(e => e.type === 'ORDER_SUBMIT' && e.orderId).map(e => e.orderId)
-            const ordersList = orders.filter(o => orderIds.includes(o.id))
-            const ordersCount = ordersList.length
-            const revenue = ordersList.reduce((sum, o) => sum + o.total, 0)
+        // Fetch medium counts for social and search visits
+        const mediumCounts = await analyticsEventClient.groupBy({
+            by: ['medium'],
+            where: {
+                type: 'PAGE_VIEW',
+                createdAt: { gte: start30 }
+            },
+            _count: { _all: true }
+        })
+        const mediumMap = mediumCounts.reduce((acc: any, curr: any) => {
+            if (curr.medium) acc[curr.medium] = curr._count._all;
+            return acc;
+        }, {} as Record<string, number>);
+        const socialVisits30Days = mediumMap['social'] || 0;
+        const searchVisits30Days = mediumMap['search'] || 0;
 
+        // Conversion Rate: paid orders / total visits
+        const conversionRate = visits30Days > 0 ? (paidOrders / visits30Days) * 100 : 0
+
+        // 3. Traffic to Purchase & Social Media Attributions
+        const socialSources = ['instagram', 'telegram', 'whatsapp', 'bale', 'eitaa', 'rubika', 'linkedin', 'youtube', 'aparat', 'facebook', 'x']
+        
+        // Group event count by source & type for social platforms
+        const socialEventsData = await analyticsEventClient.groupBy({
+            by: ['source', 'type'],
+            where: {
+                source: { in: socialSources },
+                createdAt: { gte: start30 }
+            },
+            _count: { _all: true }
+        })
+
+        // Retrieve ORDER_SUBMIT events from social sources to map them to orders
+        const socialOrdersEvents = await analyticsEventClient.findMany({
+            where: {
+                type: 'ORDER_SUBMIT',
+                source: { in: socialSources },
+                createdAt: { gte: start30 },
+                orderId: { not: null }
+            },
+            select: {
+                source: true,
+                orderId: true
+            }
+        })
+
+        const orderIds = socialOrdersEvents.map((e: any) => e.orderId).filter(Boolean) as number[];
+        const orders = await prisma.order.findMany({
+            where: {
+                id: { in: orderIds },
+                createdAt: { gte: start30 }
+            },
+            select: { id: true, total: true }
+        })
+        const orderMap = new Map(orders.map(o => [o.id, o.total]));
+
+        const socialCounts: Record<string, { visits: number; cartAdds: number }> = {};
+        for (const src of socialSources) {
+            socialCounts[src] = { visits: 0, cartAdds: 0 };
+        }
+        for (const item of socialEventsData) {
+            const { source, type, _count } = item;
+            if (source && socialCounts[source]) {
+                if (type === 'PAGE_VIEW' || type === 'PRODUCT_VIEW') {
+                    socialCounts[source].visits += _count._all;
+                } else if (type === 'ADD_TO_CART') {
+                    socialCounts[source].cartAdds += _count._all;
+                }
+            }
+        }
+
+        const socialOrderInfo: Record<string, { count: number; revenue: number }> = {};
+        for (const src of socialSources) {
+            socialOrderInfo[src] = { count: 0, revenue: 0 };
+        }
+        for (const ev of socialOrdersEvents) {
+            const total = orderMap.get(ev.orderId!) || 0;
+            if (ev.source && socialOrderInfo[ev.source]) {
+                socialOrderInfo[ev.source].count++;
+                socialOrderInfo[ev.source].revenue += total;
+            }
+        }
+
+        const socialMetrics = socialSources.map(src => {
+            const visits = socialCounts[src]?.visits || 0;
+            const cartAdds = socialCounts[src]?.cartAdds || 0;
+            const ordersCount = socialOrderInfo[src]?.count || 0;
+            const revenue = socialOrderInfo[src]?.revenue || 0;
             return {
                 source: src,
                 visits,
@@ -78,23 +160,45 @@ export default async function AdminAnalyticsPage() {
         }).filter(m => m.visits > 0 || m.orders > 0)
 
         // 4. High-Visit No-Sales Products
-        // Group views per product
+        // Group product views in database
+        const productViewCounts = await analyticsEventClient.groupBy({
+            by: ['productId'],
+            where: {
+                type: 'PRODUCT_VIEW',
+                productId: { not: null },
+                createdAt: { gte: start30 }
+            },
+            _count: { _all: true }
+        })
+
+        // Group sales quantity per product in database
+        const productSalesData = await prisma.orderItem.groupBy({
+            by: ['productId'],
+            where: {
+                order: {
+                    status: { not: 'CANCELLED' },
+                    createdAt: { gte: start30 }
+                }
+            },
+            _sum: {
+                quantity: true
+            }
+        })
+
         const viewCountsByProduct: Record<number, number> = {}
-        events.filter(e => e.type === 'PRODUCT_VIEW' && e.productId).forEach(e => {
-            viewCountsByProduct[e.productId] = (viewCountsByProduct[e.productId] || 0) + 1
+        productViewCounts.forEach((item: any) => {
+            if (item.productId) {
+                viewCountsByProduct[item.productId] = item._count._all;
+            }
         })
 
-        // Fetch sales per product in the last 30 days
-        const orderItems = await prisma.orderItem.findMany({
-            where: { order: { status: { not: 'CANCELLED' }, createdAt: { gte: start30 } } },
-            select: { productId: true, quantity: true },
-        })
         const salesCountsByProduct: Record<number, number> = {}
-        orderItems.forEach(item => {
-            salesCountsByProduct[item.productId] = (salesCountsByProduct[item.productId] || 0) + item.quantity
+        productSalesData.forEach((item: any) => {
+            if (item.productId) {
+                salesCountsByProduct[item.productId] = item._sum.quantity || 0;
+            }
         })
 
-        // Fetch product names for viewed or sold products
         const uniqueProductIds = Array.from(new Set([
             ...Object.keys(viewCountsByProduct).map(Number),
             ...Object.keys(salesCountsByProduct).map(Number)
@@ -118,19 +222,31 @@ export default async function AdminAnalyticsPage() {
                 ratio
             }
         })
-        .sort((a, b) => b.views - a.views) // Sort by views to see high-visit products first
+        .sort((a, b) => b.views - a.views)
         .slice(0, 10)
 
         // 5. Internal Search logs
-        const searchEvents = events.filter(e => e.type === 'SEARCH' && e.searchQuery)
+        const searchEventsData = await analyticsEventClient.groupBy({
+            by: ['searchQuery'],
+            where: {
+                type: 'SEARCH',
+                searchQuery: { not: null },
+                createdAt: { gte: start30 }
+            },
+            _count: { _all: true },
+            _sum: {
+                searchResultCount: true
+            }
+        })
+
         const searchQueries: Record<string, { count: number; totalResults: number }> = {}
-        searchEvents.forEach(e => {
-            const q = e.searchQuery.trim().toLowerCase()
+        searchEventsData.forEach((item: any) => {
+            const q = item.searchQuery.trim().toLowerCase()
             if (!searchQueries[q]) {
                 searchQueries[q] = { count: 0, totalResults: 0 }
             }
-            searchQueries[q].count++
-            searchQueries[q].totalResults += (e.searchResultCount || 0)
+            searchQueries[q].count += item._count._all
+            searchQueries[q].totalResults += (item._sum.searchResultCount || 0)
         })
 
         const sortedQueries = Object.entries(searchQueries).map(([query, data]) => ({
@@ -147,11 +263,16 @@ export default async function AdminAnalyticsPage() {
             where: { createdAt: { gte: start30 } }
         })
 
-        // Active users: count distinct userIds from events in last 30 days
-        const activeUserIds = Array.from(new Set(events.filter(e => e.userId).map(e => e.userId))) as number[]
+        const activeUserGroup = await analyticsEventClient.groupBy({
+            by: ['userId'],
+            where: {
+                userId: { not: null },
+                createdAt: { gte: start30 }
+            }
+        })
+        const activeUserIds = activeUserGroup.map((g: any) => g.userId) as number[]
         const activeUsers = activeUserIds.length
 
-        // Returning users: active users who were created before the 30d window
         const returningUsers = await prisma.user.count({
             where: {
                 id: { in: activeUserIds },
@@ -160,11 +281,22 @@ export default async function AdminAnalyticsPage() {
         })
         const inactiveUsers = Math.max(0, totalUsers - activeUsers)
 
-        // 7. Peak Traffic Times (Hour of Day)
+        // 7 & 8. Load Trend & Traffic Data to calculate peak times and daily trends
+        const trendAndTrafficData = await analyticsEventClient.findMany({
+            where: {
+                type: { in: ['PAGE_VIEW', 'ORDER_SUBMIT'] },
+                createdAt: { gte: start30 }
+            },
+            select: {
+                type: true,
+                createdAt: true
+            }
+        })
+
         const peakTraffic = Array.from({ length: 24 }, (_, hour) => {
-            const hourEvents = events.filter(e => new Date(e.createdAt).getHours() === hour)
-            const hourVisits = hourEvents.filter(e => e.type === 'PAGE_VIEW').length
-            const hourOrders = hourEvents.filter(e => e.type === 'ORDER_SUBMIT').length
+            const hourEvents = trendAndTrafficData.filter((e: any) => new Date(e.createdAt).getHours() === hour)
+            const hourVisits = hourEvents.filter((e: any) => e.type === 'PAGE_VIEW').length
+            const hourOrders = hourEvents.filter((e: any) => e.type === 'ORDER_SUBMIT').length
             return {
                 hour,
                 visits: hourVisits,
@@ -172,12 +304,43 @@ export default async function AdminAnalyticsPage() {
             }
         })
 
-        // 8. Device & Browser Breakdowns
+        const daily = Array.from({ length: 30 }, (_, index) => {
+            const dayStart = startOfDay(new Date(now.getTime() - (29 - index) * DAY_MS))
+            const dayEnd = new Date(dayStart.getTime() + DAY_MS)
+            const dayEvents = trendAndTrafficData.filter((e: any) => e.createdAt >= dayStart && e.createdAt < dayEnd)
+            return {
+                label: dayStart.toLocaleDateString('fa-IR', { day: '2-digit', month: '2-digit' }),
+                visits: dayEvents.filter((e: any) => e.type === 'PAGE_VIEW').length,
+                logins: dayEvents.filter((e: any) => e.type === 'ORDER_SUBMIT').length,
+            }
+        })
+
+        // 9. Device & Browser Breakdowns using database groupBy
         const devicesList = ['desktop', 'mobile', 'tablet']
+        const deviceData = await analyticsEventClient.groupBy({
+            by: ['device', 'type'],
+            where: {
+                type: { in: ['PAGE_VIEW', 'ORDER_SUBMIT'] },
+                device: { in: devicesList },
+                createdAt: { gte: start30 }
+            },
+            _count: { _all: true }
+        })
+
+        const deviceCounts: Record<string, { visits: number; orders: number }> = {}
+        devicesList.forEach(dev => { deviceCounts[dev] = { visits: 0, orders: 0 } })
+        deviceData.forEach((item: any) => {
+            const dev = item.device;
+            if (dev && deviceCounts[dev]) {
+                if (item.type === 'PAGE_VIEW') {
+                    deviceCounts[dev].visits += item._count._all;
+                } else if (item.type === 'ORDER_SUBMIT') {
+                    deviceCounts[dev].orders += item._count._all;
+                }
+            }
+        })
         const devicesMetrics = devicesList.map(dev => {
-            const devEvents = events.filter(e => e.device === dev)
-            const visits = devEvents.filter(e => e.type === 'PAGE_VIEW').length
-            const orders = devEvents.filter(e => e.type === 'ORDER_SUBMIT').length
+            const { visits, orders } = deviceCounts[dev];
             const rate = visits > 0 ? (orders / visits) * 100 : 0
             return {
                 name: dev,
@@ -188,10 +351,30 @@ export default async function AdminAnalyticsPage() {
         }).filter(d => d.visits > 0)
 
         const browsersList = ['Chrome', 'Safari', 'Firefox', 'Edge', 'Opera', 'Other']
+        const browserData = await analyticsEventClient.groupBy({
+            by: ['browser', 'type'],
+            where: {
+                type: { in: ['PAGE_VIEW', 'ORDER_SUBMIT'] },
+                browser: { in: browsersList },
+                createdAt: { gte: start30 }
+            },
+            _count: { _all: true }
+        })
+
+        const browserCounts: Record<string, { visits: number; orders: number }> = {}
+        browsersList.forEach(b => { browserCounts[b] = { visits: 0, orders: 0 } })
+        browserData.forEach((item: any) => {
+            const browser = item.browser;
+            if (browser && browserCounts[browser]) {
+                if (item.type === 'PAGE_VIEW') {
+                    browserCounts[browser].visits += item._count._all;
+                } else if (item.type === 'ORDER_SUBMIT') {
+                    browserCounts[browser].orders += item._count._all;
+                }
+            }
+        })
         const browsersMetrics = browsersList.map(browser => {
-            const browserEvents = events.filter(e => e.browser === browser)
-            const visits = browserEvents.filter(e => e.type === 'PAGE_VIEW').length
-            const orders = browserEvents.filter(e => e.type === 'ORDER_SUBMIT').length
+            const { visits, orders } = browserCounts[browser];
             const rate = visits > 0 ? (orders / visits) * 100 : 0
             return {
                 name: browser,
@@ -201,63 +384,71 @@ export default async function AdminAnalyticsPage() {
             }
         }).filter(b => b.visits > 0)
 
-        // 9. Page Speed Reports
-        const speedEvents = events.filter(e => e.type === 'SPEED_LOG' && e.path)
-        const speedByPath: Record<string, { totalTime: number; totalSize: number; count: number; errorCount: number }> = {}
-        
-        speedEvents.forEach(e => {
-            const p = e.path
-            if (!speedByPath[p]) {
-                speedByPath[p] = { totalTime: 0, totalSize: 0, count: 0, errorCount: 0 }
-            }
-            if (e.loadTime) {
-                speedByPath[p].totalTime += e.loadTime
-                speedByPath[p].count++
-            }
-            if (e.imageSize) {
-                speedByPath[p].totalSize += e.imageSize
-            }
-            if (e.hasErrors) {
-                speedByPath[p].errorCount++
+        // 10. Page Speed Reports using database groupBy
+        const speedData = await analyticsEventClient.groupBy({
+            by: ['path'],
+            where: {
+                type: 'SPEED_LOG',
+                path: { not: null },
+                createdAt: { gte: start30 }
+            },
+            _count: {
+                loadTime: true
+            },
+            _sum: {
+                loadTime: true,
+                imageSize: true
             }
         })
 
-        const speedMetrics = Object.entries(speedByPath).map(([path, data]) => ({
-            path,
-            avgLoadTime: data.count > 0 ? Math.round(data.totalTime / data.count) : 0,
-            avgImageSize: data.count > 0 ? Math.round(data.totalSize / data.count) : 0,
-            errorCount: data.errorCount
-        }))
-        .sort((a, b) => b.avgLoadTime - a.avgLoadTime)
-        .slice(0, 10)
+        const speedErrorData = await analyticsEventClient.groupBy({
+            by: ['path'],
+            where: {
+                type: 'SPEED_LOG',
+                path: { not: null },
+                hasErrors: true,
+                createdAt: { gte: start30 }
+            },
+            _count: { _all: true }
+        })
 
-        // Generate Trends for line chart (daily views vs order submits)
-        const daily = Array.from({ length: 30 }, (_, index) => {
-            const dayStart = startOfDay(new Date(now.getTime() - (29 - index) * DAY_MS))
-            const dayEnd = new Date(dayStart.getTime() + DAY_MS)
-            const dayEvents = events.filter(e => e.createdAt >= dayStart && e.createdAt < dayEnd)
+        const errorMap: Record<string, number> = {}
+        speedErrorData.forEach((item: any) => {
+            if (item.path) errorMap[item.path] = item._count._all;
+        })
+
+        const speedMetrics = speedData.map((item: any) => {
+            const path = item.path!;
+            const count = item._count.loadTime || 0;
+            const totalTime = item._sum.loadTime || 0;
+            const totalSize = item._sum.imageSize || 0;
+            const errorCount = errorMap[path] || 0;
+
             return {
-                label: dayStart.toLocaleDateString('fa-IR', { day: '2-digit', month: '2-digit' }),
-                visits: dayEvents.filter(e => e.type === 'PAGE_VIEW').length,
-                logins: dayEvents.filter(e => e.type === 'ORDER_SUBMIT').length, // display order completions in trend
+                path,
+                avgLoadTime: count > 0 ? Math.round(totalTime / count) : 0,
+                avgImageSize: count > 0 ? Math.round(totalSize / count) : 0,
+                errorCount
             }
         })
+        .sort((a: any, b: any) => b.avgLoadTime - a.avgLoadTime)
+        .slice(0, 10)
 
         return (
             <AnalyticsDashboard
-                hasData={events.length > 0}
+                hasData={hasData}
                 summary={{
                     visitsToday,
                     visits7Days,
-                    visits30Days: visits30.length,
-                    userLogins30Days: logins30.length,
-                    socialVisits30Days: socialVisits30,
-                    searchVisits30Days: searchVisits30,
+                    visits30Days,
+                    userLogins30Days,
+                    socialVisits30Days,
+                    searchVisits30Days,
                     conversionRate,
                 }}
                 daily={daily}
                 funnel={{
-                    pageViews: visits30.length,
+                    pageViews: visits30Days,
                     productViews,
                     cartAdds,
                     checkoutStarts,
