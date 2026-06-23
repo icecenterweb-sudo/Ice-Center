@@ -105,7 +105,7 @@ export default function UserButton() {
                         {/* Menu Items */}
                         <div className="py-1">
                             <Link
-                                href="/account"
+                                href="/profile"
                                 onClick={() => setIsOpen(false)}
                                 className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                             >
@@ -113,7 +113,7 @@ export default function UserButton() {
                                 <span>حساب کاربری</span>
                             </Link>
                             <Link
-                                href="/account/orders"
+                                href="/profile/orders"
                                 onClick={() => setIsOpen(false)}
                                 className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                             >
@@ -121,7 +121,7 @@ export default function UserButton() {
                                 <span>سفارش‌های من</span>
                             </Link>
                             <Link
-                                href="/account/addresses"
+                                href="/profile/addresses"
                                 onClick={() => setIsOpen(false)}
                                 className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                             >
