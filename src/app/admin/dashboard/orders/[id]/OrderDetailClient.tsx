@@ -8,7 +8,6 @@ import {
     Package, RefreshCw, Save, ArrowLeft
 } from 'lucide-react';
 import { updateOrderStatus, updateAdminNotes } from '../actions';
-import Image from 'next/image';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 
@@ -128,7 +127,7 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-12 h-12 relative bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden">
                                                         {item.thumbnail ? (
-                                                            <Image src={item.thumbnail} alt={item.productName} fill className="object-cover" />
+                                                            <img src={item.thumbnail} alt={item.productName} className="w-full h-full object-cover" />
                                                         ) : (
                                                             <div className="w-full h-full flex items-center justify-center text-gray-400">IMG</div>
                                                         )}
