@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { ArrowRight, Plus, Trash2, Edit, Eye, EyeOff, Loader2, ImageIcon } from 'lucide-react';
 
 interface Banner {
@@ -215,11 +214,10 @@ function BannerRow({
 
             {/* Thumbnail */}
             <div className="w-28 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 relative">
-                <Image
+                <img
                     src={banner.desktopImage}
                     alt={banner.alt}
-                    fill
-                    className="object-cover"
+                    className="w-full h-full object-cover"
                 />
             </div>
 

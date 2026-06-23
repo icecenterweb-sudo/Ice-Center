@@ -49,6 +49,8 @@ const nextConfig: NextConfig = {
   // },
 
   images: {
+    // Disable Next.js built-in image optimization
+    unoptimized: true,
     // Modern formats for smaller file sizes
     formats: ['image/avif', 'image/webp'],
     // Device sizes for responsive images

@@ -14,7 +14,7 @@ const categorySchema = z.object({
     name: z.string().min(1, 'نام دسته‌بندی الزامی است'),
     slug: z.string().min(1, 'اسلاگ الزامی است').regex(/^[a-z0-9-]+$/, 'اسلاگ فقط شامل حروف انگلیسی، اعداد و خط تیره باشد'),
     description: z.string().optional(),
-    imageUrl: z.string().url().optional().nullable(),
+    imageUrl: z.string().min(1).optional().nullable(),
 });
 
 const subcategorySchema = z.object({
@@ -111,7 +111,7 @@ export async function updateCategory(id: number, formData: FormData) {
                 name: data.name,
                 slug: data.slug,
                 description: data.description || undefined,
-                ...(data.imageUrl && { image: data.imageUrl })
+                ...(data.imageUrl ? { image: data.imageUrl } : { image: null })
             }
         });
 

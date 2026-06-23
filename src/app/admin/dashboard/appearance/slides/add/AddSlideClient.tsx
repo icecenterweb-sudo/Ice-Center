@@ -32,6 +32,8 @@ export default function AddSlidePage() {
     const [title, setTitle] = useState('');
     const [desktopImage, setDesktopImage] = useState('');
     const [mobileImage, setMobileImage] = useState('');
+    const [desktopPreview, setDesktopPreview] = useState('');
+    const [mobilePreview, setMobilePreview] = useState('');
     const [alt, setAlt] = useState('');
     const [linkType, setLinkType] = useState<LinkType>('none');
     const [customLink, setCustomLink] = useState('');
@@ -44,6 +46,14 @@ export default function AddSlidePage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [isLoadingData, setIsLoadingData] = useState(true);
+
+    // Clean up object URLs on unmount
+    useEffect(() => {
+        return () => {
+            if (desktopPreview.startsWith('blob:')) URL.revokeObjectURL(desktopPreview);
+            if (mobilePreview.startsWith('blob:')) URL.revokeObjectURL(mobilePreview);
+        };
+    }, [desktopPreview, mobilePreview]);
 
     // Load products and categories
     useEffect(() => {
@@ -73,6 +83,15 @@ export default function AddSlidePage() {
         if (type === 'desktop') setIsUploadingDesktop(true);
         else setIsUploadingMobile(true);
 
+        const localUrl = URL.createObjectURL(file);
+        if (type === 'desktop') {
+            if (desktopPreview.startsWith('blob:')) URL.revokeObjectURL(desktopPreview);
+            setDesktopPreview(localUrl);
+        } else {
+            if (mobilePreview.startsWith('blob:')) URL.revokeObjectURL(mobilePreview);
+            setMobilePreview(localUrl);
+        }
+
         try {
             const formData = new FormData();
             formData.append('file', file);
@@ -86,14 +105,31 @@ export default function AddSlidePage() {
             const data = await response.json();
 
             if (data.url) {
-                if (type === 'desktop') setDesktopImage(data.url);
-                else setMobileImage(data.url);
+                if (type === 'desktop') {
+                    setDesktopImage(data.url);
+                } else {
+                    setMobileImage(data.url);
+                }
             } else {
                 setError(data.error || 'خطا در آپلود تصویر');
+                if (type === 'desktop') {
+                    setDesktopPreview('');
+                    URL.revokeObjectURL(localUrl);
+                } else {
+                    setMobilePreview('');
+                    URL.revokeObjectURL(localUrl);
+                }
             }
         } catch (err) {
             console.error('Upload error:', err);
             setError('خطا در آپلود تصویر');
+            if (type === 'desktop') {
+                setDesktopPreview('');
+                URL.revokeObjectURL(localUrl);
+            } else {
+                setMobilePreview('');
+                URL.revokeObjectURL(localUrl);
+            }
         } finally {
             if (type === 'desktop') setIsUploadingDesktop(false);
             else setIsUploadingMobile(false);
@@ -212,7 +248,10 @@ export default function AddSlidePage() {
                             <input
                                 type="text"
                                 value={desktopImage}
-                                onChange={(e) => setDesktopImage(e.target.value)}
+                                onChange={(e) => {
+                                    setDesktopImage(e.target.value);
+                                    setDesktopPreview(e.target.value);
+                                }}
                                 placeholder="آدرس (URL) تصویر دسکتاپ"
                                 className="flex-1 px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900"
                             />
@@ -247,7 +286,10 @@ export default function AddSlidePage() {
                                 <button
                                     key={i}
                                     type="button"
-                                    onClick={() => setDesktopImage(url)}
+                                    onClick={() => {
+                                        setDesktopImage(url);
+                                        setDesktopPreview(url);
+                                    }}
                                     className="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                                 >
                                     پیش‌فرض {i + 1}
@@ -265,7 +307,10 @@ export default function AddSlidePage() {
                             <input
                                 type="text"
                                 value={mobileImage}
-                                onChange={(e) => setMobileImage(e.target.value)}
+                                onChange={(e) => {
+                                    setMobileImage(e.target.value);
+                                    setMobilePreview(e.target.value);
+                                }}
                                 placeholder="آدرس (URL) تصویر موبایل"
                                 className="flex-1 px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900"
                             />
@@ -296,7 +341,10 @@ export default function AddSlidePage() {
                         <p className="text-xs text-gray-500 mt-1">اندازه پیشنهادی: 768×180 پیکسل (نسبت 4:1)</p>
                         <button
                             type="button"
-                            onClick={() => setMobileImage(desktopImage)}
+                            onClick={() => {
+                                setMobileImage(desktopImage);
+                                setMobilePreview(desktopImage);
+                            }}
                             className="text-xs text-ocean hover:underline mt-1"
                         >
                             استفاده از تصویر دسکتاپ
@@ -318,13 +366,13 @@ export default function AddSlidePage() {
                     </div>
 
                     {/* Preview */}
-                    {(desktopImage || mobileImage) && (
+                    {(desktopPreview || mobilePreview) && (
                         <div className="space-y-4">
                             <label className="block text-sm font-medium text-gray-700">پیش‌نمایش</label>
 
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                 {/* Desktop Preview */}
-                                {desktopImage && (
+                                {desktopPreview && (
                                     <div>
                                         <p className="text-xs text-gray-500 mb-2 flex items-center gap-1">
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -334,7 +382,7 @@ export default function AddSlidePage() {
                                         </p>
                                         <div className="relative w-full h-[100px] bg-gray-100 rounded-xl overflow-hidden">
                                             <img
-                                                src={desktopImage}
+                                                src={desktopPreview}
                                                 alt="Desktop Preview"
                                                 className="w-full h-full object-cover"
                                                 onError={(e) => {
@@ -346,7 +394,7 @@ export default function AddSlidePage() {
                                 )}
 
                                 {/* Mobile Preview */}
-                                {mobileImage && (
+                                {mobilePreview && (
                                     <div>
                                         <p className="text-xs text-gray-500 mb-2 flex items-center gap-1">
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -356,7 +404,7 @@ export default function AddSlidePage() {
                                         </p>
                                         <div className="relative w-[180px] h-[45px] bg-gray-100 rounded-lg overflow-hidden mx-auto lg:mx-0">
                                             <img
-                                                src={mobileImage}
+                                                src={mobilePreview}
                                                 alt="Mobile Preview"
                                                 className="w-full h-full object-cover"
                                                 onError={(e) => {

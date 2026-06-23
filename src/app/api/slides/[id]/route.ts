@@ -15,8 +15,8 @@ import { requireAdmin } from '@/lib/admin-auth';
 // Validation schema for updating a slide
 const updateSlideSchema = z.object({
     title: z.string().nullable().optional(),
-    desktopImage: z.string().url().optional(),
-    mobileImage: z.string().url().optional(),
+    desktopImage: z.string().min(1).optional(),
+    mobileImage: z.string().min(1).optional(),
     alt: z.string().min(1).optional(),
     link: z.string().optional().nullable(),
     productId: z.number().optional().nullable(),

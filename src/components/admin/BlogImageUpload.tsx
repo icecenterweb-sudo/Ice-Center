@@ -2,7 +2,6 @@
 
 import { Upload, X, Loader2, Link as LinkIcon } from 'lucide-react';
 import { useState, useRef } from 'react';
-import Image from 'next/image';
 
 interface BlogImageUploadProps {
     label: string;
@@ -11,10 +10,6 @@ interface BlogImageUploadProps {
     onChange: (url: string) => void;
     aspectRatio?: 'video' | 'square' | 'thumbnail';
 }
-
-// Cloudinary unsigned upload config
-const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
 export default function BlogImageUpload({
     label,
@@ -52,27 +47,21 @@ export default function BlogImageUpload({
 
         setUploading(true);
         try {
-            if (!UPLOAD_PRESET || !CLOUD_NAME) {
-                throw new Error('Cloudinary config missing');
-            }
-            // Direct upload to Cloudinary (unsigned)
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('upload_preset', UPLOAD_PRESET);
+            formData.append('folder', 'blog');
 
-            const response = await fetch(
-                `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-                {
-                    method: 'POST',
-                    body: formData,
-                }
-            );
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData,
+            });
 
             const data = await response.json();
-            if (data.secure_url) {
-                onChange(data.secure_url);
+
+            if (data.success && data.url) {
+                onChange(data.url);
             } else {
-                alert(data.error?.message || 'خطا در آپلود تصویر');
+                alert(data.message || 'خطا در آپلود تصویر');
             }
         } catch {
             alert('خطا در آپلود تصویر');
@@ -105,11 +94,10 @@ export default function BlogImageUpload({
             <div className="space-y-3">
                 {value ? (
                     <div className={`relative rounded-lg overflow-hidden bg-gray-100 ${aspectRatio === 'thumbnail' ? aspectClasses.thumbnail : aspectClasses[aspectRatio]}`}>
-                        <Image
+                        <img
                             src={value}
                             alt="Preview"
-                            fill
-                            className="object-cover"
+                            className="w-full h-full object-cover"
                         />
                         <button
                             type="button"

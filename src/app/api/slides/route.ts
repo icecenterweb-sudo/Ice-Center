@@ -13,8 +13,8 @@ import { requireAdmin } from '@/lib/admin-auth';
 // Validation schema for creating a slide
 const createSlideSchema = z.object({
     title: z.string().nullable().optional(),
-    desktopImage: z.string().url('آدرس تصویر دسکتاپ نامعتبر است'),
-    mobileImage: z.string().url('آدرس تصویر موبایل نامعتبر است'),
+    desktopImage: z.string().min(1, 'تصویر دسکتاپ الزامی است'),
+    mobileImage: z.string().min(1, 'تصویر موبایل الزامی است'),
     alt: z.string().min(1, 'متن جایگزین الزامی است'),
     link: z.string().nullable().optional(),
     productId: z.number().nullable().optional(),

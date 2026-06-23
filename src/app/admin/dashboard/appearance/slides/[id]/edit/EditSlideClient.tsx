@@ -33,6 +33,8 @@ export default function EditSlideClient({ id }: { id: string }) {
     const [title, setTitle] = useState('');
     const [desktopImage, setDesktopImage] = useState('');
     const [mobileImage, setMobileImage] = useState('');
+    const [desktopPreview, setDesktopPreview] = useState('');
+    const [mobilePreview, setMobilePreview] = useState('');
     const [alt, setAlt] = useState('');
     const [linkType, setLinkType] = useState<LinkType>('none');
     const [customLink, setCustomLink] = useState('');
@@ -44,6 +46,14 @@ export default function EditSlideClient({ id }: { id: string }) {
     // Data for selects
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
+
+    // Clean up object URLs on unmount
+    useEffect(() => {
+        return () => {
+            if (desktopPreview.startsWith('blob:')) URL.revokeObjectURL(desktopPreview);
+            if (mobilePreview.startsWith('blob:')) URL.revokeObjectURL(mobilePreview);
+        };
+    }, [desktopPreview, mobilePreview]);
 
     // Load slide data
     useEffect(() => {
@@ -67,6 +77,8 @@ export default function EditSlideClient({ id }: { id: string }) {
                     setTitle(slide.title || '');
                     setDesktopImage(slide.desktopImage);
                     setMobileImage(slide.mobileImage);
+                    setDesktopPreview(slide.desktopImage);
+                    setMobilePreview(slide.mobileImage);
                     setAlt(slide.alt);
                     setIsActive(slide.isActive);
                     setOrder(slide.order.toString());
@@ -100,6 +112,15 @@ export default function EditSlideClient({ id }: { id: string }) {
         if (type === 'desktop') setIsUploadingDesktop(true);
         else setIsUploadingMobile(true);
 
+        const localUrl = URL.createObjectURL(file);
+        if (type === 'desktop') {
+            if (desktopPreview.startsWith('blob:')) URL.revokeObjectURL(desktopPreview);
+            setDesktopPreview(localUrl);
+        } else {
+            if (mobilePreview.startsWith('blob:')) URL.revokeObjectURL(mobilePreview);
+            setMobilePreview(localUrl);
+        }
+
         try {
             const formData = new FormData();
             formData.append('file', file);
@@ -113,14 +134,31 @@ export default function EditSlideClient({ id }: { id: string }) {
             const data = await response.json();
 
             if (data.url) {
-                if (type === 'desktop') setDesktopImage(data.url);
-                else setMobileImage(data.url);
+                if (type === 'desktop') {
+                    setDesktopImage(data.url);
+                } else {
+                    setMobileImage(data.url);
+                }
             } else {
                 setError(data.error || 'خطا در آپلود تصویر');
+                if (type === 'desktop') {
+                    setDesktopPreview('');
+                    URL.revokeObjectURL(localUrl);
+                } else {
+                    setMobilePreview('');
+                    URL.revokeObjectURL(localUrl);
+                }
             }
         } catch (err) {
             console.error('Upload error:', err);
             setError('خطا در آپلود تصویر');
+            if (type === 'desktop') {
+                setDesktopPreview('');
+                URL.revokeObjectURL(localUrl);
+            } else {
+                setMobilePreview('');
+                URL.revokeObjectURL(localUrl);
+            }
         } finally {
             if (type === 'desktop') setIsUploadingDesktop(false);
             else setIsUploadingMobile(false);
@@ -233,7 +271,10 @@ export default function EditSlideClient({ id }: { id: string }) {
                             <input
                                 type="text"
                                 value={desktopImage}
-                                onChange={(e) => setDesktopImage(e.target.value)}
+                                onChange={(e) => {
+                                    setDesktopImage(e.target.value);
+                                    setDesktopPreview(e.target.value);
+                                }}
                                 placeholder="آدرس (URL) تصویر دسکتاپ"
                                 className="flex-1 px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900"
                             />
@@ -268,7 +309,10 @@ export default function EditSlideClient({ id }: { id: string }) {
                             <input
                                 type="text"
                                 value={mobileImage}
-                                onChange={(e) => setMobileImage(e.target.value)}
+                                onChange={(e) => {
+                                    setMobileImage(e.target.value);
+                                    setMobilePreview(e.target.value);
+                                }}
                                 placeholder="آدرس (URL) تصویر موبایل"
                                 className="flex-1 px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900"
                             />
@@ -293,6 +337,16 @@ export default function EditSlideClient({ id }: { id: string }) {
                             </button>
                         </div>
                         <p className="text-xs text-gray-500 mt-1">اندازه پیشنهادی: 768×180 پیکسل</p>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setMobileImage(desktopImage);
+                                setMobilePreview(desktopImage);
+                            }}
+                            className="text-xs text-ocean hover:underline mt-1"
+                        >
+                            استفاده از تصویر دسکتاپ
+                        </button>
                     </div>
 
                     <div>
@@ -307,6 +361,59 @@ export default function EditSlideClient({ id }: { id: string }) {
                             className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900"
                         />
                     </div>
+
+                    {/* Preview */}
+                    {(desktopPreview || mobilePreview) && (
+                        <div className="space-y-4">
+                            <label className="block text-sm font-medium text-gray-700">پیش‌نمایش</label>
+
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                {/* Desktop Preview */}
+                                {desktopPreview && (
+                                    <div>
+                                        <p className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                            </svg>
+                                            دسکتاپ (1920×400)
+                                        </p>
+                                        <div className="relative w-full h-[100px] bg-gray-100 rounded-xl overflow-hidden">
+                                            <img
+                                                src={desktopPreview}
+                                                alt="Desktop Preview"
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/1920x400/gray/white?text=Image+Error';
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Mobile Preview */}
+                                {mobilePreview && (
+                                    <div>
+                                        <p className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                            </svg>
+                                            موبایل (768×180)
+                                        </p>
+                                        <div className="relative w-[180px] h-[45px] bg-gray-100 rounded-lg overflow-hidden mx-auto lg:mx-0">
+                                            <img
+                                                src={mobilePreview}
+                                                alt="Mobile Preview"
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/768x180/gray/white?text=Image+Error';
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
