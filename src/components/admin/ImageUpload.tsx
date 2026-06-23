@@ -1,8 +1,7 @@
 'use client';
 
 import { Upload, X, Loader2 } from 'lucide-react';
-import { useState } from 'react';
-import Image from 'next/image';
+import { useEffect, useState, useRef } from 'react';
 
 interface ImageUploadProps {
     currentImage?: string | null;
@@ -12,8 +11,28 @@ interface ImageUploadProps {
 
 export default function ImageUpload({ currentImage, onImageChange, folder }: ImageUploadProps) {
     const [preview, setPreview] = useState<string | null>(currentImage || null);
+    const [imageUrl, setImageUrl] = useState<string | null>(currentImage || null);
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const localPreviewRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (localPreviewRef.current) {
+            URL.revokeObjectURL(localPreviewRef.current);
+            localPreviewRef.current = null;
+        }
+
+        setPreview(currentImage || null);
+        setImageUrl(currentImage || null);
+    }, [currentImage]);
+
+    useEffect(() => {
+        return () => {
+            if (localPreviewRef.current) {
+                URL.revokeObjectURL(localPreviewRef.current);
+            }
+        };
+    }, []);
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -21,6 +40,7 @@ export default function ImageUpload({ currentImage, onImageChange, folder }: Ima
 
         if (!file) {
             setPreview(null);
+            setImageUrl(null);
             onImageChange?.(null);
             return;
         }
@@ -38,7 +58,12 @@ export default function ImageUpload({ currentImage, onImageChange, folder }: Ima
         }
 
         // Create local preview immediately for UX
+        // Revoke any previous local preview
+        if (localPreviewRef.current) {
+            URL.revokeObjectURL(localPreviewRef.current);
+        }
         const localPreview = URL.createObjectURL(file);
+        localPreviewRef.current = localPreview;
         setPreview(localPreview);
         setIsUploading(true);
 
@@ -54,28 +79,37 @@ export default function ImageUpload({ currentImage, onImageChange, folder }: Ima
                 body: formData,
             });
 
-            const result = await response.json();
+            const result = await response.json().catch(() => ({ message: 'Upload failed' }));
 
-            if (!result.success) {
+            if (!response.ok || !result?.success || !result.url) {
                 throw new Error(result.message || 'خطا در آپلود تصویر');
             }
 
-            // Update preview with Cloudinary URL
+            // Update preview with the uploaded URL and revoke the local blob
             setPreview(result.url);
+            setImageUrl(result.url);
             onImageChange?.(result.url);
-        } catch (err: any) {
-            setError(err.message || 'خطا در آپلود تصویر');
-            setPreview(null);
-            onImageChange?.(null);
+            URL.revokeObjectURL(localPreview);
+            localPreviewRef.current = null;
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Upload failed';
+            setError(message);
+            setPreview(imageUrl);
+            URL.revokeObjectURL(localPreview);
+            localPreviewRef.current = null;
         } finally {
             setIsUploading(false);
-            // Revoke the local object URL
-            URL.revokeObjectURL(localPreview);
+            e.target.value = '';
         }
     };
 
     const clearImage = () => {
+        if (localPreviewRef.current) {
+            URL.revokeObjectURL(localPreviewRef.current);
+            localPreviewRef.current = null;
+        }
         setPreview(null);
+        setImageUrl(null);
         setError(null);
         onImageChange?.(null);
     };
@@ -92,11 +126,10 @@ export default function ImageUpload({ currentImage, onImageChange, folder }: Ima
                                 <Loader2 className="w-8 h-8 text-white animate-spin" />
                             </div>
                         )}
-                        <Image
+                        <img
                             src={preview}
                             alt="Category preview"
-                            fill
-                            className="object-cover"
+                            className="w-full h-full object-cover"
                         />
                     </div>
                     <button
@@ -130,7 +163,7 @@ export default function ImageUpload({ currentImage, onImageChange, folder }: Ima
             )}
 
             {/* Hidden input to store Cloudinary URL for form submission */}
-            <input type="hidden" name="imageUrl" value={preview || ''} />
+            <input type="hidden" name="imageUrl" value={imageUrl || ''} />
 
             <p className="text-xs text-gray-500 flex items-start gap-1.5">
                 <span className="text-blue-500 mt-0.5">💡</span>

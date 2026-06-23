@@ -1,7 +1,7 @@
 'use client';
 
 import { Upload, X, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface MultiImageUploadProps {
     currentImages?: string[];
@@ -11,22 +11,39 @@ interface MultiImageUploadProps {
 }
 
 export default function MultiImageUpload({
-    currentImages = [],
+    currentImages,
     onImagesChange,
     maxImages = 5,
     folder
 }: MultiImageUploadProps) {
-    const [images, setImages] = useState<string[]>(currentImages);
+    const [images, setImages] = useState<string[]>(() => currentImages ?? []);
     const [uploadingCount, setUploadingCount] = useState(0);
     const [error, setError] = useState<string | null>(null);
+    const [pendingPreviewUrls, setPendingPreviewUrls] = useState<string[]>([]);
+    const [blobPreviews, setBlobPreviews] = useState<Record<string, string>>({});
+    const objectUrlsRef = useRef<Set<string>>(new Set());
+
+    useEffect(() => {
+        setImages(currentImages ?? []);
+    }, [currentImages]);
+
+    // Clean up object URLs on unmount
+    useEffect(() => {
+        const objectUrls = objectUrlsRef.current;
+        return () => {
+            objectUrls.forEach(url => URL.revokeObjectURL(url));
+            objectUrls.clear();
+        };
+    }, []);
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFiles = Array.from(e.target.files || []);
         setError(null);
 
         // Check total count
-        if (images.length + selectedFiles.length > maxImages) {
+        if (images.length + pendingPreviewUrls.length + selectedFiles.length > maxImages) {
             setError(`حداکثر ${maxImages} تصویر می‌توانید انتخاب کنید`);
+            e.target.value = '';
             return;
         }
 
@@ -48,45 +65,98 @@ export default function MultiImageUpload({
             validFiles.push(file);
         }
 
-        if (validFiles.length === 0) return;
+        if (validFiles.length === 0) {
+            e.target.value = '';
+            return;
+        }
 
         setUploadingCount(validFiles.length);
 
+        // Create local object URLs for instant previews
+        const tempBlobPreviews = validFiles.map(file => ({
+            file,
+            blobUrl: URL.createObjectURL(file)
+        }));
+        tempBlobPreviews.forEach(({ blobUrl }) => objectUrlsRef.current.add(blobUrl));
+        setPendingPreviewUrls(prev => [
+            ...prev,
+            ...tempBlobPreviews.map(({ blobUrl }) => blobUrl),
+        ]);
+
+        const newBlobPreviews: Record<string, string> = {};
+
         // Upload all files in parallel
-        const uploadPromises = validFiles.map(async (file) => {
+        const uploadPromises = tempBlobPreviews.map(async ({ file, blobUrl }) => {
             const formData = new FormData();
             formData.append('file', file);
             if (folder) {
                 formData.append('folder', folder);
             }
 
-            const response = await fetch('/api/upload', {
-                method: 'POST',
-                body: formData,
-            });
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
 
-            const result = await response.json();
+                const result = await response.json().catch(() => ({ message: 'Upload failed' }));
 
-            if (!result.success) {
-                throw new Error(result.message || 'خطا در آپلود تصویر');
+                if (!response.ok || !result?.success || !result.url) {
+                    URL.revokeObjectURL(blobUrl);
+                    objectUrlsRef.current.delete(blobUrl);
+                    throw new Error(result.message || 'خطا در آپلود تصویر');
+                }
+
+                newBlobPreviews[result.url] = blobUrl;
+                return result.url;
+            } catch (err) {
+                URL.revokeObjectURL(blobUrl);
+                objectUrlsRef.current.delete(blobUrl);
+                throw err;
             }
-
-            return result.url;
         });
 
-        try {
-            const uploadedUrls = await Promise.all(uploadPromises);
-            const newImages = [...images, ...uploadedUrls];
-            setImages(newImages);
-            onImagesChange?.(newImages);
-        } catch (err: any) {
-            setError(err.message || 'خطا در آپلود تصاویر');
-        } finally {
-            setUploadingCount(0);
+        const uploadResults = await Promise.allSettled(uploadPromises);
+        const uploadedUrls = uploadResults
+            .filter((result): result is PromiseFulfilledResult<string> => result.status === 'fulfilled')
+            .map(result => result.value);
+
+        if (uploadedUrls.length > 0) {
+            setBlobPreviews(prev => ({ ...prev, ...newBlobPreviews }));
+            setImages(prev => {
+                const newImages = [...prev, ...uploadedUrls];
+                onImagesChange?.(newImages);
+                return newImages;
+            });
         }
+
+        const failedUpload = uploadResults.find(
+            (result): result is PromiseRejectedResult => result.status === 'rejected'
+        );
+
+        if (failedUpload) {
+            const message = failedUpload.reason instanceof Error ? failedUpload.reason.message : 'Upload failed';
+            setError(message);
+        }
+
+        setPendingPreviewUrls(prev => prev.filter(
+            url => !tempBlobPreviews.some(({ blobUrl }) => blobUrl === url)
+        ));
+        setUploadingCount(prev => Math.max(0, prev - validFiles.length));
+        e.target.value = '';
     };
 
     const removeImage = (index: number) => {
+        const imageUrl = images[index];
+        if (blobPreviews[imageUrl]) {
+            URL.revokeObjectURL(blobPreviews[imageUrl]);
+            objectUrlsRef.current.delete(blobPreviews[imageUrl]);
+            setBlobPreviews(prev => {
+                const updated = { ...prev };
+                delete updated[imageUrl];
+                return updated;
+            });
+        }
         const newImages = images.filter((_, i) => i !== index);
         setImages(newImages);
         onImagesChange?.(newImages);
@@ -99,7 +169,7 @@ export default function MultiImageUpload({
                     تصاویر محصول (حداکثر {maxImages} تصویر)
                 </label>
                 <span className="text-xs text-gray-500">
-                    {images.length} / {maxImages}
+                    {images.length + pendingPreviewUrls.length} / {maxImages}
                 </span>
             </div>
 
@@ -109,7 +179,7 @@ export default function MultiImageUpload({
                     <div key={index} className="relative group">
                         <div className="relative w-full h-32 rounded-xl overflow-hidden border-2 border-gray-200">
                             <img
-                                src={image}
+                                src={blobPreviews[image] || image}
                                 alt={`Product ${index + 1}`}
                                 className="w-full h-full object-cover"
                             />
@@ -129,11 +199,18 @@ export default function MultiImageUpload({
                     </div>
                 ))}
 
-                {/* Loading placeholders */}
-                {uploadingCount > 0 && [...Array(uploadingCount)].map((_, index) => (
-                    <div key={`loading-${index}`} className="relative">
-                        <div className="w-full h-32 rounded-xl overflow-hidden border-2 border-gray-200 bg-gray-100 flex items-center justify-center">
-                            <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                {/* Uploading previews */}
+                {pendingPreviewUrls.map((url, index) => (
+                    <div key={`uploading-${url}-${index}`} className="relative">
+                        <div className="relative w-full h-32 rounded-xl overflow-hidden border-2 border-gray-200 bg-gray-100">
+                            <img
+                                src={url}
+                                alt={`Uploading product ${index + 1}`}
+                                className="w-full h-full object-cover opacity-70"
+                            />
+                            <div className="absolute inset-0 bg-black/35 flex items-center justify-center">
+                                <Loader2 className="w-8 h-8 text-white animate-spin" />
+                            </div>
                         </div>
                     </div>
                 ))}
