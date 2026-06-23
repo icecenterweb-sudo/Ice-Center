@@ -49,3 +49,7 @@ next-env.d.ts
 # uploads
 /public/uploads/*
 /uploads/*
+
+# export directories
+/export/
+/export.zip
