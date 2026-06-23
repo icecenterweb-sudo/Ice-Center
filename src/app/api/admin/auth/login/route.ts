@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { generateAdminToken } from '@/lib/jwt'
+import { ADMIN_TOKEN_COOKIE, generateAdminToken, getTokenCookieOptionsForRequest } from '@/lib/jwt'
 import { recordAnalyticsEvent } from '@/lib/analytics'
 import { checkRateLimit, getClientIp, RATE_LIMITS } from '@/lib/rate-limiter'
 
@@ -110,15 +110,11 @@ export async function POST(request: NextRequest) {
             },
         })
 
-        // Set httpOnly cookie
-        const isProduction = process.env.NODE_ENV === 'production'
-        response.cookies.set('admin_token', token, {
-            httpOnly: true,
-            secure: isProduction,
-            sameSite: 'lax',
-            maxAge: 60 * 60 * 24 * 30, // 30 days
-            path: '/',
-        })
+        response.cookies.set(
+            ADMIN_TOKEN_COOKIE,
+            token,
+            getTokenCookieOptionsForRequest(request)
+        )
 
         await recordAnalyticsEvent({
             type: 'ADMIN_LOGIN',

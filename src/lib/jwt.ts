@@ -122,12 +122,25 @@ export async function verifyUserToken(token: string): Promise<UserTokenPayload |
 export const ADMIN_TOKEN_COOKIE = 'admin_token'
 export const USER_TOKEN_COOKIE = 'user_token'
 
-export function getTokenCookieOptions(isProduction: boolean) {
+export function isSecureRequest(request: Request): boolean {
+    const forwardedProto = request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim()
+    if (forwardedProto) {
+        return forwardedProto === 'https'
+    }
+
+    return new URL(request.url).protocol === 'https:'
+}
+
+export function getTokenCookieOptions(secure: boolean) {
     return {
         httpOnly: true,
-        secure: isProduction,
+        secure,
         sameSite: 'lax' as const,
         maxAge: 60 * 60 * 24 * 30, // 30 days
         path: '/',
     }
+}
+
+export function getTokenCookieOptionsForRequest(request: Request) {
+    return getTokenCookieOptions(isSecureRequest(request))
 }

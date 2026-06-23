@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { isValidIranianMobile, normalizePhone } from '@/lib/sms'
 import { verifyOtp } from '@/lib/otp'
-import { generateUserToken, USER_TOKEN_COOKIE, getTokenCookieOptions } from '@/lib/jwt'
+import { generateUserToken, USER_TOKEN_COOKIE, getTokenCookieOptionsForRequest } from '@/lib/jwt'
 import { recordAnalyticsEvent } from '@/lib/analytics'
 import { toEnglishDigits } from '@/lib/numbers'
 
@@ -102,12 +102,10 @@ export async function POST(request: NextRequest) {
             isNewUser: result.isNewUser,
         })
 
-        // Set httpOnly cookie
-        const isProduction = process.env.NODE_ENV === 'production'
         response.cookies.set(
             USER_TOKEN_COOKIE,
             token,
-            getTokenCookieOptions(isProduction)
+            getTokenCookieOptionsForRequest(request)
         )
 
         return response
