@@ -8,6 +8,7 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { faIR } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
 
 interface Room {
     id: number;
@@ -123,15 +124,19 @@ export default function AdminSupportPage() {
         setReplyText('');
         setIsSending(true);
         try {
-            await fetch(`/api/admin/support/rooms/${selectedRoomId}/reply`, {
+            const res = await fetch(`/api/admin/support/rooms/${selectedRoomId}/reply`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ text }),
             });
+            if (!res.ok) throw new Error('reply failed');
             await fetchMessages(selectedRoomId);
             await fetchRooms();
         } catch (err) {
             console.error('Failed to send reply:', err);
+            // Restore the typed text so it isn't lost, and tell the admin
+            setReplyText(text);
+            toast.error('ارسال پاسخ ناموفق بود. دوباره تلاش کنید.');
         } finally {
             setIsSending(false);
         }
@@ -140,17 +145,20 @@ export default function AdminSupportPage() {
     const handleToggleStatus = async (roomId: number, currentStatus: 'OPEN' | 'CLOSED') => {
         const newStatus = currentStatus === 'OPEN' ? 'CLOSED' : 'OPEN';
         try {
-            await fetch(`/api/admin/support/rooms/${roomId}/status`, {
+            const res = await fetch(`/api/admin/support/rooms/${roomId}/status`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: newStatus }),
             });
+            if (!res.ok) throw new Error('status toggle failed');
             await fetchRooms();
             if (selectedRoomId === roomId) {
                 await fetchMessages(roomId);
             }
+            toast.success(newStatus === 'CLOSED' ? 'گفتگو بسته شد' : 'گفتگو باز شد');
         } catch (err) {
             console.error('Failed to toggle status:', err);
+            toast.error('تغییر وضعیت ناموفق بود.');
         }
     };
 

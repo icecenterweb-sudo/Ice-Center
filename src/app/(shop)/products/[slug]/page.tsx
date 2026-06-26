@@ -91,7 +91,7 @@ export default async function ProductPage({ params }: PageProps) {
         reviewCount: product.reviewCount || 0,
         images: product.images.length > 0
             ? product.images
-            : ['https://via.placeholder.com/500x500?text=No+Image'],
+            : ['/no-image.svg'],
         thumbnail: product.thumbnail || (product.images.length > 0 ? product.images[0] : null),
         warranty: product.warranty || 'گارانتی آیس سنتر',
         seller: 'فروشنده: آیس سنتر ایران',

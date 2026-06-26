@@ -92,7 +92,7 @@ function transformProducts(products: DBProduct[]): ProductForDisplay[] {
         return {
             id: p.id,
             title: p.name,
-            image: p.thumbnail || 'https://via.placeholder.com/300x300?text=No+Image',
+            image: p.thumbnail || '/no-image.svg',
             price: pricing.effectivePrice,
             oldPrice: pricing.hasOffer ? pricing.originalPrice : undefined,
             href: `/products/${p.slug}`,

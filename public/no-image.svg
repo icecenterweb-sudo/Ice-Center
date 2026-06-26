@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500" role="img" aria-label="بدون تصویر">
+  <rect width="500" height="500" fill="#f1f5f9"/>
+  <g fill="none" stroke="#cbd5e1" stroke-width="6">
+    <rect x="140" y="150" width="220" height="170" rx="12"/>
+    <circle cx="195" cy="205" r="22"/>
+    <path d="M160 300l60-55 45 40 55-60 60 75" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="250" y="380" font-family="Tahoma, Arial, sans-serif" font-size="26" fill="#94a3b8" text-anchor="middle">بدون تصویر</text>
+</svg>
