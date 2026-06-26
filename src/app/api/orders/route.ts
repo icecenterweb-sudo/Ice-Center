@@ -5,6 +5,12 @@ import { cookies } from 'next/headers';
 import { getCartItemPrices } from '@/lib/offers/queries';
 
 /**
+ * Thrown for user-facing order failures (e.g. insufficient stock).
+ * Carries a Persian message that is safe to return to the client.
+ */
+class OrderError extends Error {}
+
+/**
  * GET /api/orders - Get user's order history
  */
 export async function GET() {
@@ -118,6 +124,41 @@ export async function POST(request: NextRequest) {
 
         // Create order in transaction
         const order = await prisma.$transaction(async (tx) => {
+            // Re-check stock atomically and decrement. Locking each row
+            // (FOR UPDATE) prevents two concurrent checkouts from overselling.
+            // Acquire locks in a deterministic (id-sorted) order so two
+            // concurrent checkouts sharing the same products can't deadlock.
+            const lockOrder = [...orderItems].sort((a, b) => a.productId - b.productId);
+            for (const item of lockOrder) {
+                const rows = await tx.$queryRaw<{ stock: number; name: string }[]>`
+                    SELECT "stock", "name" FROM "Product" WHERE "id" = ${item.productId} FOR UPDATE
+                `;
+                const current = rows[0];
+                if (!current) {
+                    throw new OrderError(`محصول «${item.productName}» یافت نشد`);
+                }
+                if (current.stock < item.quantity) {
+                    throw new OrderError(
+                        `موجودی «${current.name}» کافی نیست (موجودی: ${current.stock})`
+                    );
+                }
+            }
+
+            // Decrement stock and flip inventory status when it hits zero.
+            for (const item of lockOrder) {
+                const updated = await tx.product.update({
+                    where: { id: item.productId },
+                    data: { stock: { decrement: item.quantity } },
+                    select: { stock: true },
+                });
+                if (updated.stock <= 0) {
+                    await tx.product.update({
+                        where: { id: item.productId },
+                        data: { inventoryStatus: 'OUT_OF_STOCK' },
+                    });
+                }
+            }
+
             // Create order
             const newOrder = await tx.order.create({
                 data: {
@@ -175,6 +216,10 @@ export async function POST(request: NextRequest) {
             message: 'سفارش با موفقیت ثبت شد',
         });
     } catch (error) {
+        // Surface user-facing failures (e.g. insufficient stock) with their message
+        if (error instanceof OrderError) {
+            return NextResponse.json({ error: error.message }, { status: 409 });
+        }
         console.error('Error creating order:', error);
         return NextResponse.json({ error: 'خطا در ثبت سفارش' }, { status: 500 });
     }
