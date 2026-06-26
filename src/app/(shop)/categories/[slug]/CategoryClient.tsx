@@ -746,7 +746,118 @@ export default function CategoryClient({
                         </div>
 
                         <div className="p-4">
-                            <p className="text-sm text-neutral-500">Mobile filters coming soon...</p>
+                            {/* Price ranges */}
+                            <div className="mb-6">
+                                <div className="flex items-center gap-2 mb-3 text-sm font-medium text-neutral-700">
+                                    <Tag size={16} />
+                                    <span>محدوده قیمت</span>
+                                </div>
+                                <div className="space-y-2">
+                                    {PRICE_RANGES.map((range, idx) => {
+                                        const isActive =
+                                            parseInt(currentFilters.minPrice || '0') === range.min &&
+                                            (range.max === Infinity ? !currentFilters.maxPrice : parseInt(currentFilters.maxPrice || '0') === range.max);
+                                        return (
+                                            <button
+                                                key={idx}
+                                                onClick={() => handlePriceRange(range.min, range.max)}
+                                                className={`w-full text-right px-3 py-2 text-sm rounded-lg transition-all ${isActive
+                                                    ? 'bg-blue-50 text-blue-600 font-medium border border-blue-200'
+                                                    : 'text-neutral-600 hover:bg-neutral-50'
+                                                    }`}
+                                            >
+                                                {range.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Brands */}
+                            {availableBrands.length > 0 && (
+                                <div className="mb-6">
+                                    <div className="flex items-center gap-2 mb-3 text-sm font-medium text-neutral-700">
+                                        <Tag size={16} />
+                                        <span>برند</span>
+                                    </div>
+                                    <div className="space-y-1 max-h-56 overflow-y-auto">
+                                        {availableBrands.map((brand) => (
+                                            <label
+                                                key={brand}
+                                                className="flex items-center gap-2.5 py-2 px-2 cursor-pointer hover:bg-blue-50 rounded-lg transition-colors group"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={currentFilters.brands.includes(brand)}
+                                                    onChange={() => handleBrandToggle(brand)}
+                                                    className="w-4 h-4 text-blue-500 border-neutral-300 rounded focus:ring-blue-500 focus:ring-offset-0"
+                                                />
+                                                <span className={`text-sm flex-1 ${currentFilters.brands.includes(brand) ? 'text-blue-600 font-medium' : 'text-neutral-600 group-hover:text-neutral-800'}`}>
+                                                    {brand}
+                                                </span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Availability */}
+                            <div className="mb-6">
+                                <div className="flex items-center gap-2 mb-3 text-sm font-medium text-neutral-700">
+                                    <Package size={16} />
+                                    <span>وضعیت موجودی</span>
+                                </div>
+                                <div className="space-y-1">
+                                    {AVAILABILITY_OPTIONS.map((option) => (
+                                        <label
+                                            key={option.value}
+                                            className="flex items-center gap-2.5 py-2 px-2 cursor-pointer hover:bg-blue-50 rounded-lg transition-colors group"
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={currentFilters.availability.includes(option.value)}
+                                                onChange={() => handleAvailabilityToggle(option.value)}
+                                                className="w-4 h-4 text-blue-500 border-neutral-300 rounded focus:ring-blue-500 focus:ring-offset-0"
+                                            />
+                                            <span className={`text-sm flex-1 ${currentFilters.availability.includes(option.value) ? 'text-blue-600 font-medium' : 'text-neutral-600 group-hover:text-neutral-800'}`}>
+                                                {option.label}
+                                            </span>
+                                            <div className={`w-2 h-2 rounded-full ${option.color.replace('text-', 'bg-')}`} />
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Only Discount */}
+                            <label className="flex items-center gap-3 py-2 px-2 cursor-pointer hover:bg-blue-50 rounded-lg transition-colors mb-4">
+                                <input
+                                    type="checkbox"
+                                    checked={currentFilters.onlyDiscount}
+                                    onChange={handleDiscountToggle}
+                                    className="w-4 h-4 text-blue-500 border-neutral-300 rounded focus:ring-blue-500 focus:ring-offset-0"
+                                />
+                                <span className={`text-sm font-medium ${currentFilters.onlyDiscount ? 'text-rose-600' : 'text-neutral-700'}`}>
+                                    فقط کالاهای تخفیف‌دار
+                                </span>
+                            </label>
+
+                            {/* Actions */}
+                            <div className="flex gap-2 pt-2 border-t border-neutral-100">
+                                {activeFilterCount > 0 && (
+                                    <button
+                                        onClick={() => { clearFilters(); setMobileFiltersOpen(false); }}
+                                        className="flex-1 py-2.5 text-sm font-medium text-neutral-600 border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors"
+                                    >
+                                        پاک کردن
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => setMobileFiltersOpen(false)}
+                                    className="flex-1 py-2.5 text-sm font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                                >
+                                    مشاهده نتایج
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
