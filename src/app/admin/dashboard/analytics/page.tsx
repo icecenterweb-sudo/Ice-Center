@@ -281,37 +281,66 @@ export default async function AdminAnalyticsPage() {
         })
         const inactiveUsers = Math.max(0, totalUsers - activeUsers)
 
-        // 7 & 8. Load Trend & Traffic Data to calculate peak times and daily trends
-        const trendAndTrafficData = await analyticsEventClient.findMany({
-            where: {
-                type: { in: ['PAGE_VIEW', 'ORDER_SUBMIT'] },
-                createdAt: { gte: start30 }
-            },
-            select: {
-                type: true,
-                createdAt: true
-            }
-        })
+        // 7 & 8. Peak-hour and daily trends.
+        // Aggregate in SQL bucketed by Iran local time (Asia/Tehran) so "peak
+        // hour" and day boundaries match the store's actual operating clock —
+        // not the server's UTC. Avoids loading every event into memory.
+        const IRAN_TZ = 'Asia/Tehran'
 
+        const peakRows = await prisma.$queryRaw<
+            { hour: number; visits: bigint; orders: bigint }[]
+        >`
+            SELECT
+                EXTRACT(HOUR FROM "createdAt" AT TIME ZONE 'UTC' AT TIME ZONE ${IRAN_TZ})::int AS hour,
+                COUNT(*) FILTER (WHERE "type" = 'PAGE_VIEW')    AS visits,
+                COUNT(*) FILTER (WHERE "type" = 'ORDER_SUBMIT') AS orders
+            FROM "AnalyticsEvent"
+            WHERE "type" IN ('PAGE_VIEW', 'ORDER_SUBMIT')
+              AND "createdAt" >= ${start30}
+            GROUP BY hour
+        `
+        const peakByHour = new Map(
+            peakRows.map(r => [r.hour, { visits: Number(r.visits), orders: Number(r.orders) }])
+        )
         const peakTraffic = Array.from({ length: 24 }, (_, hour) => {
-            const hourEvents = trendAndTrafficData.filter((e: any) => new Date(e.createdAt).getHours() === hour)
-            const hourVisits = hourEvents.filter((e: any) => e.type === 'PAGE_VIEW').length
-            const hourOrders = hourEvents.filter((e: any) => e.type === 'ORDER_SUBMIT').length
-            return {
-                hour,
-                visits: hourVisits,
-                orders: hourOrders
-            }
+            const row = peakByHour.get(hour)
+            return { hour, visits: row?.visits ?? 0, orders: row?.orders ?? 0 }
         })
 
+        const dailyRows = await prisma.$queryRaw<
+            { day: Date; visits: bigint; orders: bigint }[]
+        >`
+            SELECT
+                date_trunc('day', "createdAt" AT TIME ZONE 'UTC' AT TIME ZONE ${IRAN_TZ}) AS day,
+                COUNT(*) FILTER (WHERE "type" = 'PAGE_VIEW')    AS visits,
+                COUNT(*) FILTER (WHERE "type" = 'ORDER_SUBMIT') AS orders
+            FROM "AnalyticsEvent"
+            WHERE "type" IN ('PAGE_VIEW', 'ORDER_SUBMIT')
+              AND "createdAt" >= ${start30}
+            GROUP BY day
+        `
+        // Key buckets by Iran-local YYYY-MM-DD so each calendar day lines up
+        // regardless of the server's timezone.
+        const iranDayKey = (d: Date) =>
+            new Intl.DateTimeFormat('en-CA', {
+                timeZone: IRAN_TZ,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+            }).format(d)
+        const dailyByDay = new Map(
+            dailyRows.map(r => [
+                iranDayKey(new Date(r.day)),
+                { visits: Number(r.visits), orders: Number(r.orders) },
+            ])
+        )
         const daily = Array.from({ length: 30 }, (_, index) => {
-            const dayStart = startOfDay(new Date(now.getTime() - (29 - index) * DAY_MS))
-            const dayEnd = new Date(dayStart.getTime() + DAY_MS)
-            const dayEvents = trendAndTrafficData.filter((e: any) => e.createdAt >= dayStart && e.createdAt < dayEnd)
+            const dayStart = new Date(now.getTime() - (29 - index) * DAY_MS)
+            const row = dailyByDay.get(iranDayKey(dayStart))
             return {
                 label: dayStart.toLocaleDateString('fa-IR', { day: '2-digit', month: '2-digit' }),
-                visits: dayEvents.filter((e: any) => e.type === 'PAGE_VIEW').length,
-                logins: dayEvents.filter((e: any) => e.type === 'ORDER_SUBMIT').length,
+                visits: row?.visits ?? 0,
+                logins: row?.orders ?? 0,
             }
         })
 
