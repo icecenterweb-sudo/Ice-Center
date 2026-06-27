@@ -91,9 +91,21 @@ export async function getSimilarProducts(productId: number, subcategoryId: numbe
 }
 
 /**
- * Get product reviews
+ * Get product reviews (approved only, for public display)
  */
 export async function getProductReviews(productId: number) {
-    // Placeholder for future reviews implementation
-    return [];
+    return await prisma.productReview.findMany({
+        where: { productId, status: 'APPROVED' },
+        orderBy: { createdAt: 'desc' },
+        select: {
+            id: true,
+            rating: true,
+            title: true,
+            comment: true,
+            createdAt: true,
+            user: {
+                select: { firstName: true, lastName: true },
+            },
+        },
+    });
 }

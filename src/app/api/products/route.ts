@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
 import prisma from '@/lib/db';
 import { getProductsCached, invalidateProductsCache } from '@/lib/cache/products';
-import { requireAdmin } from '@/lib/admin-auth';
+import { requireRole } from '@/lib/admin-auth';
 import { z } from 'zod';
 import { checkRateLimit, getClientIp, RATE_LIMITS } from '@/lib/rate-limiter';
 
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // CRITICAL: Verify admin authentication (DB-backed check)
-    const auth = await requireAdmin(request);
+    const auth = await requireRole(request, 'PRODUCTS');
     if (!auth.ok) {
       return auth.response;
     }

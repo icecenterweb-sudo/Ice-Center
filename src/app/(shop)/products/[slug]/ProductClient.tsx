@@ -31,6 +31,15 @@ type SimilarProduct = {
     brand: string | null;
 };
 
+type Review = {
+    id: number;
+    rating: number;
+    title: string | null;
+    comment: string;
+    createdAt: Date;
+    user: { firstName: string | null; lastName: string | null } | null;
+};
+
 type ProductClientProps = {
     product: {
         id: number;
@@ -57,9 +66,10 @@ type ProductClientProps = {
         sku?: string | null;
     };
     similarProducts?: SimilarProduct[];
+    reviews?: Review[];
 };
 
-export default function ProductClient({ product, similarProducts = [] }: ProductClientProps) {
+export default function ProductClient({ product, similarProducts = [], reviews = [] }: ProductClientProps) {
     const [activeTab, setActiveTab] = useState('desc');
 
     useEffect(() => {
@@ -76,17 +86,14 @@ export default function ProductClient({ product, similarProducts = [] }: Product
         description: '',
     }));
 
-    // Placeholder reviews (will come from DB later)
-    const reviews = [
-        {
-            id: 1,
-            customerName: 'کاربر ناشناس',
-            businessType: 'خریدار',
-            rating: 5,
-            comment: 'هنوز نظری ثبت نشده است.',
-            date: '-',
-        },
-    ];
+    // Map DB reviews to the format ProductReviews expects
+    const mappedReviews = reviews.map((r) => ({
+        id: r.id,
+        customerName: [r.user?.firstName, r.user?.lastName].filter(Boolean).join(' ') || 'کاربر ناشناس',
+        rating: r.rating,
+        comment: r.comment,
+        date: new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(r.createdAt)),
+    }));
 
     return (
         <div className="min-h-screen bg-white" dir="rtl">
@@ -215,7 +222,7 @@ export default function ProductClient({ product, similarProducts = [] }: Product
 
                             {/* Reviews Section */}
                             <section id="comments" className="scroll-mt-24">
-                                <ProductReviews reviews={reviews} averageRating={product.rating} totalReviews={product.reviewCount} />
+                                <ProductReviews reviews={mappedReviews} averageRating={product.rating} totalReviews={product.reviewCount} productId={product.id} />
                             </section>
 
                         </div>

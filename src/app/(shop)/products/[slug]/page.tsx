@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import ProductClient from './ProductClient';
 import { getProductWithCaching } from '@/lib/cache/product';
-import { getSimilarProducts } from '@/lib/prisma/queries-product';
+import { getSimilarProducts, getProductReviews } from '@/lib/prisma/queries-product';
 import { generateProductPageJsonLd } from '@/lib/seo/product-jsonld';
 
 type PageProps = {
@@ -106,9 +106,10 @@ export default async function ProductPage({ params }: PageProps) {
 
     // Fetch similar products from the same subcategory
     const subcategoryId = product.subcategory?.id ?? null;
-    const similarProducts = subcategoryId
-        ? await getSimilarProducts(product.id, subcategoryId, 5)
-        : [];
+    const [similarProducts, reviews] = await Promise.all([
+        subcategoryId ? getSimilarProducts(product.id, subcategoryId, 5) : Promise.resolve([]),
+        getProductReviews(product.id),
+    ]);
 
     // Generate JSON-LD structured data
     const jsonLd = generateProductPageJsonLd({
@@ -137,7 +138,7 @@ export default async function ProductPage({ params }: PageProps) {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
             />
-            <ProductClient product={productData} similarProducts={similarProducts} />
+            <ProductClient product={productData} similarProducts={similarProducts} reviews={reviews} />
         </>
     );
 }
