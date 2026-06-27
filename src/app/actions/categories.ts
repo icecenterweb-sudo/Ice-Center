@@ -1,10 +1,12 @@
 'use server';
 
 import { prisma } from '@/lib/db';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { requireAdminAction } from '@/lib/admin-auth';
 import { z } from 'zod';
+
+const CACHE_PROFILE = { expire: 600 };
 
 // ============================================
 // Validation Schemas
@@ -72,6 +74,8 @@ export async function createCategory(formData: FormData) {
         });
 
         revalidatePath('/admin/dashboard/categories');
+        revalidateTag('homepage', CACHE_PROFILE);
+        revalidateTag('categories', CACHE_PROFILE);
     } catch (error: unknown) {
         console.error('Failed to create category:', error);
 
@@ -116,8 +120,16 @@ export async function updateCategory(id: number, formData: FormData) {
         });
 
         revalidatePath('/admin/dashboard/categories');
+        revalidateTag('homepage', CACHE_PROFILE);
+        revalidateTag('categories', CACHE_PROFILE);
+        revalidateTag(`category:${id}`, CACHE_PROFILE);
     } catch (error) {
         console.error('Failed to update category:', error);
+
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+            throw new Error('این اسلاگ قبلاً استفاده شده است');
+        }
+
         throw new Error('خطا در ویرایش دسته‌بندی');
     }
 
@@ -143,6 +155,9 @@ export async function deleteCategory(id: number) {
         });
 
         revalidatePath('/admin/dashboard/categories');
+        revalidateTag('homepage', CACHE_PROFILE);
+        revalidateTag('categories', CACHE_PROFILE);
+        revalidateTag(`category:${id}`, CACHE_PROFILE);
         return { success: true };
     } catch (error: unknown) {
         console.error('Failed to delete category:', error);
@@ -184,6 +199,10 @@ export async function createSubcategory(formData: FormData) {
         });
 
         revalidatePath('/admin/dashboard/categories');
+        revalidateTag('homepage', CACHE_PROFILE);
+        revalidateTag('categories', CACHE_PROFILE);
+        revalidateTag(`subcategories:${data.categoryId}`, CACHE_PROFILE);
+        revalidateTag(`products:category:${data.categoryId}`, CACHE_PROFILE);
     } catch (error: unknown) {
         console.error('Failed to create subcategory:', error);
 
@@ -227,8 +246,17 @@ export async function updateSubcategory(id: number, formData: FormData) {
         });
 
         revalidatePath('/admin/dashboard/categories');
+        revalidateTag('homepage', CACHE_PROFILE);
+        revalidateTag('categories', CACHE_PROFILE);
+        revalidateTag(`subcategories:${data.categoryId}`, CACHE_PROFILE);
+        revalidateTag(`products:category:${data.categoryId}`, CACHE_PROFILE);
     } catch (error) {
         console.error('Failed to update subcategory:', error);
+
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+            throw new Error(`این اسلاگ (${raw.slug}) قبلاً استفاده شده است. لطفاً اسلاگ دیگری انتخاب کنید`);
+        }
+
         throw new Error('خطا در ویرایش زیردسته');
     }
 
@@ -254,6 +282,8 @@ export async function deleteSubcategory(id: number) {
         });
 
         revalidatePath('/admin/dashboard/categories');
+        revalidateTag('homepage', CACHE_PROFILE);
+        revalidateTag('categories', CACHE_PROFILE);
         return { success: true };
     } catch (error: unknown) {
         console.error('Failed to delete subcategory:', error);
