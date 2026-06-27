@@ -64,6 +64,7 @@ model Product {
   banners              Banner[]         // Banners linking to this product
   wishlistItems        WishlistItem[]   // Wishlist items
   analyticsEvents      AnalyticsEvent[]
+  reviews              ProductReview[]
 
   @@index([slug])
   @@index([subcategoryId])
@@ -144,6 +145,8 @@ model User {
   notifications   Notification[]
   analyticsEvents AnalyticsEvent[]
   supportRooms    SupportRoom[]
+  reviews         ProductReview[]
+  couponUsages    CouponUsage[]
 
   @@index([phone])
 }
@@ -203,6 +206,7 @@ model Admin {
   analyticsEvents AnalyticsEvent[]
   supportMessages SupportMessage[]
   auditLogs       AuditLog[]
+  reviews         ProductReview[]
 
   @@index([phone])
 }
@@ -563,6 +567,7 @@ model Order {
   notes           String?     // یادداشت مشتری
   adminNotes      String?     // یادداشت ادمین (internal)
   analyticsEvents AnalyticsEvent[]
+  couponUsage     CouponUsage?
   
   // Timestamps
   createdAt       DateTime    @default(now())
@@ -752,6 +757,95 @@ model SupportMessage {
 
   @@index([roomId])
   @@index([roomId, createdAt])
+}
+
+// =============================================================================
+// PRODUCT REVIEWS
+// =============================================================================
+
+enum ReviewStatus {
+  PENDING     // منتظر تأیید ادمین
+  APPROVED    // تأیید شده و قابل نمایش
+  REJECTED    // رد شده
+}
+
+model ProductReview {
+  id        Int          @id @default(autoincrement())
+  productId Int
+  product   Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  rating    Int          // 1-5
+  title     String?
+  comment   String       @db.Text
+  status    ReviewStatus @default(PENDING)
+
+  // Admin moderation
+  adminId   Int?
+  admin     Admin?       @relation(fields: [adminId], references: [id], onDelete: SetNull)
+  adminNote String?
+
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([productId, status])
+  @@index([userId])
+  @@index([status])
+}
+
+// =============================================================================
+// COUPONS / DISCOUNT CODES
+// =============================================================================
+
+enum CouponType {
+  PERCENTAGE   // درصدی
+  FIXED_AMOUNT // مبلغ ثابت
+}
+
+enum CouponStatus {
+  ACTIVE
+  INACTIVE
+  EXPIRED
+}
+
+model Coupon {
+  id              Int          @id @default(autoincrement())
+  code            String       @unique  // کد تخفیف
+  type            CouponType
+  value           Float        // درصد یا مبلغ (تومان)
+  minOrderAmount  Float?       // حداقل مبلغ سفارش برای اعمال
+  maxDiscount     Float?       // سقف تخفیف (برای نوع درصدی)
+
+  status          CouponStatus @default(ACTIVE)
+  startDate       DateTime?
+  endDate         DateTime?
+  usageLimit      Int?         // سقف کل استفاده
+  usedCount       Int          @default(0)
+  perUserLimit    Int          @default(1)  // سقف استفاده هر کاربر
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  usages          CouponUsage[]
+
+  @@index([code])
+  @@index([status])
+}
+
+model CouponUsage {
+  id        Int      @id @default(autoincrement())
+  couponId  Int
+  coupon    Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId   Int      @unique  // هر سفارش فقط یک کوپن
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  discount  Float    // مبلغ تخفیف اعمال شده
+  createdAt DateTime @default(now())
+
+  @@index([couponId])
+  @@index([userId])
 }
 
 model ErrorLog {
