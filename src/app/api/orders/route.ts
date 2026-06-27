@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { verifyUserToken } from '@/lib/jwt';
 import { cookies } from 'next/headers';
 import { getCartItemPrices } from '@/lib/offers/queries';
+import { calculateShippingCost } from '@/lib/shipping';
 
 /**
  * Thrown for user-facing order failures (e.g. insufficient stock).
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { addressId, notes } = body;
+        const { addressId, notes, couponCode } = body;
 
         // Get user with address
         const user = await prisma.user.findUnique({
@@ -122,6 +123,63 @@ export async function POST(request: NextRequest) {
         // Generate unique order number
         const orderNumber = `ICE-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
 
+        // Validate coupon (if provided) and compute discount server-side
+        let discount = 0;
+        let couponId: number | null = null;
+        if (couponCode && typeof couponCode === 'string' && couponCode.trim()) {
+            const normalizedCode = couponCode.trim().toUpperCase();
+            const coupon = await prisma.coupon.findUnique({
+                where: { code: normalizedCode },
+                include: {
+                    usages: {
+                        where: { userId: payload.userId },
+                        select: { id: true },
+                    },
+                },
+            });
+
+            if (!coupon) {
+                return NextResponse.json({ error: 'کد تخفیف یافت نشد' }, { status: 400 });
+            }
+            if (coupon.status !== 'ACTIVE') {
+                return NextResponse.json({ error: 'این کد تخفیف غیرفعال است' }, { status: 400 });
+            }
+            const now = new Date();
+            if (coupon.startDate && now < coupon.startDate) {
+                return NextResponse.json({ error: 'این کد تخفیف هنوز فعال نشده است' }, { status: 400 });
+            }
+            if (coupon.endDate && now > coupon.endDate) {
+                return NextResponse.json({ error: 'مدت استفاده از این کد تخفیف به پایان رسیده است' }, { status: 400 });
+            }
+            if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) {
+                return NextResponse.json({ error: 'سقف استفاده از این کد تخفیف تکمیل شده است' }, { status: 400 });
+            }
+            if (coupon.usages.length >= coupon.perUserLimit) {
+                return NextResponse.json({ error: 'شما قبلا از این کد تخفیف استفاده کرده‌اید' }, { status: 400 });
+            }
+            if (coupon.minOrderAmount && subtotal < coupon.minOrderAmount) {
+                return NextResponse.json({
+                    error: `حداقل مبلغ سفارش برای این کد ${coupon.minOrderAmount.toLocaleString('fa-IR')} تومان است`,
+                }, { status: 400 });
+            }
+
+            // Calculate discount
+            if (coupon.type === 'PERCENTAGE') {
+                discount = Math.round(subtotal * (coupon.value / 100));
+                if (coupon.maxDiscount && discount > coupon.maxDiscount) {
+                    discount = coupon.maxDiscount;
+                }
+            } else {
+                discount = coupon.value;
+            }
+            if (discount > subtotal) discount = subtotal;
+            couponId = coupon.id;
+        }
+
+        // Calculate shipping cost server-side
+        const shippingCost = calculateShippingCost(subtotal);
+        const total = Math.max(0, subtotal - discount + shippingCost);
+
         // Create order in transaction
         const order = await prisma.$transaction(async (tx) => {
             // Re-check stock atomically and decrement. Locking each row
@@ -171,9 +229,9 @@ export async function POST(request: NextRequest) {
                     shippingProvince: address.province,
                     postalCode: address.postalCode,
                     subtotal,
-                    discount: 0, // TODO: Apply coupon/discount
-                    shippingCost: 0, // TODO: Calculate shipping
-                    total: subtotal,
+                    discount,
+                    shippingCost,
+                    total,
                     notes,
                     status: 'PENDING',
                     items: {
@@ -196,10 +254,26 @@ export async function POST(request: NextRequest) {
                     userId: user.id,
                     type: 'ORDER',
                     title: `سفارش ${orderNumber} ثبت شد`,
-                    message: `سفارش شما با ${newOrder.items.length} کالا و مبلغ ${subtotal.toLocaleString('fa-IR')} تومان ثبت شد.`,
+                    message: `سفارش شما با ${newOrder.items.length} کالا و مبلغ ${total.toLocaleString('fa-IR')} تومان ثبت شد.`,
                     link: `/profile/orders/${newOrder.id}`,
                 },
             });
+
+            // Record coupon usage and increment used count
+            if (couponId) {
+                await tx.couponUsage.create({
+                    data: {
+                        couponId,
+                        userId: user.id,
+                        orderId: newOrder.id,
+                        discount,
+                    },
+                });
+                await tx.coupon.update({
+                    where: { id: couponId },
+                    data: { usedCount: { increment: 1 } },
+                });
+            }
 
             return newOrder;
         });

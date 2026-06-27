@@ -24,6 +24,7 @@ import {
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/hooks/useAuth';
 import { toPersianDigits } from '@/lib/persian';
+import { SHIPPING_COST, FREE_SHIPPING_THRESHOLD } from '@/lib/shipping';
 import { recordClientEvent } from '@/lib/client-analytics';
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
@@ -254,9 +255,45 @@ export default function CheckoutPage() {
         return toPersianDigits(price.toLocaleString('fa-IR'));
     };
 
-    // Calculate totals
-    const shippingCost = 0;
-    const finalTotal = totalPrice + shippingCost;
+    // Coupon state
+    const [couponCode, setCouponCode] = useState('');
+    const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
+    const [validatingCoupon, setValidatingCoupon] = useState(false);
+
+    const couponDiscount = appliedCoupon?.discount ?? 0;
+    const shippingCost = totalPrice >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
+    const finalTotal = Math.max(0, totalPrice - couponDiscount + shippingCost);
+
+    const handleApplyCoupon = async () => {
+        if (!couponCode.trim()) {
+            toast.error('کد تخفیف را وارد کنید');
+            return;
+        }
+        if (!isAuthenticated) {
+            toast.error('لطفاً ابتدا وارد شوید');
+            return;
+        }
+        setValidatingCoupon(true);
+        try {
+            const res = await fetch('/api/coupons/validate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: couponCode, subtotal: totalPrice }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                toast.error(data.error || 'کد تخفیف نامعتبر است');
+                setAppliedCoupon(null);
+                return;
+            }
+            setAppliedCoupon({ code: data.coupon.code, discount: data.coupon.discount });
+            toast.success('کد تخفیف اعمال شد');
+        } catch {
+            toast.error('خطا در بررسی کد تخفیف');
+        } finally {
+            setValidatingCoupon(false);
+        }
+    };
 
     const handleNextStep = async () => {
         // Validate current step before moving forward
@@ -308,6 +345,7 @@ export default function CheckoutPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     notes: formValues.deliveryNotes,
+                    couponCode: appliedCoupon?.code,
                 }),
             });
 
@@ -798,10 +836,57 @@ export default function CheckoutPage() {
                                         <span className="text-gray-600">جمع کالاها ({toPersianDigits(itemCount)} کالا)</span>
                                         <span className="font-medium text-gray-900">{formatPrice(totalPrice)} تومان</span>
                                     </div>
+
+                                    {/* Coupon input */}
+                                    <div className="pt-2">
+                                        {appliedCoupon ? (
+                                            <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs font-medium text-green-700">کد: {appliedCoupon.code}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs font-medium text-green-600">-{formatPrice(appliedCoupon.discount)} تومان</span>
+                                                    <button
+                                                        onClick={() => { setAppliedCoupon(null); setCouponCode(''); }}
+                                                        className="text-xs text-red-500 hover:text-red-600"
+                                                    >
+                                                        حذف
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={couponCode}
+                                                    onChange={(e) => setCouponCode(e.target.value)}
+                                                    placeholder="کد تخفیف"
+                                                    className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                                />
+                                                <button
+                                                    onClick={handleApplyCoupon}
+                                                    disabled={validatingCoupon || !isAuthenticated}
+                                                    className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+                                                >
+                                                    {validatingCoupon ? '...' : 'اعمال'}
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+
                                     <div className="flex items-center justify-between text-sm">
                                         <span className="text-gray-600">هزینه ارسال</span>
-                                        <span className="font-medium text-green-600">رایگان</span>
+                                        {shippingCost === 0 ? (
+                                            <span className="font-medium text-green-600">رایگان</span>
+                                        ) : (
+                                            <span className="font-medium text-gray-900">{formatPrice(shippingCost)} تومان</span>
+                                        )}
                                     </div>
+                                    {shippingCost > 0 && (
+                                        <p className="text-xs text-gray-400">
+                                            با خرید {formatPrice(FREE_SHIPPING_THRESHOLD)} تومان، ارسال رایگان می‌شود
+                                        </p>
+                                    )}
                                     <div className="pt-3 border-t border-gray-100">
                                         <div className="flex items-center justify-between mb-1">
                                             <span className="text-sm text-gray-600">مبلغ قابل پرداخت</span>
