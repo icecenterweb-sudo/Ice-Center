@@ -1,7 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/db';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { requireAdminAction } from '@/lib/admin-auth';
 import { recordAudit } from '@/lib/audit';
@@ -11,6 +11,8 @@ import {
     notifyWishlistUsersOnPriceDrop,
     notifyWishlistUsersOnRestock,
 } from '@/lib/notifications';
+
+const CACHE_PROFILE = { expire: 600 };
 
 // ============================================
 // Validation Schemas
@@ -37,6 +39,15 @@ const updateProductSchema = createProductSchema;
 // Helper: Parse FormData with Validation
 // ============================================
 
+function parseJsonField(value: string | null, fallback: unknown) {
+    if (!value) return fallback;
+    try {
+        return JSON.parse(value);
+    } catch {
+        return fallback;
+    }
+}
+
 function parseProductFormData(formData: FormData) {
     const imagesData = formData.get('imagesData') as string | null;
     const featuresData = formData.get('features') as string | null;
@@ -51,11 +62,15 @@ function parseProductFormData(formData: FormData) {
         brand: (formData.get('brand') as string) || undefined,
         sku: (formData.get('sku') as string) || undefined,
         subcategoryId: formData.get('subcategoryId') ? parseInt(formData.get('subcategoryId') as string) : null,
-        images: imagesData ? JSON.parse(imagesData) : [],
-        features: featuresData ? JSON.parse(featuresData) : [],
-        specifications: specificationsData ? JSON.parse(specificationsData) : null,
+        images: parseJsonField(imagesData, []),
+        features: parseJsonField(featuresData, []),
+        specifications: parseJsonField(specificationsData, null),
         isActive: formData.get('isActive') === 'true',
     };
+}
+
+function computeInventoryStatus(stock: number): 'IN_STOCK' | 'OUT_OF_STOCK' {
+    return stock > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK';
 }
 
 // ============================================
@@ -88,6 +103,7 @@ export async function createProduct(formData: FormData) {
                 price: data.price,
                 listPrice: data.listPrice,
                 stock: data.stock,
+                inventoryStatus: computeInventoryStatus(data.stock),
                 brand: data.brand,
                 sku: data.sku || undefined,
                 slug,
@@ -104,6 +120,8 @@ export async function createProduct(formData: FormData) {
         await recordAudit(admin.adminId, "PRODUCT_CREATE", "Product", product.id, `ایجاد محصول جدید "${product.name}" با قیمت ${product.price}`);
 
         revalidatePath('/admin/dashboard/products');
+        revalidateTag('homepage', CACHE_PROFILE);
+        revalidateTag('products', CACHE_PROFILE);
     } catch (error) {
         console.error('Failed to create product:', error);
         throw new Error('خطا در ثبت محصول');
@@ -139,6 +157,7 @@ export async function updateProduct(id: number, formData: FormData) {
             price: data.price,
             listPrice: data.listPrice,
             stock: data.stock,
+            inventoryStatus: computeInventoryStatus(data.stock),
             brand: data.brand,
             sku: data.sku || undefined,
             isActive: data.isActive,
@@ -179,6 +198,9 @@ export async function updateProduct(id: number, formData: FormData) {
         }
 
         revalidatePath('/admin/dashboard/products');
+        revalidateTag('homepage', CACHE_PROFILE);
+        revalidateTag('products', CACHE_PROFILE);
+        revalidateTag(`product:${currentProduct?.slug || ''}`, CACHE_PROFILE);
     } catch (error: unknown) {
         console.error('Failed to update product:', error);
         const message = error instanceof Error ? error.message : 'خطا در ویرایش محصول';
@@ -210,6 +232,9 @@ export async function deleteProduct(id: number) {
         await recordAudit(admin.adminId, "PRODUCT_DELETE", "Product", product.id, `حذف محصول "${product.name}"`);
 
         revalidatePath('/admin/dashboard/products');
+        revalidateTag('homepage', CACHE_PROFILE);
+        revalidateTag('products', CACHE_PROFILE);
+        revalidateTag(`product:${product.slug}`, CACHE_PROFILE);
         return { success: true };
     } catch (error: unknown) {
         console.error('Failed to delete product:', error);
@@ -223,24 +248,23 @@ export async function toggleProductStatus(id: number) {
     const admin = await requireAdminAction();
 
     try {
-        const product = await prisma.product.findUnique({
-            where: { id },
-            select: { isActive: true }
-        });
+        // Atomic toggle via raw SQL — prevents lost-update race where two
+        // concurrent toggles both read the same value and write the same result.
+        const rows = await prisma.$queryRaw<{ isActive: boolean; name: string }[]>`
+            UPDATE "Product" SET "isActive" = NOT "isActive" WHERE "id" = ${id} RETURNING "isActive", "name"
+        `;
+        const updated = rows[0];
 
-        if (!product) {
+        if (!updated) {
             throw new Error('محصول یافت نشد');
         }
 
-        const updated = await prisma.product.update({
-            where: { id },
-            data: { isActive: !product.isActive }
-        });
-
         // Record Audit log
-        await recordAudit(admin.adminId, "PRODUCT_TOGGLE", "Product", updated.id, `تغییر وضعیت فعال بودن محصول "${updated.name}" به ${updated.isActive}`);
+        await recordAudit(admin.adminId, "PRODUCT_TOGGLE", "Product", id, `تغییر وضعیت فعال بودن محصول "${updated.name}" به ${updated.isActive}`);
 
         revalidatePath('/admin/dashboard/products');
+        revalidateTag('homepage', CACHE_PROFILE);
+        revalidateTag('products', CACHE_PROFILE);
         return { success: true };
     } catch (error: unknown) {
         console.error('Failed to toggle product status:', error);
@@ -304,11 +328,13 @@ export async function createProductVariant(productId: number, formData: FormData
                 price: data.price,
                 stock: data.stock,
                 isDefault: data.isDefault,
-                isActive: true,
+                isActive: data.isActive,
             }
         });
 
         revalidatePath('/admin/dashboard/products');
+        revalidateTag('homepage', CACHE_PROFILE);
+        revalidateTag('products', CACHE_PROFILE);
         return { success: true };
     } catch (error: unknown) {
         console.error('Failed to create variant:', error);
@@ -347,6 +373,8 @@ export async function updateProductVariant(id: number, formData: FormData) {
         });
 
         revalidatePath('/admin/dashboard/products');
+        revalidateTag('homepage', CACHE_PROFILE);
+        revalidateTag('products', CACHE_PROFILE);
         return { success: true };
     } catch (error: unknown) {
         console.error('Failed to update variant:', error);
@@ -365,6 +393,8 @@ export async function deleteProductVariant(id: number) {
         });
 
         revalidatePath('/admin/dashboard/products');
+        revalidateTag('homepage', CACHE_PROFILE);
+        revalidateTag('products', CACHE_PROFILE);
         return { success: true };
     } catch (error: unknown) {
         console.error('Failed to delete variant:', error);
@@ -431,6 +461,8 @@ export async function bulkUpdateProductsAction(
         }
 
         revalidatePath('/admin/dashboard/products');
+        revalidateTag('homepage', CACHE_PROFILE);
+        revalidateTag('products', CACHE_PROFILE);
         return { success: true };
     } catch (error: unknown) {
         console.error('Failed bulk products update:', error);
