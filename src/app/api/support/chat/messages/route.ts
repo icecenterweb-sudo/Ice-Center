@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { verifyUserToken } from '@/lib/jwt';
+import { cookies } from 'next/headers';
 import { z } from 'zod';
 
 const querySchema = z.object({
@@ -9,7 +11,9 @@ const querySchema = z.object({
 
 /**
  * GET /api/support/chat/messages?roomId=X&phone=Y
- * Fetch messages for a support room. Phone is used to verify ownership.
+ * Fetch messages for a support room.
+ * Verifies ownership: authenticated users are checked via token + phone match;
+ * guest rooms (no userId) fall back to phone-based verification.
  */
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
@@ -28,11 +32,26 @@ export async function GET(request: NextRequest) {
         // Verify the room belongs to this phone
         const room = await prisma.supportRoom.findFirst({
             where: { id: roomId, phone },
-            select: { id: true, status: true, name: true },
+            select: { id: true, status: true, name: true, userId: true, phone: true },
         });
 
         if (!room) {
             return NextResponse.json({ error: 'گفتگو یافت نشد' }, { status: 404 });
+        }
+
+        // If the room belongs to a registered user, verify the token
+        if (room.userId) {
+            const cookieStore = await cookies();
+            const token = cookieStore.get('user_token')?.value;
+
+            if (!token) {
+                return NextResponse.json({ error: 'احراز هویت الزامی است' }, { status: 401 });
+            }
+
+            const payload = await verifyUserToken(token).catch(() => null);
+            if (!payload || payload.userId !== room.userId) {
+                return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+            }
         }
 
         const messages = await prisma.supportMessage.findMany({
