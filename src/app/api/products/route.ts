@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
 import prisma from '@/lib/db';
 import { getProductsCached, invalidateProductsCache } from '@/lib/cache/products';
-import { cookies } from 'next/headers';
-import { verifyAdminToken } from '@/lib/jwt';
+import { requireAdmin } from '@/lib/admin-auth';
 import { z } from 'zod';
 import { checkRateLimit, getClientIp, RATE_LIMITS } from '@/lib/rate-limiter';
 
@@ -32,7 +31,7 @@ const productSchema = z.object({
   warranty: z.string().optional().nullable(),
   metaTitle: z.string().optional().nullable(),
   metaDescription: z.string().optional().nullable(),
-}).passthrough();
+}).strict();
 
 // GET - دریافت محصولات با کشینگ، صفحه‌بندی و جستجو
 export async function GET(request: NextRequest) {
@@ -109,23 +108,10 @@ export async function GET(request: NextRequest) {
 // POST - ساخت محصول جدید (Admin only)
 export async function POST(request: NextRequest) {
   try {
-    // CRITICAL: Verify admin authentication
-    const cookieStore = await cookies();
-    const token = cookieStore.get('admin_token')?.value;
-
-    if (!token) {
-      return NextResponse.json({
-        success: false,
-        message: 'احراز هویت الزامی است'
-      }, { status: 401 });
-    }
-
-    const payload = await verifyAdminToken(token);
-    if (!payload) {
-      return NextResponse.json({
-        success: false,
-        message: 'توکن نامعتبر است'
-      }, { status: 401 });
+    // CRITICAL: Verify admin authentication (DB-backed check)
+    const auth = await requireAdmin(request);
+    if (!auth.ok) {
+      return auth.response;
     }
 
     // Validate input with zod schema
