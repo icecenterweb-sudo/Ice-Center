@@ -1,11 +1,21 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Gift } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function DiscountsPage() {
     const router = useRouter();
+    const [couponCode, setCouponCode] = useState('');
+
+    const handleSubmit = () => {
+        if (!couponCode.trim()) {
+            toast.error('کد تخفیف را وارد کنید');
+            return;
+        }
+        toast.success('کد تخفیف در صفحه پرداخت قابل اعمال است');
+    };
 
     return (
         <div className="pb-20 lg:pb-0">
@@ -44,10 +54,15 @@ export default function DiscountsPage() {
                 <div className="flex gap-2 max-w-xs mx-auto">
                     <input
                         type="text"
+                        value={couponCode}
+                        onChange={(e) => setCouponCode(e.target.value)}
                         placeholder="کد تخفیف را وارد کنید"
                         className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-center focus:outline-none focus:border-ocean"
                     />
-                    <button className="px-4 py-2.5 bg-ocean hover:bg-blue-600 text-white text-sm font-medium rounded-xl transition-colors">
+                    <button
+                        onClick={handleSubmit}
+                        className="px-4 py-2.5 bg-ocean hover:bg-blue-600 text-white text-sm font-medium rounded-xl transition-colors"
+                    >
                         ثبت
                     </button>
                 </div>

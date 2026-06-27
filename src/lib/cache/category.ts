@@ -102,19 +102,16 @@ export async function getCachedSubcategories(categoryId: number): Promise<Cached
 
     const subcategories = await prisma.subcategory.findMany({
         where: { categoryId },
-        select: { id: true, name: true, slug: true },
+        include: { _count: { select: { products: { where: { isActive: true } } } } },
+        orderBy: { name: 'asc' },
     });
 
-    const withCounts = await Promise.all(
-        subcategories.map(async (sub) => ({
-            ...sub,
-            productCount: await prisma.product.count({
-                where: { subcategoryId: sub.id, isActive: true },
-            }),
-        }))
-    );
-
-    return withCounts;
+    return subcategories.map((sub) => ({
+        id: sub.id,
+        name: sub.name,
+        slug: sub.slug,
+        productCount: sub._count.products,
+    }));
 }
 
 /**

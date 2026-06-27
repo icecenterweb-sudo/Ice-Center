@@ -35,12 +35,17 @@ export async function POST(request: NextRequest) {
             if (!item.productId || typeof item.productId !== 'number') continue
             if (!item.quantity || typeof item.quantity !== 'number' || item.quantity < 1) continue
 
-            // Check if product exists
+            // Check if product exists and is active
             const product = await prisma.product.findFirst({
-                where: { id: item.productId, isActive: true }
+                where: { id: item.productId, isActive: true },
+                select: { id: true, stock: true }
             })
 
             if (!product) continue
+
+            // Validate stock: skip if out of stock, otherwise cap to available stock
+            if (product.stock <= 0) continue
+            const effectiveQuantity = Math.min(item.quantity, product.stock)
 
             // Upsert: if exists, add to quantity; if not, create
             await prisma.cartItem.upsert({
@@ -51,12 +56,12 @@ export async function POST(request: NextRequest) {
                     }
                 },
                 update: {
-                    quantity: { increment: item.quantity }
+                    quantity: { increment: effectiveQuantity }
                 },
                 create: {
                     userId: payload.userId,
                     productId: item.productId,
-                    quantity: item.quantity
+                    quantity: effectiveQuantity
                 }
             })
         }

@@ -15,20 +15,18 @@ export async function GET(request: NextRequest) {
         const authHeader = request.headers.get('authorization');
         const cronSecret = process.env.CRON_SECRET;
 
-        if (process.env.NODE_ENV === 'production') {
-            if (!cronSecret) {
-                return NextResponse.json(
-                    { error: 'CRON_SECRET is not configured' },
-                    { status: 500 }
-                );
-            }
+        if (!cronSecret) {
+            return NextResponse.json(
+                { error: 'CRON_SECRET is not configured' },
+                { status: 500 }
+            );
+        }
 
-            if (authHeader !== `Bearer ${cronSecret}`) {
-                return NextResponse.json(
-                    { error: 'Unauthorized' },
-                    { status: 401 }
-                );
-            }
+        if (authHeader !== `Bearer ${cronSecret}`) {
+            return NextResponse.json(
+                { error: 'Unauthorized' },
+                { status: 401 }
+            );
         }
 
         // Sync flags for offers that changed in the last 5 minutes

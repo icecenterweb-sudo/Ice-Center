@@ -13,20 +13,18 @@ export async function GET(request: NextRequest) {
     await connection();
 
     try {
-        // Verify cron secret in production
+        // Verify cron secret
         const authHeader = request.headers.get('authorization');
         const cronSecret = process.env.CRON_SECRET;
-        if (process.env.NODE_ENV === 'production') {
-            if (!cronSecret) {
-                return NextResponse.json(
-                    { error: 'CRON_SECRET is not configured' },
-                    { status: 500 }
-                );
-            }
+        if (!cronSecret) {
+            return NextResponse.json(
+                { error: 'CRON_SECRET is not configured' },
+                { status: 500 }
+            );
+        }
 
-            if (authHeader !== `Bearer ${cronSecret}`) {
-                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-            }
+        if (authHeader !== `Bearer ${cronSecret}`) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const now = new Date();

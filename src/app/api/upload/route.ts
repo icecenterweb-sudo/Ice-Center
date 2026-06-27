@@ -6,13 +6,19 @@ import { requireAdmin } from '@/lib/admin-auth';
 import { getUploadStorageRoot, sanitizeUploadFolder } from '@/lib/uploads';
 
 const MAX_UPLOAD_SIZE = 5 * 1024 * 1024;
-const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+const MIME_TO_EXTENSION: Record<string, string> = {
+    'image/jpeg': '.jpg',
+    'image/png': '.png',
+    'image/webp': '.webp',
+    'image/gif': '.gif',
+};
+const ALLOWED_IMAGE_TYPES = new Set(Object.keys(MIME_TO_EXTENSION));
 
 async function uploadToLocalStorage(file: File, folder: string) {
   const uploadDir = path.join(getUploadStorageRoot(), folder);
   await mkdir(uploadDir, { recursive: true });
 
-  const ext = path.extname(file.name) || '.png';
+  const ext = MIME_TO_EXTENSION[file.type] || '.png';
   const filename = `${crypto.randomUUID()}${ext}`;
   const filePath = path.join(uploadDir, filename);
 
