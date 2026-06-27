@@ -20,6 +20,17 @@ type Specification = {
     specs: Array<{ label: string; value: string }>;
 };
 
+type SimilarProduct = {
+    id: number;
+    name: string;
+    slug: string;
+    price: number;
+    listPrice: number | null;
+    thumbnail: string | null;
+    inventoryStatus: string;
+    brand: string | null;
+};
+
 type ProductClientProps = {
     product: {
         id: number;
@@ -45,9 +56,10 @@ type ProductClientProps = {
         subcategoryName: string;
         sku?: string | null;
     };
+    similarProducts?: SimilarProduct[];
 };
 
-export default function ProductClient({ product }: ProductClientProps) {
+export default function ProductClient({ product, similarProducts = [] }: ProductClientProps) {
     const [activeTab, setActiveTab] = useState('desc');
 
     useEffect(() => {
@@ -212,7 +224,7 @@ export default function ProductClient({ product }: ProductClientProps) {
                         <div className="hidden lg:block lg:col-span-3">
                             <div className="sticky top-24 space-y-4">
                                 <MiniPricingBox product={product} />
-                                <SimilarProducts />
+                                <SimilarProducts products={similarProducts} />
                                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 text-center">
                                     <p className="text-xs text-gray-500 leading-6">
                                         با اطمینان خرید کنید. پشتیبانی ۲۴ ساعته ما در کنار شماست.
