@@ -9,7 +9,7 @@
 
 import { cacheLife, cacheTag } from 'next/cache';
 import { prisma } from '@/lib/db';
-import { BannerPosition } from '@prisma/client';
+import { BannerPosition, DiscountType } from '@prisma/client';
 import { getProductPricing } from '@/lib/offers/pricing';
 
 // ============================================
@@ -26,7 +26,7 @@ type DBProduct = {
     hasActiveOffer?: boolean;
     offerProducts?: Array<{
         customDiscountValue: number | null;
-        offer: { discountType: string; discountValue: number };
+        offer: { discountType: DiscountType; discountValue: number };
     }>;
 };
 
@@ -87,7 +87,7 @@ export interface BlogPostForDisplay {
 
 function transformProducts(products: DBProduct[]): ProductForDisplay[] {
     return products.map((p) => {
-        const pricing = getProductPricing(p as any);
+        const pricing = getProductPricing(p);
 
         return {
             id: p.id,
@@ -258,7 +258,7 @@ export async function getCachedOffers() {
                             maxDiscountCap: offer.maxDiscountCap
                         }
                     }]
-                } as any);
+                });
 
                 return {
                     id: offer.id,

@@ -2,18 +2,17 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { 
-    Eye, 
-    Search, 
-    Filter, 
-    Phone, 
-    User, 
-    Calendar, 
-    MapPin, 
-    X, 
-    CheckSquare, 
-    Square, 
-    TrendingUp,
+import {
+    Eye,
+    Search,
+    Filter,
+    Phone,
+    User,
+    Calendar,
+    MapPin,
+    X,
+    CheckSquare,
+    Square,
     RefreshCw
 } from 'lucide-react';
 import { OrderStatus } from '@prisma/client';

@@ -1,5 +1,4 @@
 import { prisma } from '@/lib/db';
-import { notFound } from 'next/navigation';
 import SubcategoryForm from './SubcategoryForm';
 import { connection } from 'next/server';
 import { Suspense } from 'react';

@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
  * POST /api/notifications/mark-all-read
  * Mark all user's notifications as read
  */
-export async function POST(request: NextRequest) {
+export async function POST() {
     try {
         const cookieStore = await cookies();
         const token = cookieStore.get('user_token')?.value;

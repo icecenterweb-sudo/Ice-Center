@@ -1,12 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { List, BarChart2, Filter } from 'lucide-react';
+import { List, Filter } from 'lucide-react';
 
 interface SortBarProps {
     totalResults: number;
     onSortChange?: (sort: string) => void;
-    onViewChange?: (view: 'grid' | 'list') => void;
     onToggleSidebar?: () => void;
     onMobileFilterClick?: () => void;
     isSidebarOpen?: boolean;
@@ -15,7 +14,6 @@ interface SortBarProps {
 export default function SortBar({
     totalResults,
     onSortChange,
-    onViewChange,
     onToggleSidebar,
     isSidebarOpen
 }: SortBarProps) {

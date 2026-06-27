@@ -28,14 +28,6 @@ interface Variant {
     id: number;
 }
 
-interface Subcategory {
-    id: number;
-    name: string;
-    category?: {
-        name: string;
-    };
-}
-
 interface Product {
     id: number;
     name: string;
@@ -83,21 +75,6 @@ export default function ProductsTableClient({ initialProducts, categories }: Pro
     // Subcategory change modal state
     const [showCategoryModal, setShowCategoryModal] = useState(false);
     const [targetSubcategoryId, setTargetSubcategoryId] = useState<number | null>(null);
-
-    // Flatten all subcategories for mapping/finding names
-    const allSubcategories = useMemo(() => {
-        const subs: { id: number; name: string; categoryName: string }[] = [];
-        categories.forEach(cat => {
-            cat.subcategories.forEach(sub => {
-                subs.push({
-                    id: sub.id,
-                    name: sub.name,
-                    categoryName: cat.name
-                });
-            });
-        });
-        return subs;
-    }, [categories]);
 
     // Handle single row checkbox toggle
     const handleSelectRow = (id: number) => {

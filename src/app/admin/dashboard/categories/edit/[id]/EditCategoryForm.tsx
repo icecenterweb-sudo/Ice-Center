@@ -40,7 +40,7 @@ function SubmitButton() {
 export default function EditCategoryForm({ category }: EditCategoryFormProps) {
     const [name, setName] = useState(category.name);
     const [slug, setSlug] = useState(category.slug);
-    const [imageUrl, setImageUrl] = useState<string | null>(null);
+    const [, setImageUrl] = useState<string | null>(null);
 
     // Auto-generate slug from name
     const handleNameChange = (value: string) => {

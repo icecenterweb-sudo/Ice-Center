@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import MultiImageUpload from '@/components/admin/MultiImageUpload';
 import FeaturesManager from '@/components/admin/FeaturesManager';
@@ -14,8 +13,7 @@ interface EditProductFormProps {
 }
 
 export default function EditProductForm({ product, subcategories }: EditProductFormProps) {
-    const router = useRouter();
-    const [imageUrls, setImageUrls] = useState<string[]>([]);
+    const [, setImageUrls] = useState<string[]>([]);
     const [features, setFeatures] = useState<string[]>(product.features || []);
     const [specifications, setSpecifications] = useState<Record<string, string>>(product.specifications || {});
 

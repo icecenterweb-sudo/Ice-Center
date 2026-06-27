@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef, use } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowRight, Image, Link as LinkIcon, Loader2, Upload, ImageIcon } from 'lucide-react';
+import { ArrowRight, Link as LinkIcon, Loader2, Upload, ImageIcon } from 'lucide-react';
 
 interface Product {
     id: number;
@@ -314,7 +314,7 @@ export default function EditBannerClient({ id }: { id: string }) {
                 {/* Images */}
                 <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-6">
                     <h2 className="font-bold text-gray-800 flex items-center gap-2">
-                        <Image className="w-5 h-5" />
+                        <ImageIcon className="w-5 h-5" />
                         تصاویر بنر
                     </h2>
 

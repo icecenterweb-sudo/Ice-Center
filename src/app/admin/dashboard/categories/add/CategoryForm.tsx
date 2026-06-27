@@ -28,7 +28,7 @@ function SubmitButton() {
 export default function CategoryForm() {
     const [name, setName] = useState('');
     const [slug, setSlug] = useState('');
-    const [imageUrl, setImageUrl] = useState<string | null>(null);
+    const [, setImageUrl] = useState<string | null>(null);
 
     // Auto-generate slug from name
     const handleNameChange = (value: string) => {

@@ -13,8 +13,7 @@ import {
     Ticket,
     Phone,
     HelpCircle,
-    LogOut,
-    Settings
+    LogOut
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toPersianDigits } from '@/lib/persian';

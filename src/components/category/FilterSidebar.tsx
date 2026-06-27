@@ -1,13 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, X } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 
 interface FilterSidebarProps {
     onFilterChange?: (filters: any) => void;
 }
 
-export default function FilterSidebar({ onFilterChange }: FilterSidebarProps) {
+export default function FilterSidebar({}: FilterSidebarProps) {
     const [priceRange, setPriceRange] = useState([0, 500000000]);
     const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
     const [expandedSections, setExpandedSections] = useState({
@@ -30,12 +30,6 @@ export default function FilterSidebar({ onFilterChange }: FilterSidebarProps) {
         { id: 'techno', name: 'تکنو آیس', count: 8 },
         { id: 'freezer-ind', name: 'فریزر صنعت', count: 5 },
         { id: 'cooler-iran', name: 'کولر ایران', count: 3 },
-    ];
-
-    const usages = [
-        { id: 'industrial', name: 'صنعتی و کارگاهی' },
-        { id: 'shop', name: 'فروشگاهی' },
-        { id: 'home', name: 'خانگی پیشرفته' },
     ];
 
     return (

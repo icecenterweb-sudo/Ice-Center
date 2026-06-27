@@ -7,9 +7,6 @@
  * - src/utils/persian.ts (toPersianNumber, toEnglishNumber, formatPersianCurrency, etc.)
  */
 
-const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
-const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
-
 /**
  * Converts English digits to Persian digits.
  * Works on both strings and numbers.

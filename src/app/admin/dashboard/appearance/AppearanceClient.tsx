@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Image, Palette, Settings } from 'lucide-react';
+import { Image } from 'lucide-react';
 
 export default function AppearancePage() {
     const sections = [

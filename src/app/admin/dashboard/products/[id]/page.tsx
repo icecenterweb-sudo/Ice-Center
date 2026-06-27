@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/db';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowRight, Edit, Package } from 'lucide-react';
+import { ArrowRight, Edit } from 'lucide-react';
 import { connection } from 'next/server';
 import { Suspense } from 'react';
 

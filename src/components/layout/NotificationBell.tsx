@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Bell, Package, Tag, TrendingDown, Box, Info, Loader2, Check, X } from 'lucide-react';
+import { Bell, Package, Tag, TrendingDown, Box, Info, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { faIR } from 'date-fns/locale';
 
@@ -61,7 +61,7 @@ export default function NotificationBell() {
                 const data = await res.json();
                 setUnreadCount(data.unreadCount);
             }
-        } catch (error) {
+        } catch {
             // User not logged in or error - ignore
         }
     }

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowRight, Package, Clock, CheckCircle, Truck, XCircle, Loader2, MapPin, Phone, User, AlertCircle, PackageCheck, Hand } from 'lucide-react';
+import { ArrowRight, Package, Clock, CheckCircle, Truck, XCircle, Loader2, MapPin, Phone, User } from 'lucide-react';
 
 interface OrderItem {
     id: number;
@@ -62,7 +62,7 @@ export default function OrderDetailPage() {
                 } else {
                     setError(data.error || 'خطا در دریافت سفارش');
                 }
-            } catch (err) {
+            } catch {
                 setError('خطا در اتصال به سرور');
             } finally {
                 setLoading(false);

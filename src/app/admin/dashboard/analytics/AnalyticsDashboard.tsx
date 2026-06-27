@@ -1,24 +1,18 @@
 'use client'
 
-import { 
-    Activity, 
-    BarChart3, 
-    CalendarDays, 
-    Globe2, 
-    Search, 
-    Share2, 
-    Smartphone, 
-    TrendingUp, 
-    Users, 
-    ShoppingBag, 
-    ArrowRightLeft, 
-    Clock, 
-    Cpu, 
-    AlertTriangle, 
-    Zap, 
-    CheckCircle2,
-    Eye,
-    Percent,
+import {
+    Activity,
+    BarChart3,
+    CalendarDays,
+    Globe2,
+    Share2,
+    Smartphone,
+    TrendingUp,
+    Users,
+    ShoppingBag,
+    Cpu,
+    AlertTriangle,
+    Zap,
     AlertCircle
 } from 'lucide-react'
 import { toPersianDigits } from '@/lib/persian'
@@ -627,7 +621,7 @@ function RetentionRow({ label, value, color, percent }: { label: string; value: 
     )
 }
 
-function FunnelStep({ index, label, value, max, color }: { index: number; label: string; value: number; max: number; color: string }) {
+function FunnelStep({ label, value, max, color }: { index: number; label: string; value: number; max: number; color: string }) {
     const percent = max > 0 ? (value / max) * 100 : 0
     return (
         <div className="space-y-1.5">

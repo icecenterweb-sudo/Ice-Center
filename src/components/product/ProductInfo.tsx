@@ -1,4 +1,4 @@
-import { Shield, Award, Star, TruckIcon } from 'lucide-react';
+import { Shield, Star, TruckIcon } from 'lucide-react';
 
 interface ProductInfoProps {
     product: {

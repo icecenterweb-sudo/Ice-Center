@@ -2,14 +2,13 @@
 
 import { useState, useTransition, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-    AlertOctagon, 
-    AlertTriangle, 
-    Info, 
-    Trash2, 
-    Search, 
-    X, 
-    ChevronLeft, 
+import {
+    AlertOctagon,
+    AlertTriangle,
+    Info,
+    Trash2,
+    Search,
+    X,
     Copy,
     Check,
     Terminal,

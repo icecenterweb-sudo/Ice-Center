@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowRight, BellOff, Bell, Package, Tag, TrendingDown, Box, Info, Loader2, Trash2, CheckCheck } from 'lucide-react';
+import { ArrowRight, BellOff, Package, Tag, TrendingDown, Box, Info, Loader2, Trash2, CheckCheck } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { faIR } from 'date-fns/locale';
 

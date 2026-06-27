@@ -6,7 +6,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { ArrowRight, Save, Eye, Loader2 } from 'lucide-react';
 import BlogImageUpload from '@/components/admin/BlogImageUpload';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
@@ -66,7 +66,6 @@ export default function NewPostForm({ categories, tags }: NewPostFormProps) {
     const {
         register,
         handleSubmit,
-        control,
         watch,
         setValue,
         formState: { errors, isSubmitting },

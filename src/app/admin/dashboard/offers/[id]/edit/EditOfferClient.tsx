@@ -57,7 +57,7 @@ export default function EditOfferClient({ id }: { id: string }) {
     const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
     const [customDiscounts, setCustomDiscounts] = useState<Record<number, string>>({});
     const [searchQuery, setSearchQuery] = useState('');
-    const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+    const [, setIsLoadingProducts] = useState(true);
 
     // Load offer data
     useEffect(() => {

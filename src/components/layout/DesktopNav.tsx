@@ -19,7 +19,7 @@ interface DesktopNavProps {
   onToggleMenu: () => void;
 }
 
-const DesktopNav: React.FC<DesktopNavProps> = ({ hidden, isMenuOpen, onToggleMenu }) => {
+const DesktopNav: React.FC<DesktopNavProps> = ({ hidden, onToggleMenu }) => {
   return (
     <motion.div
       variants={{

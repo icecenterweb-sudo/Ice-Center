@@ -236,7 +236,7 @@ export async function getProducts({
 
     // Calculate effective prices for each product
     const productsWithPricing = allProducts.map(product => {
-        const pricing = getProductPricing(product as any);
+        const pricing = getProductPricing(product);
 
         return {
             id: product.id,

@@ -2,11 +2,6 @@
 
 import { ChevronUp, ChevronDown, Tag } from 'lucide-react';
 
-interface Brand {
-    name: string;
-    count?: number;
-}
-
 interface BrandFilterProps {
     expanded: boolean;
     onToggle: () => void;

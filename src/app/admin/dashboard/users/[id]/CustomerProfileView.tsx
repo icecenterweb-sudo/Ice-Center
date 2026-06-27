@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import {
-    User, Phone, ShoppingBag, Heart, ShoppingCart, MessageSquare,
+    Phone, ShoppingBag, Heart, ShoppingCart, MessageSquare,
     BarChart3, Calendar, MapPin, Package, Tag, ArrowRight, Clock,
     Monitor, Smartphone, Circle
 } from 'lucide-react';

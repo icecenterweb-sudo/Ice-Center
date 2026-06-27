@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db';
-import { FolderTree, Plus, Edit, Trash2, Image as ImageIcon } from 'lucide-react';
+import { FolderTree, Plus, Edit, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 import DeleteCategoryButton from './DeleteCategoryButton';
 import DeleteSubcategoryButton from './DeleteSubcategoryButton';

@@ -50,7 +50,7 @@ export default function AdminLoginPage() {
             setStep('otp');
             setCountdown(120); // 2 minutes
             setLoading(false);
-        } catch (err) {
+        } catch {
             setError('خطای شبکه. لطفا دوباره تلاش کنید.');
             setLoading(false);
         }
@@ -78,7 +78,7 @@ export default function AdminLoginPage() {
 
             router.push('/admin/dashboard');
             router.refresh();
-        } catch (err) {
+        } catch {
             setError('خطای شبکه. لطفا دوباره تلاش کنید.');
             setLoading(false);
         }

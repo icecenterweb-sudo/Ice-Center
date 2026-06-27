@@ -1,7 +1,6 @@
 import { Metadata } from 'next';
 import CategoriesClient from './CategoriesClient';
 import { getAllCategories, getProducts, getAvailableBrands } from '@/lib/prisma/queries-category';
-import { generateCategoryJsonLd } from '@/lib/seo/jsonld';
 import { InventoryStatus } from '@prisma/client';
 
 type Props = {

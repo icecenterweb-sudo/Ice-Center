@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, Plus, Trash2, Edit, Eye, EyeOff, GripVertical, Loader2 } from 'lucide-react';
 
@@ -19,7 +18,6 @@ interface Slide {
 }
 
 export default function SlidesPage() {
-    const router = useRouter();
     const [slides, setSlides] = useState<Slide[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isDeleting, setIsDeleting] = useState<number | null>(null);

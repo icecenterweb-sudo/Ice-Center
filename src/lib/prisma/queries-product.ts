@@ -48,7 +48,7 @@ export async function getProductBySlug(slug: string) {
 
         if (!product) return null;
 
-        const pricing = getProductPricing(product as any);
+        const pricing = getProductPricing(product);
 
         // Return product with pricing info
         return {

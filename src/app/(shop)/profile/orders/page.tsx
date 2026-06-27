@@ -151,7 +151,7 @@ export default function OrdersPage() {
                                     <div className="flex items-center gap-2">
                                         {/* Product Thumbnails */}
                                         <div className="flex -space-x-2 rtl:space-x-reverse">
-                                            {order.items.slice(0, 3).map((item, idx) => (
+                                            {order.items.slice(0, 3).map((item) => (
                                                 <div
                                                     key={item.id}
                                                     className="w-10 h-10 rounded-lg bg-gray-100 border-2 border-white overflow-hidden"

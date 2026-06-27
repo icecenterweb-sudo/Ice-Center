@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 

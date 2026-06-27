@@ -1,7 +1,7 @@
 'use client';
 
 import { createProduct } from '@/app/actions/products';
-import { ArrowRight, Save, Upload, Info } from 'lucide-react';
+import { ArrowRight, Save, Info } from 'lucide-react';
 import Link from 'next/link';
 import { useFormStatus } from 'react-dom';
 import { useState } from 'react';
@@ -49,7 +49,7 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
     const [selectedCategory, setSelectedCategory] = useState<string>('');
     const [nameLength, setNameLength] = useState(0);
     const [descLength, setDescLength] = useState(0);
-    const [imageUrls, setImageUrls] = useState<string[]>([]);
+    const [, setImageUrls] = useState<string[]>([]);
     const [features, setFeatures] = useState<string[]>([]);
     const [specifications, setSpecifications] = useState<Record<string, string>>({});
 

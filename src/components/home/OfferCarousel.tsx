@@ -43,42 +43,6 @@ interface AmazingOfferCarouselProps {
   offers?: OfferItem[];
 }
 
-// --- Fallback Mock Data (used when no offers provided) ---
-const mockProducts: OfferProduct[] = [
-  {
-    id: 1,
-    title: 'دستگاه بستنی ساز خانگی مدل IC-200',
-    price: 12500000,
-    oldPrice: 15000000,
-    discount: 17,
-    image: '/uploads/categories/711Jw2d2LuL_jwsd9x.jpg',
-  },
-  {
-    id: 2,
-    title: 'دستگاه یخ ساز صنعتی 50 کیلوگرمی',
-    price: 35000000,
-    oldPrice: 42000000,
-    discount: 17,
-    image: '/uploads/products/yakhsaz-50kg-1232_adlyut.jpg',
-  },
-  {
-    id: 3,
-    title: 'فریزر صنعتی 6 درب مدل F-600',
-    price: 28000000,
-    oldPrice: 35000000,
-    discount: 20,
-    image: '/uploads/products/001-min-2_ip52ev.jpg',
-  },
-  {
-    id: 4,
-    title: 'دستگاه آبمیوه گیری حرفه‌ای',
-    price: 8500000,
-    oldPrice: 11000000,
-    discount: 23,
-    image: '/uploads/products/dc2c39_kz3wpy.jpg',
-  },
-];
-
 const AmazingOfferCarousel = ({ offers }: AmazingOfferCarouselProps) => {
   // Transform offers to product format
   const products: OfferProduct[] = useMemo(() => {

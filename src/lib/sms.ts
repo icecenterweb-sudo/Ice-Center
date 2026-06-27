@@ -63,7 +63,7 @@ export async function sendOtp(phone: string): Promise<SendOtpResponse> {
                             error: parsed.status || 'Failed to send OTP',
                         })
                     }
-                } catch (error) {
+                } catch {
                     resolve({
                         success: false,
                         error: 'Failed to parse SMS service response',

@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Star, ShoppingCart, BarChart2, Check, Phone } from 'lucide-react';
+import { BarChart2, Check, Phone } from 'lucide-react';
 import WishlistButton from './WishlistButton';
 
 interface ProductCardProps {
@@ -29,10 +29,6 @@ export default function ProductCard({ product }: ProductCardProps) {
     const formatPrice = (price: number) => {
         return new Intl.NumberFormat('fa-IR').format(price);
     };
-
-    const discount = product.listPrice
-        ? Math.round(((product.listPrice - product.price) / product.listPrice) * 100)
-        : 0;
 
     const isInStock = product.inventoryStatus === 'IN_STOCK' || product.inventoryStatus === 'LOW_STOCK';
 

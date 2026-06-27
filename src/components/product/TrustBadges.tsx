@@ -1,4 +1,4 @@
-import { Shield, Wrench, Package, Headset, Clock, Truck } from 'lucide-react';
+import { Shield, Wrench, Headset, Clock, Truck } from 'lucide-react';
 
 export default function TrustBadges() {
     const features = [

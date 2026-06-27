@@ -7,7 +7,7 @@
 
 import { prisma } from '@/lib/db';
 import { connection } from 'next/server';
-import { calculateEffectivePrice, isOfferActive, type OfferDiscount, getProductPricing } from './pricing';
+import { getProductPricing } from './pricing';
 
 /**
  * Get active offers for the homepage carousel
@@ -88,7 +88,7 @@ export async function getCarouselOffers(limit = 12) {
                         maxDiscountCap: offer.maxDiscountCap
                     }
                 }]
-            } as any);
+            });
 
             items.push({
                 id: offer.id,
@@ -165,7 +165,7 @@ export async function getProductWithActiveOffer(productId: number) {
     const activeOfferProduct = product.offerProducts[0];
     const activeOffer = activeOfferProduct?.offer;
 
-    const pricing = getProductPricing(product as any);
+    const pricing = getProductPricing(product);
 
     return {
         ...product,
@@ -235,7 +235,7 @@ export async function getCategoryProductsWithPrices(
 
     // Calculate effective prices
     return products.map(product => {
-        const pricing = getProductPricing(product as any);
+        const pricing = getProductPricing(product);
 
         return {
             id: product.id,
@@ -294,7 +294,7 @@ export async function getCartItemPrices(productIds: number[]) {
     });
 
     return products.map(product => {
-        const pricing = getProductPricing(product as any);
+        const pricing = getProductPricing(product);
 
         return {
             productId: product.id,

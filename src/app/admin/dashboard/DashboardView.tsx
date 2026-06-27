@@ -13,8 +13,7 @@ import {
     Download,
     Search,
     X,
-    FileSpreadsheet,
-    Eye
+    FileSpreadsheet
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
@@ -416,23 +415,20 @@ export default function DashboardView({
                             </div>
                             
                             <div className="space-y-3">
-                                <ExportOption 
-                                    icon={ShoppingCart} 
-                                    title="خروجی اطلاعات سفارشات" 
+                                <ExportOption
+                                    title="خروجی اطلاعات سفارشات"
                                     desc="شامل وضعیت خرید، مبالغ کل و جزئیات خریداران" 
                                     onClick={() => handleExport('orders')} 
                                     loading={exportingType === 'orders'}
                                 />
-                                <ExportOption 
-                                    icon={Users} 
-                                    title="خروجی اطلاعات مشتریان" 
+                                <ExportOption
+                                    title="خروجی اطلاعات مشتریان"
                                     desc="شامل تلفن، نام و زمان ثبت‌نام جهت کارزارهای پیامکی" 
                                     onClick={() => handleExport('customers')} 
                                     loading={exportingType === 'customers'}
                                 />
-                                <ExportOption 
-                                    icon={Package} 
-                                    title="خروجی اطلاعات انبار کالاها" 
+                                <ExportOption
+                                    title="خروجی اطلاعات انبار کالاها"
                                     desc="شامل کد کالا، برند، قیمت و موجودی فیزیکی انبار" 
                                     onClick={() => handleExport('products')} 
                                     loading={exportingType === 'products'}
@@ -588,8 +584,7 @@ export default function DashboardView({
     )
 }
 
-function ExportOption({ icon: Icon, title, desc, onClick, loading }: {
-    icon: typeof Package
+function ExportOption({ title, desc, onClick, loading }: {
     title: string
     desc: string
     onClick: () => void

@@ -18,11 +18,6 @@ interface Banner {
     category: { id: number; name: string; slug: string } | null;
 }
 
-const positionLabels: Record<string, string> = {
-    'SINGLE_FULL': 'تک بنر تمام‌عرض',
-    'DOUBLE': 'دو بنر کنار هم',
-};
-
 export default function BannersPage() {
     const [banners, setBanners] = useState<Banner[]>([]);
     const [isLoading, setIsLoading] = useState(true);

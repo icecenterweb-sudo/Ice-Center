@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, Search, Menu, PanelRightClose, PanelRight } from 'lucide-react';
+import { Bell, Search, PanelRightClose, PanelRight } from 'lucide-react';
 import { useAdminSidebar } from '@/context/AdminSidebarContext';
 
 export default function Header({ adminName }: { adminName?: string }) {

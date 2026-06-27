@@ -28,7 +28,7 @@ export default function AddToCartButton({
     variant = 'default',
     className = ''
 }: AddToCartButtonProps) {
-    const { addItem, openCart } = useCart()
+    const { addItem } = useCart()
     const [isAdding, setIsAdding] = useState(false)
     const [added, setAdded] = useState(false)
 

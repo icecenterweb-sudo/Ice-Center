@@ -61,7 +61,7 @@ export function generateProductBreadcrumbJsonLd(items: BreadcrumbItem[]) {
 export function generateProductSchemaJsonLd(product: ProductJsonLdParams) {
     const baseUrl = 'https://ice-center.ir';
 
-    const schema: Record<string, any> = {
+    const schema: Record<string, unknown> = {
         '@type': 'Product',
         'name': product.name,
         'description': product.description || `${product.name} - خرید از آیس سنتر`,

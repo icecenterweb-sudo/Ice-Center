@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { useFormStatus } from 'react-dom';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
-import { useRouter } from 'next/navigation';
 
 interface Category {
     id: number;
@@ -38,7 +37,6 @@ function SubmitButton() {
 }
 
 export default function SubcategoryForm({ categories, defaultCategoryId }: SubcategoryFormProps) {
-    const router = useRouter();
     const [name, setName] = useState('');
     const [slug, setSlug] = useState('');
     const [nameLength, setNameLength] = useState(0);
