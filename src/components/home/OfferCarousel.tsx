@@ -207,7 +207,7 @@ const AmazingOfferCarousel = ({ offers }: AmazingOfferCarouselProps) => {
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
           {/* Title */}
           <div className="flex items-center gap-2">
-            <Percent className="w-5 h-5 text-white-500 font-extrabold" />
+            <Percent className="w-5 h-5 text-white font-extrabold" />
             <span className="text-base md:text-lg font-extrabold text-white">شگفت‌انگیز</span>
           </div>
 
