@@ -11,7 +11,7 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { updateProductOfferFlag } from '@/lib/offers';
 import { z } from 'zod';
-import { requireAdmin } from '@/lib/admin-auth';
+import { requireRole } from '@/lib/admin-auth';
 
 // Product with optional custom discount
 const productEntrySchema = z.object({
@@ -108,7 +108,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
  */
 export async function PUT(request: NextRequest, { params }: RouteParams) {
     try {
-        const auth = await requireAdmin(request);
+        const auth = await requireRole(request, 'OFFERS');
         if (!auth.ok) return auth.response;
 
         const { id } = await params;
@@ -224,7 +224,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
     try {
-        const auth = await requireAdmin(request);
+        const auth = await requireRole(request, 'OFFERS');
         if (!auth.ok) return auth.response;
 
         const { id } = await params;

@@ -3,7 +3,7 @@
 import { prisma } from '@/lib/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { requireAdminAction } from '@/lib/admin-auth';
+import { requireRoleAction } from '@/lib/admin-auth';
 import { z } from 'zod';
 
 const CACHE_PROFILE = { expire: 600 };
@@ -32,7 +32,7 @@ const subcategorySchema = z.object({
 
 export async function createCategory(formData: FormData) {
     // Auth check
-    await requireAdminAction();
+    await requireRoleAction('CATEGORIES');
 
     const raw = {
         name: formData.get('name') as string,
@@ -92,7 +92,7 @@ export async function createCategory(formData: FormData) {
 
 export async function updateCategory(id: number, formData: FormData) {
     // Auth check
-    await requireAdminAction();
+    await requireRoleAction('CATEGORIES');
 
     const raw = {
         name: formData.get('name') as string,
@@ -138,7 +138,7 @@ export async function updateCategory(id: number, formData: FormData) {
 
 export async function deleteCategory(id: number) {
     // Auth check
-    await requireAdminAction();
+    await requireRoleAction('CATEGORIES');
 
     try {
         // Check if category has subcategories
@@ -172,7 +172,7 @@ export async function deleteCategory(id: number) {
 
 export async function createSubcategory(formData: FormData) {
     // Auth check
-    await requireAdminAction();
+    await requireRoleAction('CATEGORIES');
 
     const raw = {
         name: formData.get('name') as string,
@@ -218,7 +218,7 @@ export async function createSubcategory(formData: FormData) {
 
 export async function updateSubcategory(id: number, formData: FormData) {
     // Auth check
-    await requireAdminAction();
+    await requireRoleAction('CATEGORIES');
 
     const raw = {
         name: formData.get('name') as string,
@@ -265,7 +265,7 @@ export async function updateSubcategory(id: number, formData: FormData) {
 
 export async function deleteSubcategory(id: number) {
     // Auth check
-    await requireAdminAction();
+    await requireRoleAction('CATEGORIES');
 
     try {
         // Check if subcategory has products

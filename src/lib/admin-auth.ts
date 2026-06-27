@@ -96,3 +96,58 @@ export function hasAdminRole(payload: AdminTokenPayload, requiredRoles: string[]
     if (payload.roles.includes('SUPER_ADMIN')) return true;
     return requiredRoles.some(role => payload.roles.includes(role));
 }
+
+/**
+ * Role-based access mapping for each admin section.
+ * SUPER_ADMIN bypasses all checks (handled in hasAdminRole).
+ */
+export const ROLE_PERMISSIONS = {
+    PRODUCTS: ['SUPER_ADMIN', 'GENERAL_MANAGER', 'INVENTORY_MANAGER', 'EDITOR'],
+    CATEGORIES: ['SUPER_ADMIN', 'GENERAL_MANAGER', 'INVENTORY_MANAGER', 'EDITOR'],
+    ORDERS: ['SUPER_ADMIN', 'GENERAL_MANAGER', 'SUPPORT_ADMIN'],
+    BLOG: ['SUPER_ADMIN', 'GENERAL_MANAGER', 'BLOG_WRITER'],
+    COUPONS: ['SUPER_ADMIN', 'GENERAL_MANAGER'],
+    BANNERS: ['SUPER_ADMIN', 'GENERAL_MANAGER', 'EDITOR'],
+    OFFERS: ['SUPER_ADMIN', 'GENERAL_MANAGER'],
+    SLIDES: ['SUPER_ADMIN', 'GENERAL_MANAGER', 'EDITOR'],
+    ADMIN_MANAGEMENT: ['SUPER_ADMIN'],
+} as const;
+
+export type AdminSection = keyof typeof ROLE_PERMISSIONS;
+
+/**
+ * Require admin authentication + specific role for Server Actions.
+ * Throws if the admin doesn't have the required role.
+ */
+export async function requireRoleAction(section: AdminSection): Promise<AdminTokenPayload> {
+    const payload = await requireAdminAction();
+    const requiredRoles = ROLE_PERMISSIONS[section] as readonly string[];
+    if (!hasAdminRole(payload, [...requiredRoles])) {
+        throw new Error('شما دسترسی لازم برای این عملیات را ندارید.');
+    }
+    return payload;
+}
+
+/**
+ * Require admin authentication + specific role for API routes.
+ * Returns a NextResponse (403) if the admin doesn't have the required role.
+ */
+export async function requireRole(
+    request: Request,
+    section: AdminSection
+): Promise<AdminAuthResult> {
+    const auth = await requireAdmin(request);
+    if (!auth.ok) return auth;
+
+    const requiredRoles = ROLE_PERMISSIONS[section] as readonly string[];
+    if (!hasAdminRole(auth.payload, [...requiredRoles])) {
+        return {
+            ok: false,
+            response: NextResponse.json(
+                { success: false, error: 'Forbidden: insufficient role' },
+                { status: 403 }
+            ),
+        };
+    }
+    return auth;
+}

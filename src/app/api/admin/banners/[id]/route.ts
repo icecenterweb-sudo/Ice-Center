@@ -1,6 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { requireAdmin } from '@/lib/admin-auth';
+import { requireRole } from '@/lib/admin-auth';
+import { z } from 'zod';
+
+const bannerPositionSchema = z.enum(['SINGLE_FULL', 'DOUBLE']);
+
+const updateBannerSchema = z.object({
+    title: z.string().trim().min(1, 'عنوان بنر الزامی است').optional(),
+    position: bannerPositionSchema.optional(),
+    desktopImage: z.string().trim().min(1, 'تصویر دسکتاپ الزامی است').optional(),
+    mobileImage: z.string().trim().min(1, 'تصویر موبایل الزامی است').optional(),
+    alt: z.string().trim().min(1, 'متن جایگزین الزامی است').optional(),
+    link: z.string().trim().optional().nullable(),
+    productId: z.number().int().positive().optional().nullable(),
+    categoryId: z.number().int().positive().optional().nullable(),
+    isActive: z.boolean().optional(),
+    order: z.number().int().optional(),
+});
 
 type RouteContext = {
     params: Promise<{ id: string }>;
@@ -9,7 +25,7 @@ type RouteContext = {
 // GET - Get single banner
 export async function GET(request: NextRequest, context: RouteContext) {
     try {
-        const auth = await requireAdmin(request);
+        const auth = await requireRole(request, 'BANNERS');
         if (!auth.ok) return auth.response;
 
         const { id } = await context.params;
@@ -50,7 +66,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 // PUT - Update banner
 export async function PUT(request: NextRequest, context: RouteContext) {
     try {
-        const auth = await requireAdmin(request);
+        const auth = await requireRole(request, 'BANNERS');
         if (!auth.ok) return auth.response;
 
         const { id } = await context.params;
@@ -64,18 +80,14 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         }
 
         const body = await request.json();
-        const {
-            title,
-            position,
-            desktopImage,
-            mobileImage,
-            alt,
-            link,
-            productId,
-            categoryId,
-            isActive,
-            order,
-        } = body;
+
+        const result = updateBannerSchema.safeParse(body);
+        if (!result.success) {
+            return NextResponse.json(
+                { success: false, error: result.error.issues.map(i => i.message).join('، ') },
+                { status: 400 }
+            );
+        }
 
         // Check exists
         const existing = await prisma.banner.findUnique({
@@ -89,19 +101,20 @@ export async function PUT(request: NextRequest, context: RouteContext) {
             );
         }
 
-        // Build update data
+        // Build update data from validated fields
+        const data = result.data;
         const updateData: Record<string, unknown> = {};
 
-        if (title !== undefined) updateData.title = title.trim();
-        if (position !== undefined) updateData.position = position;
-        if (desktopImage !== undefined) updateData.desktopImage = desktopImage.trim();
-        if (mobileImage !== undefined) updateData.mobileImage = mobileImage.trim();
-        if (alt !== undefined) updateData.alt = alt.trim();
-        if (link !== undefined) updateData.link = link?.trim() || null;
-        if (productId !== undefined) updateData.productId = productId || null;
-        if (categoryId !== undefined) updateData.categoryId = categoryId || null;
-        if (isActive !== undefined) updateData.isActive = isActive;
-        if (order !== undefined) updateData.order = order;
+        if (data.title !== undefined) updateData.title = data.title;
+        if (data.position !== undefined) updateData.position = data.position;
+        if (data.desktopImage !== undefined) updateData.desktopImage = data.desktopImage;
+        if (data.mobileImage !== undefined) updateData.mobileImage = data.mobileImage;
+        if (data.alt !== undefined) updateData.alt = data.alt;
+        if (data.link !== undefined) updateData.link = data.link || null;
+        if (data.productId !== undefined) updateData.productId = data.productId || null;
+        if (data.categoryId !== undefined) updateData.categoryId = data.categoryId || null;
+        if (data.isActive !== undefined) updateData.isActive = data.isActive;
+        if (data.order !== undefined) updateData.order = data.order;
 
         const banner = await prisma.banner.update({
             where: { id: bannerId },
@@ -121,7 +134,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
 // DELETE - Delete banner
 export async function DELETE(request: NextRequest, context: RouteContext) {
     try {
-        const auth = await requireAdmin(request);
+        const auth = await requireRole(request, 'BANNERS');
         if (!auth.ok) return auth.response;
 
         const { id } = await context.params;

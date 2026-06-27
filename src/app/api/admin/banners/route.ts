@@ -1,11 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { requireAdmin } from '@/lib/admin-auth';
+import { requireRole } from '@/lib/admin-auth';
+import { z } from 'zod';
+
+const bannerPositionSchema = z.enum(['SINGLE_FULL', 'DOUBLE']);
+
+const createBannerSchema = z.object({
+    title: z.string().trim().min(1, 'عنوان بنر الزامی است'),
+    position: bannerPositionSchema.default('SINGLE_FULL'),
+    desktopImage: z.string().trim().min(1, 'تصویر دسکتاپ الزامی است'),
+    mobileImage: z.string().trim().min(1, 'تصویر موبایل الزامی است'),
+    alt: z.string().trim().min(1, 'متن جایگزین الزامی است'),
+    link: z.string().trim().optional().nullable(),
+    productId: z.number().int().positive().optional().nullable(),
+    categoryId: z.number().int().positive().optional().nullable(),
+    isActive: z.boolean().default(true),
+    order: z.number().int().default(0),
+});
 
 // GET - List all banners (for admin)
 export async function GET(request: NextRequest) {
     try {
-        const auth = await requireAdmin(request);
+        const auth = await requireRole(request, 'BANNERS');
         if (!auth.ok) return auth.response;
 
         const banners = await prisma.banner.findMany({
@@ -32,64 +48,33 @@ export async function GET(request: NextRequest) {
 // POST - Create new banner
 export async function POST(request: NextRequest) {
     try {
-        const auth = await requireAdmin(request);
+        const auth = await requireRole(request, 'BANNERS');
         if (!auth.ok) return auth.response;
 
         const body = await request.json();
-        const {
-            title,
-            position,
-            desktopImage,
-            mobileImage,
-            alt,
-            link,
-            productId,
-            categoryId,
-            isActive,
-            order,
-        } = body;
 
-        // Validation
-        if (!title?.trim()) {
+        const result = createBannerSchema.safeParse(body);
+        if (!result.success) {
             return NextResponse.json(
-                { success: false, error: 'عنوان بنر الزامی است' },
+                { success: false, error: result.error.issues.map(i => i.message).join('، ') },
                 { status: 400 }
             );
         }
 
-        if (!desktopImage?.trim()) {
-            return NextResponse.json(
-                { success: false, error: 'تصویر دسکتاپ الزامی است' },
-                { status: 400 }
-            );
-        }
-
-        if (!mobileImage?.trim()) {
-            return NextResponse.json(
-                { success: false, error: 'تصویر موبایل الزامی است' },
-                { status: 400 }
-            );
-        }
-
-        if (!alt?.trim()) {
-            return NextResponse.json(
-                { success: false, error: 'متن جایگزین الزامی است' },
-                { status: 400 }
-            );
-        }
+        const data = result.data;
 
         const banner = await prisma.banner.create({
             data: {
-                title: title.trim(),
-                position: position || 'SINGLE_FULL',
-                desktopImage: desktopImage.trim(),
-                mobileImage: mobileImage.trim(),
-                alt: alt.trim(),
-                link: link?.trim() || null,
-                productId: productId || null,
-                categoryId: categoryId || null,
-                isActive: isActive ?? true,
-                order: order ?? 0,
+                title: data.title,
+                position: data.position,
+                desktopImage: data.desktopImage,
+                mobileImage: data.mobileImage,
+                alt: data.alt,
+                link: data.link || null,
+                productId: data.productId || null,
+                categoryId: data.categoryId || null,
+                isActive: data.isActive,
+                order: data.order,
             },
         });
 

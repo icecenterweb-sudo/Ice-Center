@@ -10,7 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
-import { requireAdmin } from '@/lib/admin-auth';
+import { requireRole } from '@/lib/admin-auth';
 
 // Validation schema for updating a slide
 const updateSlideSchema = z.object({
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
  */
 export async function PUT(request: NextRequest, { params }: RouteParams) {
     try {
-        const auth = await requireAdmin(request);
+        const auth = await requireRole(request, 'SLIDES');
         if (!auth.ok) return auth.response;
 
         const { id } = await params;
@@ -152,7 +152,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
     try {
-        const auth = await requireAdmin(request);
+        const auth = await requireRole(request, 'SLIDES');
         if (!auth.ok) return auth.response;
 
         const { id } = await params;

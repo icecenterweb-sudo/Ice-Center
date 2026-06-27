@@ -3,7 +3,7 @@
 import { prisma } from '@/lib/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { requireAdminAction } from '@/lib/admin-auth';
+import { requireRoleAction } from '@/lib/admin-auth';
 import { recordAudit } from '@/lib/audit';
 import { z } from 'zod';
 import { generateUniqueSlug } from '@/lib/slugify';
@@ -79,7 +79,7 @@ function computeInventoryStatus(stock: number): 'IN_STOCK' | 'OUT_OF_STOCK' {
 
 export async function createProduct(formData: FormData) {
     // Auth check
-    const admin = await requireAdminAction();
+    const admin = await requireRoleAction('PRODUCTS');
 
     // Parse and validate
     const raw = parseProductFormData(formData);
@@ -132,7 +132,7 @@ export async function createProduct(formData: FormData) {
 
 export async function updateProduct(id: number, formData: FormData) {
     // Auth check
-    const admin = await requireAdminAction();
+    const admin = await requireRoleAction('PRODUCTS');
 
     // Parse and validate
     const raw = parseProductFormData(formData);
@@ -203,8 +203,7 @@ export async function updateProduct(id: number, formData: FormData) {
         revalidateTag(`product:${currentProduct?.slug || ''}`, CACHE_PROFILE);
     } catch (error: unknown) {
         console.error('Failed to update product:', error);
-        const message = error instanceof Error ? error.message : 'خطا در ویرایش محصول';
-        throw new Error(message);
+        throw new Error('خطا در ویرایش محصول');
     }
 
     redirect('/admin/dashboard/products');
@@ -212,7 +211,7 @@ export async function updateProduct(id: number, formData: FormData) {
 
 export async function deleteProduct(id: number) {
     // Auth check
-    const admin = await requireAdminAction();
+    const admin = await requireRoleAction('PRODUCTS');
 
     try {
         // Check if product has variants
@@ -238,14 +237,13 @@ export async function deleteProduct(id: number) {
         return { success: true };
     } catch (error: unknown) {
         console.error('Failed to delete product:', error);
-        const message = error instanceof Error ? error.message : 'خطا در حذف محصول';
-        throw new Error(message);
+        throw new Error('خطا در حذف محصول');
     }
 }
 
 export async function toggleProductStatus(id: number) {
     // Auth check
-    const admin = await requireAdminAction();
+    const admin = await requireRoleAction('PRODUCTS');
 
     try {
         // Atomic toggle via raw SQL — prevents lost-update race where two
@@ -268,8 +266,7 @@ export async function toggleProductStatus(id: number) {
         return { success: true };
     } catch (error: unknown) {
         console.error('Failed to toggle product status:', error);
-        const message = error instanceof Error ? error.message : 'خطا در تغییر وضعیت محصول';
-        throw new Error(message);
+        throw new Error('خطا در تغییر وضعیت محصول');
     }
 }
 
@@ -305,7 +302,7 @@ function parseVariantFormData(formData: FormData) {
 
 export async function createProductVariant(productId: number, formData: FormData) {
     // Auth check
-    await requireAdminAction();
+    await requireRoleAction('PRODUCTS');
 
     const raw = parseVariantFormData(formData);
     const result = variantSchema.safeParse(raw);
@@ -338,14 +335,13 @@ export async function createProductVariant(productId: number, formData: FormData
         return { success: true };
     } catch (error: unknown) {
         console.error('Failed to create variant:', error);
-        const message = error instanceof Error ? error.message : 'خطا در ایجاد واریانت';
-        throw new Error(message);
+        throw new Error('خطا در ایجاد واریانت');
     }
 }
 
 export async function updateProductVariant(id: number, formData: FormData) {
     // Auth check
-    await requireAdminAction();
+    await requireRoleAction('PRODUCTS');
 
     const raw = parseVariantFormData(formData);
     const result = variantSchema.safeParse(raw);
@@ -378,14 +374,13 @@ export async function updateProductVariant(id: number, formData: FormData) {
         return { success: true };
     } catch (error: unknown) {
         console.error('Failed to update variant:', error);
-        const message = error instanceof Error ? error.message : 'خطا در ویرایش واریانت';
-        throw new Error(message);
+        throw new Error('خطا در ویرایش واریانت');
     }
 }
 
 export async function deleteProductVariant(id: number) {
     // Auth check
-    await requireAdminAction();
+    await requireRoleAction('PRODUCTS');
 
     try {
         await prisma.productVariant.delete({
@@ -398,8 +393,7 @@ export async function deleteProductVariant(id: number) {
         return { success: true };
     } catch (error: unknown) {
         console.error('Failed to delete variant:', error);
-        const message = error instanceof Error ? error.message : 'خطا در حذف واریانت';
-        throw new Error(message);
+        throw new Error('خطا در حذف واریانت');
     }
 }
 
@@ -408,10 +402,24 @@ export async function bulkUpdateProductsAction(
     action: 'ACTIVATE' | 'DEACTIVATE' | 'DELETE' | 'CHANGE_SUBCATEGORY',
     subcategoryId?: number
 ) {
-    const admin = await requireAdminAction();
+    const admin = await requireRoleAction('PRODUCTS');
 
     if (!productIds || productIds.length === 0) {
         throw new Error('هیچ محصولی انتخاب نشده است.');
+    }
+
+    if (!productIds.every(id => Number.isInteger(id) && id > 0)) {
+        throw new Error('شناسه محصولات نامعتبر است');
+    }
+
+    if (productIds.length > 100) {
+        throw new Error('حداکثر ۱۰۰ محصول در هر عملیات مجاز است');
+    }
+
+    if (action === 'CHANGE_SUBCATEGORY') {
+        if (typeof subcategoryId !== 'number' || !Number.isInteger(subcategoryId) || subcategoryId <= 0) {
+            throw new Error('زیردسته نامعتبر است');
+        }
     }
 
     try {
@@ -466,7 +474,6 @@ export async function bulkUpdateProductsAction(
         return { success: true };
     } catch (error: unknown) {
         console.error('Failed bulk products update:', error);
-        const message = error instanceof Error ? error.message : 'خطا در عملیات گروهی محصولات';
-        throw new Error(message);
+        throw new Error('خطا در عملیات گروهی محصولات');
     }
 }
