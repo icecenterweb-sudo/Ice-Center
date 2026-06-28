@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, ShoppingBag, Package, Clock, CheckCircle, Truck, XCircle, Loader2 } from 'lucide-react';
+import Image from 'next/image';
 
 interface OrderItem {
     id: number;
@@ -24,7 +25,7 @@ interface Order {
     _count: { items: number };
 }
 
-const statusConfig: Record<string, { label: string; color: string; icon: React.ComponentType<any> }> = {
+const statusConfig: Record<string, { label: string; color: string; icon: React.ComponentType<{ className?: string }> }> = {
     PENDING: { label: 'در انتظار پرداخت', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
     PAID: { label: 'پرداخت شده', color: 'bg-blue-100 text-blue-700', icon: CheckCircle },
     PROCESSING: { label: 'در حال پردازش', color: 'bg-purple-100 text-purple-700', icon: Package },
@@ -154,13 +155,14 @@ export default function OrdersPage() {
                                             {order.items.slice(0, 3).map((item) => (
                                                 <div
                                                     key={item.id}
-                                                    className="w-10 h-10 rounded-lg bg-gray-100 border-2 border-white overflow-hidden"
+                                                    className="relative w-10 h-10 rounded-lg bg-gray-100 border-2 border-white overflow-hidden"
                                                 >
                                                     {item.thumbnail ? (
-                                                        <img
+                                                        <Image
                                                             src={item.thumbnail}
                                                             alt={item.productName}
-                                                            className="w-full h-full object-cover"
+                                                            fill
+                                                            className="object-cover"
                                                         />
                                                     ) : (
                                                         <div className="w-full h-full flex items-center justify-center text-gray-400">

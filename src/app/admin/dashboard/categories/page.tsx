@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db';
 import { FolderTree, Plus, Edit, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import DeleteCategoryButton from './DeleteCategoryButton';
 import DeleteSubcategoryButton from './DeleteSubcategoryButton';
 import { connection } from 'next/server';
@@ -61,11 +62,12 @@ async function CategoriesContent() {
                                 <div className="flex items-start gap-4">
                                     {/* Category Image */}
                                     {category.image ? (
-                                        <div className="w-16 h-16 rounded-lg overflow-hidden border-2 border-white shadow-sm flex-shrink-0">
-                                            <img
+                                        <div className="relative w-16 h-16 rounded-lg overflow-hidden border-2 border-white shadow-sm flex-shrink-0">
+                                            <Image
                                                 src={category.image}
                                                 alt={category.name}
-                                                className="w-full h-full object-cover"
+                                                fill
+                                                className="object-cover"
                                             />
                                         </div>
                                     ) : (

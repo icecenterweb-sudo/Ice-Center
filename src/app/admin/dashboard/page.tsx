@@ -19,11 +19,11 @@ async function DashboardContent() {
             select: { total: true },
         }),
         prisma.order.count({ where: { status: 'PENDING' } }),
-        ((prisma as any).auditLog ? (prisma as any).auditLog.findMany({
+        prisma.auditLog ? prisma.auditLog.findMany({
             orderBy: { createdAt: 'desc' },
             take: 5,
             include: { admin: { select: { name: true } } },
-        }) : Promise.resolve([])),
+        }) : Promise.resolve([]),
     ]);
 
     const monthlySales = ordersThisMonth.reduce((sum, o) => sum + o.total, 0);

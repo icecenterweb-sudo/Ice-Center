@@ -147,7 +147,7 @@ export async function updateOrderStatus(orderId: number, status: OrderStatus) {
 
         // Record PAYMENT_SUCCESS event if paid
         if (status === 'PAID') {
-            const analyticsEventClient = (prisma as any).analyticsEvent;
+            const analyticsEventClient = prisma.analyticsEvent;
             if (analyticsEventClient) {
                 // Find original source/medium from ORDER_SUBMIT event for attribution
                 const originalEvent = await analyticsEventClient.findFirst({
@@ -164,7 +164,7 @@ export async function updateOrderStatus(orderId: number, status: OrderStatus) {
                         medium: originalEvent?.medium || 'direct',
                         path: `/admin/dashboard/orders/${order.id}`,
                     }
-                }).catch((err: any) => console.error('[Analytics] Failed to log PAYMENT_SUCCESS:', err));
+                }).catch((err: unknown) => console.error('[Analytics] Failed to log PAYMENT_SUCCESS:', err));
             }
         }
 
@@ -270,7 +270,7 @@ export async function bulkUpdateOrdersStatusAction(orderIds: number[], status: O
         // Record Analytics and send notifications for each order in background
         for (const order of orders) {
             if (status === 'PAID') {
-                const analyticsEventClient = (prisma as any).analyticsEvent;
+                const analyticsEventClient = prisma.analyticsEvent;
                 if (analyticsEventClient) {
                     analyticsEventClient.create({
                         data: {
@@ -281,7 +281,7 @@ export async function bulkUpdateOrdersStatusAction(orderIds: number[], status: O
                             medium: 'direct',
                             path: `/admin/dashboard/orders/${order.id}`,
                         }
-                    }).catch((err: any) => console.error('[Analytics] Failed to log bulk PAYMENT_SUCCESS:', err));
+                    }).catch((err: unknown) => console.error('[Analytics] Failed to log bulk PAYMENT_SUCCESS:', err));
                 }
             }
             notifyOrderStatusChange(order.userId, order.id, order.orderNumber, status).catch(console.error);
@@ -289,8 +289,8 @@ export async function bulkUpdateOrdersStatusAction(orderIds: number[], status: O
 
         revalidatePath('/admin/dashboard/orders');
         return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Failed bulk orders update:', error);
-        return { error: error.message || 'خطا در عملیات گروهی سفارشات' };
+        return { error: error instanceof Error ? error.message : 'خطا در عملیات گروهی سفارشات' };
     }
 }

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Tag, Plus, Clock, Calendar, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { prisma } from '@/lib/db';
 import { formatPersianNumber } from '@/lib/persian';
@@ -180,14 +181,15 @@ async function OffersContent() {
                                                     {offer.products.slice(0, 3).map((op) => (
                                                         <div
                                                             key={op.product.id}
-                                                            className="w-8 h-8 rounded-lg bg-gray-100 overflow-hidden"
+                                                            className="relative w-8 h-8 rounded-lg bg-gray-100 overflow-hidden"
                                                             title={op.product.name}
                                                         >
                                                             {op.product.thumbnail ? (
-                                                                <img
+                                                                <Image
                                                                     src={op.product.thumbnail}
                                                                     alt={op.product.name}
-                                                                    className="w-full h-full object-cover"
+                                                                    fill
+                                                                    className="object-cover"
                                                                 />
                                                             ) : (
                                                                 <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">

@@ -381,6 +381,7 @@ export default function AddSlidePage() {
                                             دسکتاپ (1920×400)
                                         </p>
                                         <div className="relative w-full h-[100px] bg-gray-100 rounded-xl overflow-hidden">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
                                             <img
                                                 src={desktopPreview}
                                                 alt="Desktop Preview"
@@ -403,6 +404,7 @@ export default function AddSlidePage() {
                                             موبایل (768×180)
                                         </p>
                                         <div className="relative w-[180px] h-[45px] bg-gray-100 rounded-lg overflow-hidden mx-auto lg:mx-0">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
                                             <img
                                                 src={mobilePreview}
                                                 alt="Mobile Preview"

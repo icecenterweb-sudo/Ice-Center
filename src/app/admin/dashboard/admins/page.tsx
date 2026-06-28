@@ -3,6 +3,7 @@ import { connection } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyAdminToken } from '@/lib/jwt';
 import { redirect } from 'next/navigation';
+import { AdminRole } from '@prisma/client';
 import AdminsClient from './AdminsClient';
 import { Suspense } from 'react';
 
@@ -29,9 +30,9 @@ async function AdminsContent() {
 
     return (
         <AdminsClient 
-            admins={admins as any[]} 
+            admins={admins} 
             currentAdminPhone={payload.phone}
-            currentAdminRoles={payload.roles as any[]}
+            currentAdminRoles={payload.roles as AdminRole[]}
         />
     );
 }

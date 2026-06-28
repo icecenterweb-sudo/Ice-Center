@@ -3,21 +3,22 @@
 import { useState, useTransition, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { 
-    Package, 
-    Eye, 
-    Edit, 
-    Trash2, 
-    Check, 
-    X, 
-    FolderEdit, 
-    Search, 
-    Filter, 
-    Power, 
+import {
+    Package,
+    Eye,
+    Edit,
+    Trash2,
+    Check,
+    X,
+    FolderEdit,
+    Search,
+    Filter,
+    Power,
     PowerOff,
     CheckSquare,
     Square
 } from 'lucide-react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { formatPersianNumber, toPersianNumber } from '@/lib/persian';
@@ -151,8 +152,9 @@ export default function ProductsTableClient({ initialProducts, categories }: Pro
                     setTargetSubcategoryId(null);
                     router.refresh();
                 }
-            } catch (err: any) {
-                toast.error(err.message || 'خطایی رخ داد.', { id: loadingToast });
+            } catch (err: unknown) {
+                const message = err instanceof Error ? err.message : String(err);
+                toast.error(message || 'خطایی رخ داد.', { id: loadingToast });
             }
         });
     };
@@ -271,12 +273,13 @@ export default function ProductsTableClient({ initialProducts, categories }: Pro
                                                 </button>
                                             </td>
                                             <td className="px-3 py-3">
-                                                <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden border border-gray-100">
+                                                <div className="relative w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden border border-gray-100">
                                                     {product.thumbnail ? (
-                                                        <img
+                                                        <Image
                                                             src={product.thumbnail}
                                                             alt={product.name}
-                                                            className="w-full h-full object-cover"
+                                                            fill
+                                                            className="object-cover"
                                                         />
                                                     ) : (
                                                         <Package className="w-5 h-5 text-gray-300" />

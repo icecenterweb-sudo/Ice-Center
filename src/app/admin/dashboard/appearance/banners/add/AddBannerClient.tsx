@@ -408,6 +408,7 @@ export default function AddBannerPage() {
                                             دسکتاپ ({position === 'SINGLE_FULL' ? '1600×200' : '800×200'})
                                         </p>
                                         <div className="relative w-full h-[60px] bg-gray-100 rounded-xl overflow-hidden">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
                                             <img
                                                 src={desktopPreview}
                                                 alt="Desktop Preview"
@@ -430,6 +431,7 @@ export default function AddBannerPage() {
                                             موبایل (768×256)
                                         </p>
                                         <div className="relative w-[180px] h-[60px] bg-gray-100 rounded-lg overflow-hidden mx-auto lg:mx-0">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
                                             <img
                                                 src={mobilePreview}
                                                 alt="Mobile Preview"

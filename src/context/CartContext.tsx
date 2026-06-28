@@ -119,6 +119,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }, [])
 
     // Initialize cart
+    /* eslint-disable react-hooks/set-state-in-effect */
     useEffect(() => {
         if (authLoading) return
 
@@ -130,6 +131,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             loadLocalCart()
         }
     }, [isAuthenticated, authLoading, syncCart, fetchCart, loadLocalCart])
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     // Cart operations
     const openCart = useCallback(() => setIsOpen(true), [])

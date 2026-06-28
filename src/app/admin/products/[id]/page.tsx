@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function EditProductPage() {
   const router = useRouter();
@@ -45,15 +46,16 @@ export default function EditProductPage() {
 
   useEffect(() => {
     if (id) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchProduct();
     }
   }, [fetchProduct, id]);
 
-  const handleChange = (e: any) => {
-    const { name, value, type, checked } = e.target;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
     }));
   };
 
@@ -247,11 +249,12 @@ export default function EditProductPage() {
               <p className="font-bold mb-2">تصاویر محصول ({formData.images.length}):</p>
               <div className="grid grid-cols-3 gap-4">
                 {formData.images.map((url, index) => (
-                  <div key={index} className="relative group">
-                    <img
+                  <div key={index} className="relative group w-full h-32">
+                    <Image
                       src={url}
                       alt={`تصویر ${index + 1}`}
-                      className="w-full h-32 object-cover rounded border"
+                      fill
+                      className="object-cover rounded border"
                     />
                     <button
                       type="button"

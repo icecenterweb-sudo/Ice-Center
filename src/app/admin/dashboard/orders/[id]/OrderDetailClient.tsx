@@ -2,17 +2,25 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { OrderStatus } from '@prisma/client';
+import { OrderStatus, Prisma } from '@prisma/client';
 import {
     User, MapPin, Calendar,
     Package, Save, ArrowLeft
 } from 'lucide-react';
+import Image from 'next/image';
 import { updateOrderStatus, updateAdminNotes } from '../actions';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 
 interface OrderDetailClientProps {
-    order: any; // Using any for simplicity in rapid dev, ideally typed
+    order: Prisma.OrderGetPayload<{
+        include: {
+            items: true;
+            user: {
+                select: { id: true; firstName: true; lastName: true; phone: true };
+            };
+        };
+    }>;
 }
 
 const statusOptions: { value: OrderStatus; label: string; color: string }[] = [
@@ -121,13 +129,13 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
-                                    {order.items.map((item: any) => (
+                                    {order.items.map((item) => (
                                         <tr key={item.id}>
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-12 h-12 relative bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden">
                                                         {item.thumbnail ? (
-                                                            <img src={item.thumbnail} alt={item.productName} className="w-full h-full object-cover" />
+                                                            <Image src={item.thumbnail} alt={item.productName} fill className="object-cover" />
                                                         ) : (
                                                             <div className="w-full h-full flex items-center justify-center text-gray-400">IMG</div>
                                                         )}

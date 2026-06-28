@@ -2,20 +2,32 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { Prisma } from '@prisma/client';
 import MultiImageUpload from '@/components/admin/MultiImageUpload';
 import FeaturesManager from '@/components/admin/FeaturesManager';
 import SpecificationsManager from '@/components/admin/SpecificationsManager';
 import { updateProduct } from '@/app/actions/products';
 
 interface EditProductFormProps {
-    product: any;
-    subcategories: any[];
+    product: Prisma.ProductGetPayload<{
+        include: {
+            subcategory: true;
+            variants: true;
+        };
+    }>;
+    subcategories: Prisma.SubcategoryGetPayload<{
+        include: {
+            category: true;
+        };
+    }>[];
 }
 
 export default function EditProductForm({ product, subcategories }: EditProductFormProps) {
     const [, setImageUrls] = useState<string[]>([]);
     const [features, setFeatures] = useState<string[]>(product.features || []);
-    const [specifications, setSpecifications] = useState<Record<string, string>>(product.specifications || {});
+    const [specifications, setSpecifications] = useState<Record<string, string>>(
+        (product.specifications as Record<string, string> | null) ?? {}
+    );
 
     const handleSubmit = async (formData: FormData) => {
         // Images are now already uploaded to Cloudinary by MultiImageUpload

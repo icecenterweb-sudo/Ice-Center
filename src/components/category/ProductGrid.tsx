@@ -4,13 +4,20 @@ import ProductCard from '@/components/product/ProductCard';
 
 interface Product {
     id: number;
-    name: string;
     slug: string;
+    name: string;
     price: number;
-    listPrice?: number | null;
-    thumbnail?: string | null;
+    listPrice?: number;
+    image: string;
+    rating: number;
+    reviewCount: number;
     inventoryStatus: string;
-    brand?: string | null;
+    specs?: {
+        capacity?: string;
+        power?: string;
+        temp?: string;
+    };
+    isSpecialOffer?: boolean;
 }
 
 interface ProductGridProps {
@@ -30,7 +37,7 @@ export default function ProductGrid({ products, emptyMessage = 'محصولی ی�
 
     return (
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-            {products.map((product: any) => (
+            {products.map((product) => (
                 <ProductCard key={product.id} product={product} />
             ))}
         </div>

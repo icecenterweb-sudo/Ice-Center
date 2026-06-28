@@ -34,7 +34,7 @@ interface ErrorsViewProps {
     initialLogs: ErrorLog[];
 }
 
-const severityConfig: Record<string, { label: string; color: string; cardBg: string; text: string; icon: any }> = {
+const severityConfig: Record<string, { label: string; color: string; cardBg: string; text: string; icon: React.ComponentType<{ className?: string }> }> = {
     CRITICAL: { label: 'بحرانی', color: 'bg-red-50 text-red-700 border-red-150', cardBg: 'bg-red-50/50', text: 'text-red-600', icon: AlertOctagon },
     ERROR: { label: 'خطا', color: 'bg-orange-50 text-orange-700 border-orange-150', cardBg: 'bg-orange-50/50', text: 'text-orange-600', icon: AlertOctagon },
     WARNING: { label: 'هشدار', color: 'bg-yellow-50 text-yellow-700 border-yellow-150', cardBg: 'bg-yellow-50/50', text: 'text-yellow-600', icon: AlertTriangle },
@@ -121,8 +121,8 @@ export default function ErrorsView({ initialLogs }: ErrorsViewProps) {
                     setSelectedIds(prev => prev.filter(item => item !== id));
                     router.refresh();
                 }
-            } catch (err: any) {
-                toast.error(err.message || 'خطا رخ داد.', { id: loadingToast });
+            } catch (err: unknown) {
+                toast.error(err instanceof Error ? err.message : 'خطا رخ داد.', { id: loadingToast });
             }
         });
     };
@@ -141,8 +141,8 @@ export default function ErrorsView({ initialLogs }: ErrorsViewProps) {
                     setSelectedIds([]);
                     router.refresh();
                 }
-            } catch (err: any) {
-                toast.error(err.message || 'خطا رخ داد.', { id: loadingToast });
+            } catch (err: unknown) {
+                toast.error(err instanceof Error ? err.message : 'خطا رخ داد.', { id: loadingToast });
             }
         });
     };
@@ -160,8 +160,8 @@ export default function ErrorsView({ initialLogs }: ErrorsViewProps) {
                     setSelectedIds([]);
                     router.refresh();
                 }
-            } catch (err: any) {
-                toast.error(err.message || 'خطا رخ داد.', { id: loadingToast });
+            } catch (err: unknown) {
+                toast.error(err instanceof Error ? err.message : 'خطا رخ داد.', { id: loadingToast });
             }
         });
     };

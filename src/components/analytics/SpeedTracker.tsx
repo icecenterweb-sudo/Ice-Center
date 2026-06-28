@@ -19,9 +19,9 @@ export default function SpeedTracker() {
                     const loadTime = nav.loadEventEnd || nav.domContentLoadedEventEnd || 0
                     if (loadTime <= 0) return
 
-                    const resources = performance.getEntriesByType('resource')
-                    const images = resources.filter((r: any) => r.initiatorType === 'img')
-                    const imageSize = images.reduce((sum, img: any) => sum + (img.encodedBodySize || img.transferSize || 0), 0) / 1024 // in KB
+                    const resources = performance.getEntriesByType('resource') as PerformanceResourceTiming[]
+                    const images = resources.filter((r) => r.initiatorType === 'img')
+                    const imageSize = images.reduce((sum, img) => sum + (img.encodedBodySize || img.transferSize || 0), 0) / 1024 // in KB
 
                     recordClientEvent('SPEED_LOG', {
                         loadTime,

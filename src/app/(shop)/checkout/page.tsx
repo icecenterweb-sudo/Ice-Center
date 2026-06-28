@@ -363,9 +363,9 @@ export default function CheckoutPage() {
             
             // Track successful order submission
             recordClientEvent('ORDER_SUBMIT', { orderId: data.order.id });
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Order error:', error);
-            toast.error(error.message || 'خطا در ثبت سفارش');
+            toast.error(error instanceof Error ? error.message : 'خطا در ثبت سفارش');
             setIsSubmitting(false);
         }
     };

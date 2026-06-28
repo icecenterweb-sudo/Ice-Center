@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Plus, Trash2, Edit, Eye, EyeOff, GripVertical, Loader2 } from 'lucide-react';
+import Image from 'next/image';
 
 interface Slide {
     id: number;
@@ -151,11 +152,12 @@ export default function SlidesPage() {
                                 </div>
 
                                 {/* Thumbnail */}
-                                <div className="w-24 h-14 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                                    <img
+                                <div className="relative w-24 h-14 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                                    <Image
                                         src={slide.desktopImage}
                                         alt={slide.alt}
-                                        className="w-full h-full object-cover"
+                                        fill
+                                        className="object-cover"
                                     />
                                 </div>
 

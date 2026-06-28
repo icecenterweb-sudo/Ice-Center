@@ -42,8 +42,8 @@ export async function updateAdminRolesAction(adminId: number, roles: AdminRole[]
 
         revalidatePath('/admin/dashboard/admins');
         return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Failed to update admin roles:', error);
-        return { error: error.message || 'خطا در به‌روزرسانی نقش‌ها' };
+        return { error: error instanceof Error ? error.message : 'خطا در به‌روزرسانی نقش‌ها' };
     }
 }

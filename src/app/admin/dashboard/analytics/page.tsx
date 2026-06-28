@@ -12,12 +12,10 @@ export default async function AdminAnalyticsPage() {
     const startToday = startOfDay(now)
 
     // Base client check
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const analyticsEventClient = (prisma as any).analyticsEvent;
+    const analyticsEventClient = prisma.analyticsEvent;
     if (!analyticsEventClient) {
         console.warn('Prisma client has not been regenerated with AnalyticsEvent model.');
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return <AnalyticsDashboard hasData={false} summary={null as any} daily={[]} funnel={null as any} socialMetrics={[]} highVisitNoSales={[]} searchMetrics={{ topQueries: [], zeroResultQueries: [] }} retentionMetrics={{ newUsers: 0, activeUsers: 0, returningUsers: 0, inactiveUsers: 0 }} peakTraffic={[]} deviceBrowserMetrics={{ devices: [], browsers: [] }} speedMetrics={[]} />
+        return <AnalyticsDashboard hasData={false} summary={{ visitsToday: 0, visits7Days: 0, visits30Days: 0, userLogins30Days: 0, socialVisits30Days: 0, searchVisits30Days: 0, conversionRate: 0 }} daily={[]} funnel={{ pageViews: 0, productViews: 0, cartAdds: 0, checkoutStarts: 0, orderSubmits: 0, paidOrders: 0 }} socialMetrics={[]} highVisitNoSales={[]} searchMetrics={{ topQueries: [], zeroResultQueries: [] }} retentionMetrics={{ newUsers: 0, activeUsers: 0, returningUsers: 0, inactiveUsers: 0 }} peakTraffic={[]} deviceBrowserMetrics={{ devices: [], browsers: [] }} speedMetrics={[]} />
     }
 
     try {
@@ -35,7 +33,7 @@ export default async function AdminAnalyticsPage() {
             where: { createdAt: { gte: start30 } },
             _count: { _all: true }
         })
-        const counts = typeCounts.reduce((acc: any, curr: any) => {
+        const counts = typeCounts.reduce((acc, curr) => {
             acc[curr.type] = curr._count._all;
             return acc;
         }, {} as Record<string, number>);
@@ -71,7 +69,7 @@ export default async function AdminAnalyticsPage() {
             },
             _count: { _all: true }
         })
-        const mediumMap = mediumCounts.reduce((acc: any, curr: any) => {
+        const mediumMap = mediumCounts.reduce((acc, curr) => {
             if (curr.medium) acc[curr.medium] = curr._count._all;
             return acc;
         }, {} as Record<string, number>);
@@ -108,7 +106,7 @@ export default async function AdminAnalyticsPage() {
             }
         })
 
-        const orderIds = socialOrdersEvents.map((e: any) => e.orderId).filter(Boolean) as number[];
+        const orderIds = socialOrdersEvents.map((e) => e.orderId).filter(Boolean) as number[];
         const orders = await prisma.order.findMany({
             where: {
                 id: { in: orderIds },
@@ -186,14 +184,14 @@ export default async function AdminAnalyticsPage() {
         })
 
         const viewCountsByProduct: Record<number, number> = {}
-        productViewCounts.forEach((item: any) => {
+        productViewCounts.forEach((item) => {
             if (item.productId) {
                 viewCountsByProduct[item.productId] = item._count._all;
             }
         })
 
         const salesCountsByProduct: Record<number, number> = {}
-        productSalesData.forEach((item: any) => {
+        productSalesData.forEach((item) => {
             if (item.productId) {
                 salesCountsByProduct[item.productId] = item._sum.quantity || 0;
             }
@@ -240,8 +238,8 @@ export default async function AdminAnalyticsPage() {
         })
 
         const searchQueries: Record<string, { count: number; totalResults: number }> = {}
-        searchEventsData.forEach((item: any) => {
-            const q = item.searchQuery.trim().toLowerCase()
+        searchEventsData.forEach((item) => {
+            const q = item.searchQuery!.trim().toLowerCase()
             if (!searchQueries[q]) {
                 searchQueries[q] = { count: 0, totalResults: 0 }
             }
@@ -270,7 +268,7 @@ export default async function AdminAnalyticsPage() {
                 createdAt: { gte: start30 }
             }
         })
-        const activeUserIds = activeUserGroup.map((g: any) => g.userId) as number[]
+        const activeUserIds = activeUserGroup.map((g) => g.userId) as number[]
         const activeUsers = activeUserIds.length
 
         const returningUsers = await prisma.user.count({
@@ -358,7 +356,7 @@ export default async function AdminAnalyticsPage() {
 
         const deviceCounts: Record<string, { visits: number; orders: number }> = {}
         devicesList.forEach(dev => { deviceCounts[dev] = { visits: 0, orders: 0 } })
-        deviceData.forEach((item: any) => {
+        deviceData.forEach((item) => {
             const dev = item.device;
             if (dev && deviceCounts[dev]) {
                 if (item.type === 'PAGE_VIEW') {
@@ -392,7 +390,7 @@ export default async function AdminAnalyticsPage() {
 
         const browserCounts: Record<string, { visits: number; orders: number }> = {}
         browsersList.forEach(b => { browserCounts[b] = { visits: 0, orders: 0 } })
-        browserData.forEach((item: any) => {
+        browserData.forEach((item) => {
             const browser = item.browser;
             if (browser && browserCounts[browser]) {
                 if (item.type === 'PAGE_VIEW') {
@@ -442,11 +440,11 @@ export default async function AdminAnalyticsPage() {
         })
 
         const errorMap: Record<string, number> = {}
-        speedErrorData.forEach((item: any) => {
+        speedErrorData.forEach((item) => {
             if (item.path) errorMap[item.path] = item._count._all;
         })
 
-        const speedMetrics = speedData.map((item: any) => {
+        const speedMetrics = speedData.map((item) => {
             const path = item.path!;
             const count = item._count.loadTime || 0;
             const totalTime = item._sum.loadTime || 0;
@@ -460,7 +458,7 @@ export default async function AdminAnalyticsPage() {
                 errorCount
             }
         })
-        .sort((a: any, b: any) => b.avgLoadTime - a.avgLoadTime)
+        .sort((a, b) => b.avgLoadTime - a.avgLoadTime)
         .slice(0, 10)
 
         return (
@@ -508,8 +506,7 @@ export default async function AdminAnalyticsPage() {
     } catch (error) {
         console.error('[Analytics] Dashboard aggregation error:', error)
         // Fallback safely so page doesn't crash
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return <AnalyticsDashboard hasData={false} summary={null as any} daily={[]} funnel={null as any} socialMetrics={[]} highVisitNoSales={[]} searchMetrics={{ topQueries: [], zeroResultQueries: [] }} retentionMetrics={{ newUsers: 0, activeUsers: 0, returningUsers: 0, inactiveUsers: 0 }} peakTraffic={[]} deviceBrowserMetrics={{ devices: [], browsers: [] }} speedMetrics={[]} />
+        return <AnalyticsDashboard hasData={false} summary={{ visitsToday: 0, visits7Days: 0, visits30Days: 0, userLogins30Days: 0, socialVisits30Days: 0, searchVisits30Days: 0, conversionRate: 0 }} daily={[]} funnel={{ pageViews: 0, productViews: 0, cartAdds: 0, checkoutStarts: 0, orderSubmits: 0, paidOrders: 0 }} socialMetrics={[]} highVisitNoSales={[]} searchMetrics={{ topQueries: [], zeroResultQueries: [] }} retentionMetrics={{ newUsers: 0, activeUsers: 0, returningUsers: 0, inactiveUsers: 0 }} peakTraffic={[]} deviceBrowserMetrics={{ devices: [], browsers: [] }} speedMetrics={[]} />
     }
 }
 

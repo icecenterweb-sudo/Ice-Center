@@ -2,6 +2,7 @@
 
 import { Upload, X, Loader2, Link as LinkIcon } from 'lucide-react';
 import { useState, useRef } from 'react';
+import Image from 'next/image';
 
 interface BlogImageUploadProps {
     label: string;
@@ -94,10 +95,11 @@ export default function BlogImageUpload({
             <div className="space-y-3">
                 {value ? (
                     <div className={`relative rounded-lg overflow-hidden bg-gray-100 ${aspectRatio === 'thumbnail' ? aspectClasses.thumbnail : aspectClasses[aspectRatio]}`}>
-                        <img
+                        <Image
                             src={value}
                             alt="Preview"
-                            className="w-full h-full object-cover"
+                            fill
+                            className="object-cover"
                         />
                         <button
                             type="button"

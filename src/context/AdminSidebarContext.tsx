@@ -19,6 +19,7 @@ export const AdminSidebarProvider: React.FC<{ children: React.ReactNode }> = ({ 
     useEffect(() => {
         const saved = localStorage.getItem('sidebarCollapsed');
         if (saved) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setIsCollapsed(JSON.parse(saved));
         }
     }, []);

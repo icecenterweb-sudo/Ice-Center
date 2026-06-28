@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, Tag, Calendar, Search, X, Plus, Percent, Banknote } from 'lucide-react';
+import Image from 'next/image';
 
 interface Product {
     id: number;
@@ -357,9 +358,9 @@ export default function AddOfferPage() {
                                                     : 'hover:bg-gray-50'
                                                     }`}
                                             >
-                                                <div className="w-10 h-10 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
+                                                <div className="relative w-10 h-10 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
                                                     {product.thumbnail ? (
-                                                        <img src={product.thumbnail} alt="" className="w-full h-full object-cover" />
+                                                        <Image src={product.thumbnail} alt="" fill className="object-cover" />
                                                     ) : (
                                                         <div className="w-full h-full flex items-center justify-center text-gray-400">📦</div>
                                                     )}
@@ -398,9 +399,9 @@ export default function AddOfferPage() {
                                                 className="p-3 bg-gray-50 rounded-xl space-y-2"
                                             >
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-12 h-12 rounded-lg bg-white overflow-hidden flex-shrink-0">
+                                                    <div className="relative w-12 h-12 rounded-lg bg-white overflow-hidden flex-shrink-0">
                                                         {product.thumbnail ? (
-                                                            <img src={product.thumbnail} alt="" className="w-full h-full object-cover" />
+                                                            <Image src={product.thumbnail} alt="" fill className="object-cover" />
                                                         ) : (
                                                             <div className="w-full h-full flex items-center justify-center text-gray-400">📦</div>
                                                         )}

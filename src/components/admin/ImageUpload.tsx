@@ -126,6 +126,7 @@ export default function ImageUpload({ currentImage, onImageChange, folder }: Ima
                                 <Loader2 className="w-8 h-8 text-white animate-spin" />
                             </div>
                         )}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                             src={preview}
                             alt="Category preview"

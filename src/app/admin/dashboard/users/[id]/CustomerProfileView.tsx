@@ -7,6 +7,7 @@ import {
     BarChart3, Calendar, MapPin, Package, Tag, ArrowRight, Clock,
     Monitor, Smartphone, Circle
 } from 'lucide-react';
+import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
 import { faIR } from 'date-fns/locale';
 
@@ -258,7 +259,9 @@ export default function CustomerProfileView({ data }: { data: CustomerData }) {
                             {cartItems.map((item) => (
                                 <div key={item.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                                     {item.product.thumbnail ? (
-                                        <img src={item.product.thumbnail} alt={item.product.name} className="w-12 h-12 object-cover rounded-lg" />
+                                        <div className="relative w-12 h-12 overflow-hidden rounded-lg">
+                                            <Image src={item.product.thumbnail} alt={item.product.name} fill className="object-cover" />
+                                        </div>
                                     ) : (
                                         <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
                                             <ShoppingCart className="w-5 h-5 text-gray-400" />
@@ -280,7 +283,9 @@ export default function CustomerProfileView({ data }: { data: CustomerData }) {
                             {wishlistItems.map((item) => (
                                 <div key={item.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                                     {item.product.thumbnail ? (
-                                        <img src={item.product.thumbnail} alt={item.product.name} className="w-12 h-12 object-cover rounded-lg" />
+                                        <div className="relative w-12 h-12 overflow-hidden rounded-lg">
+                                            <Image src={item.product.thumbnail} alt={item.product.name} fill className="object-cover" />
+                                        </div>
                                     ) : (
                                         <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
                                             <Heart className="w-5 h-5 text-gray-400" />

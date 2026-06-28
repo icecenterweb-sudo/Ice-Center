@@ -1,4 +1,4 @@
-import { Shield, Star, TruckIcon } from 'lucide-react';
+import { Shield, Star, TruckIcon, type LucideIcon } from 'lucide-react';
 
 interface ProductInfoProps {
     product: {
@@ -12,7 +12,7 @@ interface ProductInfoProps {
         seller: string;
     };
     advantages: Array<{
-        icon: any;
+        icon: LucideIcon;
         title: string;
         description: string;
     }>;

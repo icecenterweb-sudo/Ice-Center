@@ -25,8 +25,9 @@ export default function DeleteProductButton({ productId, hasVariants }: DeletePr
         try {
             await deleteProduct(productId);
             router.refresh();
-        } catch (error: any) {
-            alert(error.message || 'خطا در حذف محصول');
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            alert(message || 'خطا در حذف محصول');
         }
     };
 

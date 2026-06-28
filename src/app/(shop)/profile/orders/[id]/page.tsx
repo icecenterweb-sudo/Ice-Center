@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowRight, Package, Clock, CheckCircle, Truck, XCircle, Loader2, MapPin, Phone, User } from 'lucide-react';
+import Image from 'next/image';
 
 interface OrderItem {
     id: number;
@@ -36,7 +37,7 @@ interface Order {
     items: OrderItem[];
 }
 
-const statusConfig: Record<string, { label: string; color: string; icon: React.ComponentType<any> }> = {
+const statusConfig: Record<string, { label: string; color: string; icon: React.ComponentType<{ className?: string }> }> = {
     PENDING: { label: 'در انتظار پرداخت', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
     PAID: { label: 'پرداخت شده', color: 'bg-blue-100 text-blue-700', icon: CheckCircle },
     PROCESSING: { label: 'در حال پردازش', color: 'bg-purple-100 text-purple-700', icon: Package },
@@ -148,12 +149,13 @@ export default function OrderDetailPage() {
                 <div className="space-y-3">
                     {order.items.map((item) => (
                         <div key={item.id} className="flex gap-3 p-3 bg-gray-50 rounded-xl">
-                            <div className="w-16 h-16 rounded-lg bg-white overflow-hidden flex-shrink-0">
+                            <div className="relative w-16 h-16 rounded-lg bg-white overflow-hidden flex-shrink-0">
                                 {item.thumbnail ? (
-                                    <img
+                                    <Image
                                         src={item.thumbnail}
                                         alt={item.productName}
-                                        className="w-full h-full object-cover"
+                                        fill
+                                        className="object-cover"
                                     />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-gray-400">

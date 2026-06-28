@@ -91,6 +91,35 @@ type ProductCarouselProps = {
   products?: Product[];
 };
 
+// Calculate time until midnight Iran time (UTC+3:30)
+const calculateTimeToMidnight = () => {
+  const now = new Date();
+  // Iran is UTC+3:30
+  const iranOffset = 3.5 * 60; // minutes
+  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const iranTime = new Date(utcTime + (iranOffset * 60000));
+
+  // Calculate midnight in Iran
+  const midnight = new Date(iranTime);
+  midnight.setHours(24, 0, 0, 0);
+
+  const diff = midnight.getTime() - iranTime.getTime();
+
+  if (diff <= 0) return '۰۰:۰۰:۰۰';
+
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+  // Convert to Persian numerals
+  const toPersian = (n: number) => n.toString().padStart(2, '0')
+    .replace(/0/g, '۰').replace(/1/g, '۱').replace(/2/g, '۲')
+    .replace(/3/g, '۳').replace(/4/g, '۴').replace(/5/g, '۵')
+    .replace(/6/g, '۶').replace(/7/g, '۷').replace(/8/g, '۸').replace(/9/g, '۹');
+
+  return `${toPersian(hours)}:${toPersian(minutes)}:${toPersian(seconds)}`;
+};
+
 const ProductCarousel: React.FC<ProductCarouselProps> = ({
   title,
   viewAllHref = '#',
@@ -105,39 +134,9 @@ const ProductCarousel: React.FC<ProductCarouselProps> = ({
 
   const [canScrollPrev, setCanScrollPrev] = useState(false);
   const [canScrollNext, setCanScrollNext] = useState(false);
-  const [countdown, setCountdown] = useState('۰۰:۰۰:۰۰');
+  const [countdown, setCountdown] = useState(calculateTimeToMidnight);
 
-  // Calculate time until midnight Iran time (UTC+3:30)
   useEffect(() => {
-    const calculateTimeToMidnight = () => {
-      const now = new Date();
-      // Iran is UTC+3:30
-      const iranOffset = 3.5 * 60; // minutes
-      const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
-      const iranTime = new Date(utcTime + (iranOffset * 60000));
-
-      // Calculate midnight in Iran
-      const midnight = new Date(iranTime);
-      midnight.setHours(24, 0, 0, 0);
-
-      const diff = midnight.getTime() - iranTime.getTime();
-
-      if (diff <= 0) return '۰۰:۰۰:۰۰';
-
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-      // Convert to Persian numerals
-      const toPersian = (n: number) => n.toString().padStart(2, '0')
-        .replace(/0/g, '۰').replace(/1/g, '۱').replace(/2/g, '۲')
-        .replace(/3/g, '۳').replace(/4/g, '۴').replace(/5/g, '۵')
-        .replace(/6/g, '۶').replace(/7/g, '۷').replace(/8/g, '۸').replace(/9/g, '۹');
-
-      return `${toPersian(hours)}:${toPersian(minutes)}:${toPersian(seconds)}`;
-    };
-
-    setCountdown(calculateTimeToMidnight());
     const interval = setInterval(() => {
       setCountdown(calculateTimeToMidnight());
     }, 1000);
@@ -161,7 +160,7 @@ const ProductCarousel: React.FC<ProductCarouselProps> = ({
 
   useEffect(() => {
     if (!emblaApi) return;
-    onSelect();
+    queueMicrotask(() => onSelect());
     emblaApi.on('select', onSelect);
     emblaApi.on('reInit', onSelect);
   }, [emblaApi, onSelect]);

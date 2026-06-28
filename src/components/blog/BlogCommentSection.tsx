@@ -22,16 +22,18 @@ interface BlogCommentSectionProps {
     postId: number;
 }
 
+interface CommentFormData {
+    authorName: string;
+    authorEmail: string;
+    content: string;
+}
+
 interface CommentFormProps {
     parentId?: number;
     onCancel?: () => void;
     onSubmit: (e: React.FormEvent, parentId?: number) => void;
-    formData: {
-        authorName: string;
-        authorEmail: string;
-        content: string;
-    };
-    setFormData: (data: any) => void;
+    formData: CommentFormData;
+    setFormData: (data: CommentFormData) => void;
     submitting: boolean;
 }
 
@@ -105,8 +107,8 @@ interface CommentItemProps {
     isReply?: boolean;
     replyingTo: number | null;
     setReplyingTo: (id: number | null) => void;
-    formData: any;
-    setFormData: (data: any) => void;
+    formData: CommentFormData;
+    setFormData: (data: CommentFormData) => void;
     handleSubmit: (e: React.FormEvent, parentId?: number) => void;
     submitting: boolean;
 }

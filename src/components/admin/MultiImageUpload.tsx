@@ -178,6 +178,7 @@ export default function MultiImageUpload({
                 {images.map((image, index) => (
                     <div key={index} className="relative group">
                         <div className="relative w-full h-32 rounded-xl overflow-hidden border-2 border-gray-200">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                                 src={blobPreviews[image] || image}
                                 alt={`Product ${index + 1}`}
@@ -203,6 +204,7 @@ export default function MultiImageUpload({
                 {pendingPreviewUrls.map((url, index) => (
                     <div key={`uploading-${url}-${index}`} className="relative">
                         <div className="relative w-full h-32 rounded-xl overflow-hidden border-2 border-gray-200 bg-gray-100">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                                 src={url}
                                 alt={`Uploading product ${index + 1}`}

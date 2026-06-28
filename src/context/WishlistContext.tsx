@@ -22,7 +22,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
             const res = await fetch('/api/wishlist');
             if (res.ok) {
                 const data = await res.json();
-                setIds(new Set(data.items?.map((i: any) => i.productId) || []));
+                setIds(new Set(data.items?.map((i: { productId: number }) => i.productId) || []));
             } else {
                 setIds(new Set());
             }

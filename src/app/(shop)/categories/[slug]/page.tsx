@@ -9,6 +9,7 @@ import {
     applyFiltersToProducts,
     getFreshFilteredProducts,
 } from '@/lib/cache/category';
+import type { CachedProduct } from '@/lib/cache/category';
 import { InventoryStatus } from '@prisma/client';
 
 type Props = {
@@ -74,7 +75,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
     // Use cached + client-side filtering for other filters
     const hasSubcategoryFilter = subcategoryId !== undefined;
 
-    let products: any[];
+    let products: CachedProduct[];
     let totalCount: number;
     let totalPages: number;
     let currentPage: number;

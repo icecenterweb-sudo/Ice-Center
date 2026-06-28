@@ -36,8 +36,9 @@ export default function VariantManager({ productId, variants: initialVariants }:
             await deleteProductVariant(variantId);
             setVariants(variants.filter(v => v.id !== variantId));
             router.refresh();
-        } catch (error: any) {
-            alert(error.message || 'خطا در حذف واریانت');
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            alert(message || 'خطا در حذف واریانت');
         }
     };
 
@@ -49,8 +50,9 @@ export default function VariantManager({ productId, variants: initialVariants }:
             await createProductVariant(productId, formData);
             setIsAdding(false);
             router.refresh();
-        } catch (error: any) {
-            alert(error.message || 'خطا در ایجاد واریانت');
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            alert(message || 'خطا در ایجاد واریانت');
         }
     };
 
@@ -62,8 +64,9 @@ export default function VariantManager({ productId, variants: initialVariants }:
             await updateProductVariant(variantId, formData);
             setEditingId(null);
             router.refresh();
-        } catch (error: any) {
-            alert(error.message || 'خطا در ویرایش واریانت');
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : String(error);
+            alert(message || 'خطا در ویرایش واریانت');
         }
     };
 

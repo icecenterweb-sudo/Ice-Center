@@ -50,7 +50,7 @@ const CategorySection: React.FC<CategorySectionProps> = ({ categories }) => {
 
   useEffect(() => {
     if (!emblaApi) return;
-    onSelect();
+    queueMicrotask(() => onSelect());
     emblaApi.on('select', onSelect);
     emblaApi.on('reInit', onSelect);
   }, [emblaApi, onSelect]);

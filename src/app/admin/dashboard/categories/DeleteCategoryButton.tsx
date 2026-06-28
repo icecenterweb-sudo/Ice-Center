@@ -27,8 +27,8 @@ export default function DeleteCategoryButton({ categoryId, hasSubcategories }: D
             await deleteCategory(categoryId);
             toast.success('دسته‌بندی با موفقیت حذف شد');
             router.refresh();
-        } catch (error: any) {
-            toast.error(error.message || 'خطا در حذف دسته‌بندی');
+        } catch (error: unknown) {
+            toast.error(error instanceof Error ? error.message : 'خطا در حذف دسته‌بندی');
         }
     };
 

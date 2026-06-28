@@ -58,12 +58,12 @@ export default function SubcategoryForm({ categories, defaultCategoryId }: Subca
             await createSubcategory(formData);
             toast.success('زیردسته با موفقیت ایجاد شد');
             // Note: redirect will happen in the server action
-        } catch (error: any) {
+        } catch (error: unknown) {
             // Ignore NEXT_REDIRECT errors (these are expected from server action redirects)
-            if (error?.message?.includes('NEXT_REDIRECT')) {
+            if (error instanceof Error && error.message.includes('NEXT_REDIRECT')) {
                 return;
             }
-            toast.error(error.message || 'خطا در ایجاد زیردسته');
+            toast.error(error instanceof Error ? error.message : 'خطا در ایجاد زیردسته');
         }
     };
 

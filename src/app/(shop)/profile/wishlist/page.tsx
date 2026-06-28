@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, Heart, ShoppingBag, Trash2, Loader2, ShoppingCart } from 'lucide-react';
+import Image from 'next/image';
 
 interface WishlistProduct {
     id: number;
@@ -141,12 +142,13 @@ export default function WishlistPage() {
                         >
                             {/* Product Image */}
                             <Link href={`/products/${item.product.slug}`} className="flex-shrink-0">
-                                <div className="w-24 h-24 rounded-xl bg-gray-100 overflow-hidden">
+                                <div className="relative w-24 h-24 rounded-xl bg-gray-100 overflow-hidden">
                                     {item.product.thumbnail ? (
-                                        <img
+                                        <Image
                                             src={item.product.thumbnail}
                                             alt={item.product.name}
-                                            className="w-full h-full object-cover"
+                                            fill
+                                            className="object-cover"
                                         />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center text-gray-400">

@@ -106,7 +106,7 @@ const BlogCarousel = ({ posts }: BlogCarouselProps) => {
 
     useEffect(() => {
         if (!emblaApi) return;
-        onSelect();
+        queueMicrotask(() => onSelect());
         emblaApi.on('select', onSelect);
         emblaApi.on('reInit', onSelect);
     }, [emblaApi, onSelect]);
