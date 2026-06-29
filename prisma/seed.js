@@ -1,9 +1,10 @@
 const { PrismaClient } = require('@prisma/client')
 const { PrismaPg } = require('@prisma/adapter-pg')
 const { Pool } = require('pg')
+require('dotenv').config({ path: '.env.local' })
 require('dotenv').config()
 
-const connectionString = process.env.DATABASE_URL
+const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL
 const pool = new Pool({ connectionString })
 const adapter = new PrismaPg(pool)
 const prisma = new PrismaClient({ adapter })
@@ -111,7 +112,7 @@ async function seedAdmin() {
             data: {
                 phone: adminPhone,
                 name: adminName,
-                role: 'ADMIN',
+                roles: ['SUPER_ADMIN'],
                 status: 'ACTIVE',
             },
         })
@@ -148,7 +149,7 @@ async function seedCategories() {
         // Seed subcategories
         for (const subData of categoryData.subcategories) {
             const existingSubcategory = await prisma.subcategory.findUnique({
-                where: { slug: subData.slug }
+                where: { categoryId_slug: { categoryId: category.id, slug: subData.slug } }
             })
 
             if (existingSubcategory) {
@@ -174,7 +175,7 @@ async function seedProducts() {
     console.log('\n🛒 Seeding Products with Variants...\n')
 
     // Get subcategory for batch freezer (hardening machines)
-    const hardeningSubcategory = await prisma.subcategory.findUnique({
+    const hardeningSubcategory = await prisma.subcategory.findFirst({
         where: { slug: 'hardening-machines' }
     })
 
