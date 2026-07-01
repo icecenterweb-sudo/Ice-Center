@@ -2,7 +2,7 @@ import { NextRequest, NextResponse, connection } from 'next/server';
 import { prisma } from '@/lib/db';
 import { createPostSchema, listPostsQuerySchema } from '@/lib/blog/validation';
 import { getPublishedPosts, getAllPosts } from '@/lib/blog/queries';
-import { requireAdmin } from '@/lib/admin-auth';
+import { requireRole } from '@/lib/admin-auth';
 
 // GET /api/blog - List posts
 export async function GET(request: NextRequest) {
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
         // Otherwise use getPublishedPosts for public
         const isAdmin = searchParams.has('status') || searchParams.has('admin');
         if (isAdmin) {
-            const auth = await requireAdmin(request);
+            const auth = await requireRole(request, 'BLOG');
             if (!auth.ok) return auth.response;
         }
 
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
 // POST /api/blog - Create new post
 export async function POST(request: NextRequest) {
     try {
-        const auth = await requireAdmin(request);
+        const auth = await requireRole(request, 'BLOG');
         if (!auth.ok) return auth.response;
 
         const body = await request.json();

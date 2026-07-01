@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
-import { requireAdmin } from '@/lib/admin-auth';
+import { requireRole } from '@/lib/admin-auth';
 import { z } from 'zod';
 
 const updateProductSchema = z.object({
@@ -72,7 +72,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await requireAdmin(request);
+    const auth = await requireRole(request, 'PRODUCTS');
     if (!auth.ok) return auth.response;
 
     const { id } = await params;
@@ -124,7 +124,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await requireAdmin(request);
+    const auth = await requireRole(request, 'PRODUCTS');
     if (!auth.ok) return auth.response;
 
     const { id } = await params;
