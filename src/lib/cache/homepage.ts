@@ -127,10 +127,6 @@ export async function getCachedSlides(): Promise<SlideForDisplay[]> {
     });
     cacheTag('homepage', 'slides');
 
-    if (process.env.NODE_ENV === 'development') {
-        console.log('[CACHE] slides - fetching fresh data');
-    }
-
     const slides = await prisma.slide.findMany({
         where: { isActive: true },
         include: {
@@ -162,10 +158,6 @@ export async function getCachedCategories(): Promise<CategoryForDisplay[]> {
         expire: 600,
     });
     cacheTag('homepage', 'categories');
-
-    if (process.env.NODE_ENV === 'development') {
-        console.log('[CACHE] categories - fetching fresh data');
-    }
 
     const categories = await prisma.category.findMany({
         select: {
@@ -203,10 +195,6 @@ export async function getCachedOffers() {
         expire: 600,
     });
     cacheTag('homepage', 'offers');
-
-    if (process.env.NODE_ENV === 'development') {
-        console.log('[CACHE] offers - fetching fresh data');
-    }
 
     const now = new Date(); // Time logic inside cache
 
@@ -294,10 +282,6 @@ export async function getCachedCategoryProducts(): Promise<{ categories: Categor
         expire: 600,
     });
     cacheTag('homepage', 'products');
-
-    if (process.env.NODE_ENV === 'development') {
-        console.log('[CACHE] category-products - fetching fresh data');
-    }
 
     const now = new Date(); // Time logic inside cache
 
@@ -407,9 +391,6 @@ export async function getCachedSingleBanners(): Promise<BannerForDisplay[]> {
     });
     cacheTag('homepage', 'banners');
 
-    if (process.env.NODE_ENV === 'development') {
-        console.log('[CACHE] single-banners - fetching fresh data');
-    }
     return getBannersByPosition('SINGLE_FULL');
 }
 
@@ -422,9 +403,6 @@ export async function getCachedDoubleBanners(): Promise<BannerForDisplay[]> {
     });
     cacheTag('homepage', 'banners');
 
-    if (process.env.NODE_ENV === 'development') {
-        console.log('[CACHE] double-banners - fetching fresh data');
-    }
     return getBannersByPosition('DOUBLE');
 }
 
@@ -440,10 +418,6 @@ export async function getCachedBlogPosts(limit = 6): Promise<BlogPostForDisplay[
         expire: 600,
     });
     cacheTag('homepage', 'blog');
-
-    if (process.env.NODE_ENV === 'development') {
-        console.log('[CACHE] blog-posts - fetching fresh data');
-    }
 
     const now = new Date(); // Time logic inside cache
 

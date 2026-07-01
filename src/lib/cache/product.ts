@@ -99,10 +99,6 @@ export async function getCachedProductStatic(slug: string): Promise<ProductStati
     });
     cacheTag('product', `product:${slug}`);
 
-    if (process.env.NODE_ENV === 'development') {
-        console.log(`[CACHE] product-static:${slug} - fetching fresh data`);
-    }
-
     const product = await prisma.product.findUnique({
         where: { slug },
         select: {

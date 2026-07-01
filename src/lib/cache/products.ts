@@ -45,11 +45,8 @@ export async function getProductsCached(options: {
             : null
 
         if (cached) {
-            console.log(`[Cache] HIT: ${cacheKey}`)
             return { ...cached, fromCache: true }
         }
-
-        console.log(`[Cache] MISS: ${cacheKey}`)
 
         // 2. Cache miss - query database
         const skip = (page - 1) * limit
@@ -132,7 +129,6 @@ export async function invalidateProductsCache(): Promise<void> {
     try {
         // Simply increment version - old keys become orphaned and expire via TTL
         CACHE_VERSION++;
-        console.log(`[Cache] Invalidated by incrementing version to ${CACHE_VERSION}`)
 
         // Optionally clean up old keys in background using SCAN (non-blocking)
         // This is fire-and-forget, doesn't block the request
@@ -181,7 +177,6 @@ async function cleanupOldCacheKeys(): Promise<void> {
                 const batch = keysToDelete.slice(i, i + 100);
                 await redis.del(...batch);
             }
-            console.log(`[Cache] Cleaned up ${keysToDelete.length} old cache keys`);
         }
     } catch (error) {
         console.error('[Cache] Cleanup error:', error);
