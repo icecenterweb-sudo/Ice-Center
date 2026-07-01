@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { verifyUserToken, USER_TOKEN_COOKIE } from '@/lib/jwt';
+import { z } from 'zod';
+
+const createAddressSchema = z.object({
+    city: z.string().min(2, 'شهر الزامی است').max(100),
+    province: z.string().min(2).max(100).optional(),
+    address: z.string().min(10, 'آدرس الزامی است').max(500),
+    postalCode: z.string().min(10).max(20).optional(),
+    isDefault: z.boolean().optional(),
+});
 
 // GET - Fetch user addresses
 export async function GET(request: NextRequest) {
@@ -62,15 +71,16 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const { city, province, address, postalCode, isDefault } = await request.json();
-
-        // Validate required fields
-        if (!city || !address) {
+        const body = await request.json();
+        const validation = createAddressSchema.safeParse(body);
+        if (!validation.success) {
             return NextResponse.json(
-                { error: 'شهر و آدرس الزامی است' },
+                { error: validation.error.issues[0].message },
                 { status: 400 }
             );
         }
+
+        const { city, province, address, postalCode, isDefault } = validation.data;
 
         // If this is set as default, unset other defaults
         if (isDefault) {

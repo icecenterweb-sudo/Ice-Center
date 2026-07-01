@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { verifyUserToken } from '@/lib/jwt';
 import { cookies } from 'next/headers';
+import { z } from 'zod';
+
+const addToWishlistSchema = z.object({
+    productId: z.number().int().positive(),
+});
 
 /**
  * GET /api/wishlist - Get user's wishlist
@@ -71,11 +76,12 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { productId } = body;
-
-        if (!productId) {
-            return NextResponse.json({ error: 'شناسه محصول الزامی است' }, { status: 400 });
+        const validation = addToWishlistSchema.safeParse(body);
+        if (!validation.success) {
+            return NextResponse.json({ error: validation.error.issues[0].message }, { status: 400 });
         }
+
+        const { productId } = validation.data;
 
         // Check if product exists
         const product = await prisma.product.findUnique({
