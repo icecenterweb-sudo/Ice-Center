@@ -2,23 +2,26 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-    Shield, 
-    User, 
-    Phone, 
-    Calendar, 
-    Edit, 
-    Check, 
+import {
+    Shield,
+    User,
+    Phone,
+    Calendar,
+    Edit,
+    Check,
     X,
     Lock,
     ShieldAlert,
     CheckSquare,
-    Square
+    Square,
+    UserPlus,
+    Search,
+    Loader2,
 } from 'lucide-react';
 import { AdminRole } from '@prisma/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { updateAdminRolesAction } from './actions';
+import { updateAdminRolesAction, promoteUserToAdminAction, searchUsersAction } from './actions';
 
 interface AdminUser {
     id: number;
@@ -51,6 +54,15 @@ export default function AdminsClient({ admins, currentAdminPhone, currentAdminRo
 
     const [editingAdmin, setEditingAdmin] = useState<AdminUser | null>(null);
     const [tempRoles, setTempRoles] = useState<AdminRole[]>([]);
+
+    // Promote user state
+    const [showPromoteModal, setShowPromoteModal] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<Array<{ id: number; phone: string; firstName: string | null; lastName: string | null; isAdmin: boolean }>>([]);
+    const [searching, setSearching] = useState(false);
+    const [selectedPhone, setSelectedPhone] = useState('');
+    const [promoteRoles, setPromoteRoles] = useState<AdminRole[]>(['ADMIN']);
+    const [promoting, setPromoting] = useState(false);
 
     // Check if current user is SUPER_ADMIN or GENERAL_MANAGER
     const canManageRoles = currentAdminRoles.includes('SUPER_ADMIN') || currentAdminRoles.includes('GENERAL_MANAGER');
@@ -100,17 +112,82 @@ export default function AdminsClient({ admins, currentAdminPhone, currentAdminRo
         });
     };
 
+    const handleSearchUsers = async (query: string) => {
+        setSearchQuery(query);
+        if (query.trim().length < 3) {
+            setSearchResults([]);
+            return;
+        }
+        setSearching(true);
+        try {
+            const res = await searchUsersAction(query);
+            if (res.users) {
+                setSearchResults(res.users);
+            }
+        } catch {
+            toast.error('خطا در جستجو');
+        } finally {
+            setSearching(false);
+        }
+    };
+
+    const handlePromote = async () => {
+        if (!selectedPhone) {
+            toast.error('یک کاربر انتخاب کنید');
+            return;
+        }
+        if (promoteRoles.length === 0) {
+            toast.error('حداقل یک نقش انتخاب کنید');
+            return;
+        }
+
+        setPromoting(true);
+        try {
+            const formData = new FormData();
+            formData.set('phone', selectedPhone);
+            formData.set('roles', JSON.stringify(promoteRoles));
+            const res = await promoteUserToAdminAction(formData);
+
+            if (res.success) {
+                toast.success('کاربر با موفقیت به ادمین ارتقا یافت');
+                setShowPromoteModal(false);
+                setSelectedPhone('');
+                setSearchQuery('');
+                setSearchResults([]);
+                setPromoteRoles(['ADMIN']);
+                router.refresh();
+            } else {
+                toast.error(res.error || 'خطا در ارتقای کاربر');
+            }
+        } catch {
+            toast.error('خطا در ارتباط با سرور');
+        } finally {
+            setPromoting(false);
+        }
+    };
+
     return (
         <div className="space-y-6" dir="rtl">
             {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                    <Shield className="w-6 h-6 text-blue-600" />
-                    دسترسی‌های چند سطحی (مدیران پلتفرم)
-                </h1>
-                <p className="text-gray-500 text-sm mt-1">
-                    مدیریت حساب کاربری و تخصیص نقش‌های متفاوت به تیم اجرایی فروشگاه
-                </p>
+            <div className="flex items-center justify-between flex-wrap gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                        <Shield className="w-6 h-6 text-blue-600" />
+                        دسترسی‌های چند سطحی (مدیران پلتفرم)
+                    </h1>
+                    <p className="text-gray-500 text-sm mt-1">
+                        مدیریت حساب کاربری و تخصیص نقش‌های متفاوت به تیم اجرایی فروشگاه
+                    </p>
+                </div>
+                {canManageRoles && (
+                    <button
+                        onClick={() => setShowPromoteModal(true)}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all text-sm shadow-sm"
+                    >
+                        <UserPlus className="w-5 h-5" />
+                        افزودن ادمین از کاربران
+                    </button>
+                )}
             </div>
 
             {/* Admins Table */}
@@ -296,6 +373,162 @@ export default function AdminsClient({ admins, currentAdminPhone, currentAdminRo
                                 <button
                                     type="button"
                                     onClick={() => setEditingAdmin(null)}
+                                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-2xl font-bold transition-colors text-sm"
+                                >
+                                    انصراف
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* PROMOTE USER MODAL */}
+            <AnimatePresence>
+                {showPromoteModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setShowPromoteModal(false)}
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            className="relative w-full max-w-xl bg-white rounded-3xl p-6 shadow-2xl border border-gray-100 flex flex-col max-h-[85vh] text-right"
+                        >
+                            {/* Modal Header */}
+                            <div className="flex justify-between items-center pb-4 border-b border-gray-100 mb-4 shrink-0">
+                                <div className="flex items-center gap-2">
+                                    <UserPlus className="w-5 h-5 text-blue-600" />
+                                    <h3 className="text-lg font-bold text-gray-900">
+                                        افزودن ادمین جدید از کاربران
+                                    </h3>
+                                </div>
+                                <button
+                                    onClick={() => setShowPromoteModal(false)}
+                                    className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            {/* Search Section */}
+                            <div className="shrink-0 mb-4">
+                                <div className="relative">
+                                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={(e) => handleSearchUsers(e.target.value)}
+                                        placeholder="جستجو با شماره موبایل یا نام..."
+                                        className="w-full pr-10 pl-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                        autoFocus
+                                    />
+                                    {searching && (
+                                        <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-500 animate-spin" />
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Search Results */}
+                            <div className="flex-1 overflow-y-auto space-y-2 mb-4 min-h-[120px]">
+                                {searchResults.length === 0 && searchQuery.trim().length >= 3 && !searching ? (
+                                    <p className="text-center text-sm text-gray-400 py-8">کاربری یافت نشد</p>
+                                ) : searchResults.length === 0 ? (
+                                    <p className="text-center text-sm text-gray-400 py-8">حداقل ۳ کاراکتر برای جستجو وارد کنید</p>
+                                ) : (
+                                    searchResults.map((u) => (
+                                        <div
+                                            key={u.id}
+                                            onClick={() => !u.isAdmin && setSelectedPhone(u.phone)}
+                                            className={`p-3 rounded-xl border transition-all flex items-center gap-3 ${
+                                                u.isAdmin
+                                                    ? 'border-gray-100 bg-gray-50 opacity-60 cursor-not-allowed'
+                                                    : selectedPhone === u.phone
+                                                    ? 'border-blue-500 bg-blue-50/30 cursor-pointer'
+                                                    : 'border-gray-150 hover:border-blue-200 cursor-pointer'
+                                            }`}
+                                        >
+                                            <div className="w-9 h-9 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
+                                                <User className="w-4 h-4" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-bold text-gray-800">
+                                                    {[u.firstName, u.lastName].filter(Boolean).join(' ') || 'بدون نام'}
+                                                </p>
+                                                <p className="text-xs text-gray-500 font-mono">{u.phone}</p>
+                                            </div>
+                                            {u.isAdmin ? (
+                                                <span className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded-lg font-bold">ادمین</span>
+                                            ) : selectedPhone === u.phone ? (
+                                                <Check className="w-5 h-5 text-blue-600" />
+                                            ) : null}
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            {/* Role Selection */}
+                            {selectedPhone && (
+                                <div className="shrink-0 border-t border-gray-100 pt-4 mb-4">
+                                    <p className="text-xs font-bold text-gray-600 mb-2">انتخاب نقش‌ها:</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {Object.entries(roleConfigs).map(([key, config]) => {
+                                            const role = key as AdminRole;
+                                            const isChecked = promoteRoles.includes(role);
+                                            const isSuperAdminRole = role === 'SUPER_ADMIN';
+                                            const canAssignSuperAdmin = currentAdminRoles.includes('SUPER_ADMIN');
+                                            const disabled = isSuperAdminRole && !canAssignSuperAdmin;
+                                            return (
+                                                <button
+                                                    key={role}
+                                                    onClick={() => {
+                                                        if (disabled) return;
+                                                        setPromoteRoles(prev =>
+                                                            prev.includes(role)
+                                                                ? prev.filter(r => r !== role)
+                                                                : [...prev, role]
+                                                        );
+                                                    }}
+                                                    disabled={disabled}
+                                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                                        isChecked
+                                                            ? config.bg + ' border'
+                                                            : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+                                                    } ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                                                >
+                                                    {config.label}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Modal Footer */}
+                            <div className="flex gap-3 pt-4 border-t border-gray-100 shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={handlePromote}
+                                    disabled={!selectedPhone || promoteRoles.length === 0 || promoting}
+                                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white py-3 rounded-2xl font-bold transition-all shadow-md shadow-blue-500/10 text-sm flex items-center justify-center gap-2"
+                                >
+                                    {promoting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
+                                    ارتقا به ادمین
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowPromoteModal(false);
+                                        setSelectedPhone('');
+                                        setSearchQuery('');
+                                        setSearchResults([]);
+                                        setPromoteRoles(['ADMIN']);
+                                    }}
                                     className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-2xl font-bold transition-colors text-sm"
                                 >
                                     انصراف
