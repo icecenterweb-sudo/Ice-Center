@@ -5,6 +5,7 @@ import { verifyOtp } from '@/lib/otp'
 import { generateUserToken, USER_TOKEN_COOKIE, getTokenCookieOptionsForRequest } from '@/lib/jwt'
 import { recordAnalyticsEvent } from '@/lib/analytics'
 import { toEnglishDigits } from '@/lib/persian'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 
 export async function POST(request: NextRequest) {
     try {
@@ -32,6 +33,19 @@ export async function POST(request: NextRequest) {
             return NextResponse.json(
                 { error: 'کد تأیید باید ۴ رقم باشد' },
                 { status: 400 }
+            )
+        }
+
+        // Rate limiting per IP (Redis-backed, works in serverless)
+        const clientIp = getClientIp(request)
+        const ipRateLimit = await checkRateLimit(`verify-otp:ip:${clientIp}`, {
+            windowMs: 5 * 60 * 1000, // 5 minutes
+            maxRequests: 5,
+        })
+        if (!ipRateLimit.allowed) {
+            return NextResponse.json(
+                { error: `تلاش‌های زیادی. لطفاً ${ipRateLimit.resetIn} ثانیه دیگر تلاش کنید.` },
+                { status: 429 }
             )
         }
 
