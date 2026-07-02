@@ -6,7 +6,11 @@ import path from 'path';
  * as static assets without a custom route handler.
  */
 export function getUploadStorageRoot() {
-    return path.resolve(process.env.UPLOADS_DIR || path.join(/*turbopackIgnore: true*/ process.cwd(), 'public', 'uploads'));
+    // turbopackIgnore prevents NFT from tracing the whole project due to dynamic process.cwd()
+    return path.resolve(
+        process.env.UPLOADS_DIR ||
+        path.join(/*turbopackIgnore: true*/ process.cwd(), 'public', 'uploads')
+    );
 }
 
 export function sanitizeUploadFolder(folder: string) {
