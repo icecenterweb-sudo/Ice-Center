@@ -12,7 +12,7 @@ async function findUploadFile(segments: string[]) {
     if (!filePath) return null;
 
     try {
-        const fileStat = await stat(filePath);
+        const fileStat = await stat(/*turbopackIgnore: true*/ filePath);
         if (fileStat.isFile()) return filePath;
     } catch {
         // File not found
@@ -32,7 +32,7 @@ export async function GET(
         return new NextResponse('Not found', { status: 404 });
     }
 
-    const file = await readFile(filePath);
+    const file = await readFile(/*turbopackIgnore: true*/ filePath);
 
     return new NextResponse(file, {
         headers: {

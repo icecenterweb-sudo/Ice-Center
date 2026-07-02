@@ -6,7 +6,7 @@ import path from 'path';
  * as static assets without a custom route handler.
  */
 export function getUploadStorageRoot() {
-    // turbopackIgnore prevents NFT from tracing the whole project due to dynamic process.cwd()
+    // Prevent NFT/Turbopack from tracing the whole project for runtime upload files.
     return path.resolve(
         process.env.UPLOADS_DIR ||
         path.join(/*turbopackIgnore: true*/ process.cwd(), 'public', 'uploads')
