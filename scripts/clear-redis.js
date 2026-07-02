@@ -1,5 +1,4 @@
 const redis = require('@upstash/redis');
-require('dotenv').config({ path: '.env.local' });
 require('dotenv').config();
 
 const redisUrl = process.env.KV_REST_API_URL;

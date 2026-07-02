@@ -4,7 +4,6 @@
  * Usage: node scripts/import-backup-fast.js <path-to-sql-file>
  */
 const { Pool } = require('pg');
-require('dotenv').config({ path: '.env.local' });
 require('dotenv').config();
 
 const fs = require('fs');

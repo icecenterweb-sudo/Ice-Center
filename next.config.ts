@@ -230,6 +230,16 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // Uploaded files in public/uploads/ - Cache for 1 week
+      {
+        source: '/uploads/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=604800, stale-while-revalidate=86400',
+          },
+        ],
+      },
 
       // ==========================================
       // API ROUTES

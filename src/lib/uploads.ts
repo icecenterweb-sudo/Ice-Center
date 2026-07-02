@@ -6,7 +6,7 @@ import path from 'path';
  * as static assets without a custom route handler.
  */
 export function getUploadStorageRoot() {
-    return path.resolve(process.env.UPLOADS_DIR || path.join(process.cwd(), 'public', 'uploads'));
+    return path.resolve(process.env.UPLOADS_DIR || path.join(/*turbopackIgnore: true*/ process.cwd(), 'public', 'uploads'));
 }
 
 export function sanitizeUploadFolder(folder: string) {
