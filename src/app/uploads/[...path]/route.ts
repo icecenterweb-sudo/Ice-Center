@@ -2,27 +2,20 @@ import { readFile, stat } from 'fs/promises';
 import { NextRequest, NextResponse } from 'next/server';
 import {
     getImageContentType,
-    getLegacyPublicUploadRoot,
     getUploadStorageRoot,
     resolveUploadPath,
 } from '@/lib/uploads';
 
 
 async function findUploadFile(segments: string[]) {
-    const roots = [getUploadStorageRoot(), getLegacyPublicUploadRoot()];
+    const filePath = resolveUploadPath(getUploadStorageRoot(), segments);
+    if (!filePath) return null;
 
-    for (const root of roots) {
-        const filePath = resolveUploadPath(root, segments);
-        if (!filePath) continue;
-
-        try {
-            const fileStat = await stat(filePath);
-            if (fileStat.isFile()) {
-                return filePath;
-            }
-        } catch {
-            // Try the next upload root.
-        }
+    try {
+        const fileStat = await stat(filePath);
+        if (fileStat.isFile()) return filePath;
+    } catch {
+        // File not found
     }
 
     return null;

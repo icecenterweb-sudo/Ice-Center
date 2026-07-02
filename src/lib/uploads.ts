@@ -1,11 +1,12 @@
 import path from 'path';
 
+/**
+ * Returns the single canonical upload directory.
+ * All uploads are stored inside public/uploads/ so Next.js can serve them
+ * as static assets without a custom route handler.
+ */
 export function getUploadStorageRoot() {
-    return path.resolve(process.env.UPLOADS_DIR || path.join(process.cwd(), 'uploads'));
-}
-
-export function getLegacyPublicUploadRoot() {
-    return path.resolve(process.cwd(), 'public', 'uploads');
+    return path.resolve(process.env.UPLOADS_DIR || path.join(process.cwd(), 'public', 'uploads'));
 }
 
 export function sanitizeUploadFolder(folder: string) {
