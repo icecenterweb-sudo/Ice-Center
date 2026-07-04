@@ -37,6 +37,9 @@ yarn-error.log*
 /backups/
 /db-backup*.json
 
+# vps package
+ice-center-vps.zip
+
 # vercel
 .vercel
 

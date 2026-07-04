@@ -13,7 +13,6 @@
 import { config } from 'dotenv';
 // Load environment variables
 config({ path: '.env' });
-config({ path: '.env.local' });
 
 import { PrismaClient } from '@prisma/client';
 import { Pool } from 'pg';

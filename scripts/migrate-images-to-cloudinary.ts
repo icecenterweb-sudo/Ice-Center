@@ -13,9 +13,7 @@
  */
 
 import { config } from 'dotenv';
-// Load environment variables from both .env and .env.local (Next.js convention)
 config({ path: '.env' });
-config({ path: '.env.local' }); // Override with .env.local if exists
 import { PrismaClient } from '@prisma/client';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';

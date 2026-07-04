@@ -20,8 +20,8 @@ const nextConfig: NextConfig = {
       // 'date-fns',        // Uncomment if you use date-fns
       // 'lodash',          // Uncomment if you use lodash
     ],
-    // Faster dev builds with file system caching
-    turbopackFileSystemCacheForDev: true,
+    // Faster dev builds with file system caching, no need this for vps server.
+    // turbopackFileSystemCacheForDev: true,
   },
 
   // Logging - reduces noise in production
@@ -73,29 +73,6 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       }
     ],
-  },
-
-  // Webpack optimizations
-  webpack: (config, { isServer }) => {
-    // Optimize client-side chunks
-    if (!isServer) {
-      config.optimization = {
-        ...config.optimization,
-        splitChunks: {
-          chunks: 'all',
-          cacheGroups: {
-            // Split vendor code
-            vendor: {
-              test: /[\\/]node_modules[\\/]/,
-              name: 'vendors',
-              chunks: 'all',
-              priority: 10,
-            },
-          },
-        },
-      };
-    }
-    return config;
   },
 
   // Cache headers for better performance with Vercel + ArvanCloud CDN
