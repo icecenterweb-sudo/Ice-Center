@@ -384,7 +384,7 @@ export default function EditSlideClient({ id }: { id: string }) {
                                                 alt="Desktop Preview"
                                                 className="w-full h-full object-cover"
                                                 onError={(e) => {
-                                                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/1920x400/gray/white?text=Image+Error';
+                                                    (e.target as HTMLImageElement).src = '/no-image.svg';
                                                 }}
                                             />
                                         </div>
@@ -407,7 +407,7 @@ export default function EditSlideClient({ id }: { id: string }) {
                                                 alt="Mobile Preview"
                                                 className="w-full h-full object-cover"
                                                 onError={(e) => {
-                                                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/768x180/gray/white?text=Image+Error';
+                                                    (e.target as HTMLImageElement).src = '/no-image.svg';
                                                 }}
                                             />
                                         </div>

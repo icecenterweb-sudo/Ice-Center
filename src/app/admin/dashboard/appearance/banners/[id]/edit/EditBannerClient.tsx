@@ -452,7 +452,7 @@ export default function EditBannerClient({ id }: { id: string }) {
                                                 alt="Desktop Preview"
                                                 className="w-full h-full object-cover"
                                                 onError={(e) => {
-                                                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/1600x200/gray/white?text=Image+Error';
+                                                    (e.target as HTMLImageElement).src = '/no-image.svg';
                                                 }}
                                             />
                                         </div>
@@ -475,7 +475,7 @@ export default function EditBannerClient({ id }: { id: string }) {
                                                 alt="Mobile Preview"
                                                 className="w-full h-full object-cover"
                                                 onError={(e) => {
-                                                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/768x256/gray/white?text=Image+Error';
+                                                    (e.target as HTMLImageElement).src = '/no-image.svg';
                                                 }}
                                             />
                                         </div>

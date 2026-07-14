@@ -190,13 +190,6 @@ export default function AddSlidePage() {
         }
     };
 
-    // Placeholder images for quick testing
-    const placeholderImages = [
-        'https://via.placeholder.com/1920x380/3b82f6/ffffff?text=Slide+1',
-        'https://via.placeholder.com/1920x380/10b981/ffffff?text=Slide+2',
-        'https://via.placeholder.com/1920x380/8b5cf6/ffffff?text=Slide+3',
-    ];
-
     return (
         <div className="p-6 max-w-4xl mx-auto">
             {/* Header */}
@@ -280,22 +273,6 @@ export default function AddSlidePage() {
                             </button>
                         </div>
                         <p className="text-xs text-gray-500 mt-1">اندازه پیشنهادی: 1920×400 پیکسل (نسبت 5:1)</p>
-                        {/* Quick placeholder buttons */}
-                        <div className="flex gap-2 mt-2">
-                            {placeholderImages.map((url, i) => (
-                                <button
-                                    key={i}
-                                    type="button"
-                                    onClick={() => {
-                                        setDesktopImage(url);
-                                        setDesktopPreview(url);
-                                    }}
-                                    className="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                                >
-                                    پیش‌فرض {i + 1}
-                                </button>
-                            ))}
-                        </div>
                     </div>
 
                     {/* Mobile Image */}
@@ -387,7 +364,7 @@ export default function AddSlidePage() {
                                                 alt="Desktop Preview"
                                                 className="w-full h-full object-cover"
                                                 onError={(e) => {
-                                                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/1920x400/gray/white?text=Image+Error';
+                                                    (e.target as HTMLImageElement).src = '/no-image.svg';
                                                 }}
                                             />
                                         </div>
@@ -410,7 +387,7 @@ export default function AddSlidePage() {
                                                 alt="Mobile Preview"
                                                 className="w-full h-full object-cover"
                                                 onError={(e) => {
-                                                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/768x180/gray/white?text=Image+Error';
+                                                    (e.target as HTMLImageElement).src = '/no-image.svg';
                                                 }}
                                             />
                                         </div>
