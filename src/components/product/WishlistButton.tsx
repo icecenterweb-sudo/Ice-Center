@@ -72,7 +72,7 @@ export default function WishlistButton({ productId, className = '', size = 'md' 
             className={`
                 ${sizeClasses[size]} 
                 flex items-center justify-center rounded-full 
-                transition-all duration-200
+                transition-[background-color,border-color,color] duration-[150ms] ease-out active-press
                 ${isFav
                     ? 'bg-red-50 border-red-200 text-red-500 hover:bg-red-100'
                     : 'bg-white/90 backdrop-blur border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200'

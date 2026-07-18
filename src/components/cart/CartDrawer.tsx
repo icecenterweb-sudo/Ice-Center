@@ -49,7 +49,7 @@ export default function CartDrawer() {
                                 <ShoppingBag className="w-5 h-5" />
                                 سبد خرید
                                 {itemCount > 0 && (
-                                    <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                    <span className="bg-ocean text-white text-xs px-2 py-0.5 rounded-full">
                                         {toPersianDigits(itemCount)}
                                     </span>
                                 )}
@@ -71,7 +71,7 @@ export default function CartDrawer() {
                                     <p className="text-sm mt-1">محصولات مورد نظر خود را اضافه کنید</p>
                                     <button
                                         onClick={closeCart}
-                                        className="mt-6 px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                                        className="mt-6 px-6 py-2 bg-ocean text-white rounded-lg hover:bg-royal transition-colors"
                                     >
                                         ادامه خرید
                                     </button>
@@ -108,7 +108,7 @@ export default function CartDrawer() {
                                                 <Link
                                                     href={`/product/${item.product.slug}`}
                                                     onClick={closeCart}
-                                                    className="text-sm font-medium text-gray-800 line-clamp-2 hover:text-blue-600 transition-colors"
+                                                    className="text-sm font-medium text-gray-800 line-clamp-2 hover:text-ocean transition-colors"
                                                 >
                                                     {item.product.name}
                                                 </Link>
@@ -120,7 +120,7 @@ export default function CartDrawer() {
                                                             onClick={() => updateQuantity(item.productId, item.quantity + 1)}
                                                             className="p-1.5 hover:bg-gray-50 rounded-r-lg transition-colors"
                                                         >
-                                                            <Plus className="w-4 h-4 text-blue-500" />
+                                                            <Plus className="w-4 h-4 text-ocean" />
                                                         </button>
                                                         <span className="w-8 text-center text-sm font-medium text-black">
                                                             {toPersianDigits(item.quantity)}
@@ -176,7 +176,7 @@ export default function CartDrawer() {
                                 <Link
                                     href="/checkout"
                                     onClick={closeCart}
-                                    className="flex items-center justify-center gap-2 w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all"
+                                    className="flex items-center justify-center gap-2 w-full py-3.5 bg-midnight hover:bg-[#0c2440] text-white font-bold rounded-xl transition-all"
                                 >
                                     <span>تکمیل سفارش</span>
                                     <ArrowLeft className="w-5 h-5" />

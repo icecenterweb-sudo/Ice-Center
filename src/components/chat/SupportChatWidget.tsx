@@ -212,8 +212,7 @@ export default function SupportChatWidget() {
                         exit={{ scale: 0, opacity: 0 }}
                         transition={{ type: 'spring', stiffness: 260, damping: 20 }}
                         onClick={handleOpen}
-                        className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-50 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center cursor-pointer"
-                        style={{ background: 'linear-gradient(135deg, #2E79BA, #5FC9F3)' }}
+                        className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-50 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center cursor-pointer bg-gradient-to-br from-ocean to-sky-breeze"
                     >
                         <MessageCircle className="w-7 h-7 text-white" />
                         {hasNewMessage && (
@@ -263,8 +262,7 @@ export default function SupportChatWidget() {
                         >
                             {/* Header */}
                             <div
-                                className="flex items-center gap-3 p-4 text-white flex-shrink-0 md:rounded-t-2xl"
-                                style={{ background: 'linear-gradient(135deg, #081F37, #2E79BA)' }}
+                                className="flex items-center gap-3 p-4 text-white flex-shrink-0 md:rounded-t-2xl bg-gradient-to-br from-midnight to-ocean"
                             >
                                 {/* Mobile: Back button | Desktop: Chat icon */}
                                 <button
@@ -298,8 +296,7 @@ export default function SupportChatWidget() {
                             {chatState === 'intro' && (
                                 <div className="flex-1 flex flex-col items-center justify-center p-6 gap-6">
                                     <div className="text-center">
-                                        <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3"
-                                            style={{ background: 'linear-gradient(135deg, #081F37, #2E79BA)' }}>
+                                        <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 bg-gradient-to-br from-midnight to-ocean">
                                             <MessageCircle className="w-8 h-8 text-white" />
                                         </div>
                                         <h3 className="font-bold text-gray-800 text-lg">شروع گفتگو</h3>
@@ -346,8 +343,7 @@ export default function SupportChatWidget() {
                                         <button
                                             type="submit"
                                             disabled={isStarting}
-                                            className="w-full py-2.5 rounded-xl text-white font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-60 transition-all"
-                                            style={{ background: 'linear-gradient(135deg, #1E549F, #2E79BA)' }}
+                                            className="w-full py-2.5 rounded-xl text-white font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-60 transition-all bg-gradient-to-br from-royal to-ocean"
                                         >
                                             {isStarting ? (
                                                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -393,9 +389,8 @@ export default function SupportChatWidget() {
                                                 <div
                                                     className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${msg.sender === 'USER'
                                                         ? 'bg-white text-gray-800 rounded-tr-sm'
-                                                        : 'text-white rounded-tl-sm'
+                                                        : 'text-white rounded-tl-sm bg-gradient-to-br from-royal to-ocean'
                                                         }`}
-                                                    style={msg.sender === 'ADMIN' ? { background: 'linear-gradient(135deg, #1E549F, #2E79BA)' } : {}}
                                                 >
                                                     {msg.sender === 'ADMIN' && msg.admin?.name && (
                                                         <p className="text-xs text-white/70 mb-1 font-medium">{msg.admin.name}</p>
@@ -432,8 +427,7 @@ export default function SupportChatWidget() {
                                                 <button
                                                     onClick={handleSend}
                                                     disabled={!inputText.trim() || isSending}
-                                                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 disabled:opacity-40 transition-all"
-                                                    style={{ background: 'linear-gradient(135deg, #1E549F, #2E79BA)' }}
+                                                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 disabled:opacity-40 transition-all bg-gradient-to-br from-royal to-ocean"
                                                 >
                                                     {isSending
                                                         ? <Loader2 className="w-4 h-4 text-white animate-spin" />

@@ -34,7 +34,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
     return (
         <Link href={`/products/${product.slug}`} className="block h-full group">
-            <div className="bg-white rounded-lg border border-gray-100 p-3 h-full flex flex-col hover:border-blue-200 hover:shadow-[0_4px_20px_rgba(0,0,0,0.08)] transition-all duration-300 relative">
+            <div className="bg-white rounded-lg border border-gray-100 h-full flex flex-col relative overflow-hidden interactive-card-hover">
 
                 {/* Special Offer Badge */}
                 {product.isSpecialOffer && (
@@ -48,50 +48,50 @@ export default function ProductCard({ product }: ProductCardProps) {
                     {/* Wishlist Button - Always visible */}
                     <WishlistButton productId={product.id} size="sm" />
 
-                    {/* Compare Button - Show on hover */}
+                    {/* Compare Button - Show on hover (currently not active) */}
                     <button
-                        className="flex items-center justify-center w-7 h-7 text-gray-400 hover:text-blue-600 bg-white/90 backdrop-blur rounded-full border border-gray-200 hover:border-blue-300 transition-all opacity-0 group-hover:opacity-100"
+                        className="flex items-center justify-center w-7 h-7 text-gray-400 bg-white/90 backdrop-blur rounded-full border border-gray-200 opacity-0 group-hover:opacity-100 cursor-not-allowed transition-[opacity,transform,background-color,border-color,color] duration-[150ms] ease-out"
                         onClick={(e) => {
                             e.preventDefault();
-                            // Handle compare
                         }}
-                        title="مقایسه"
+                        title="مقایسه (بزودی)"
+                        aria-disabled="true"
                     >
                         <BarChart2 className="w-3.5 h-3.5" />
                     </button>
                 </div>
 
                 {/* Image Container */}
-                <div className="relative aspect-square mb-4 bg-white rounded-lg overflow-hidden p-4">
+                <div className="relative aspect-square mb-4 bg-gray-50/50 overflow-hidden w-full">
                     <Image
                         src={product.image}
                         alt={product.name}
                         fill
-                        className="object-contain group-hover:scale-105 transition-transform duration-500"
+                        className="object-cover image-zoom-hover"
                         sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                     />
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 flex flex-col">
+                <div className="flex-1 flex flex-col px-3 pb-3">
                     {/* Title */}
-                    <h3 className="text-[13px] leading-6 font-medium text-gray-800 mb-3 min-h-[3rem] line-clamp-2 group-hover:text-blue-600 transition-colors">
+                    <h3 className="text-[13px] leading-6 font-medium text-gray-800 mb-3 min-h-[3rem] line-clamp-2 group-hover:text-ocean transition-colors">
                         {product.name}
                     </h3>
 
                     {/* Key Specs Preview (B2B Feature) */}
                     {product.specs && (
                         <div className="mb-4 space-y-1.5">
-                            {product.specs.capacity && (
+                             {product.specs.capacity && (
                                 <div className="flex items-center gap-2 text-[11px] text-gray-500">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-blue-100"></span>
+                                    <span className="w-1.5 h-1.5 rounded-full bg-ocean/10"></span>
                                     <span className="text-gray-400">ظرفیت:</span>
                                     <span className="font-medium text-gray-600">{product.specs.capacity}</span>
                                 </div>
                             )}
                             {product.specs.power && (
                                 <div className="flex items-center gap-2 text-[11px] text-gray-500">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-blue-100"></span>
+                                    <span className="w-1.5 h-1.5 rounded-full bg-ocean/10"></span>
                                     <span className="text-gray-400">توان:</span>
                                     <span className="font-medium text-gray-600">{product.specs.power}</span>
                                 </div>
@@ -126,19 +126,19 @@ export default function ProductCard({ product }: ProductCardProps) {
                                     product.price > 0 ? (
                                         <>
                                             {product.listPrice && product.listPrice > product.price && (
-                                                <div className="text-[11px] text-gray-400 line-through decoration-red-200 mb-0.5 ml-1">
+                                                <div className="text-[11px] text-gray-400 line-through decoration-red-200 mb-0.5 ml-1 tabular-nums">
                                                     {formatPrice(product.listPrice)}
                                                 </div>
                                             )}
                                             <div className="flex items-center gap-1 text-gray-900">
-                                                <span className="text-lg font-bold tracking-tight">
+                                                <span className="text-lg font-bold tracking-tight tabular-nums">
                                                     {formatPrice(product.price)}
                                                 </span>
                                                 <span className="text-[11px] text-gray-500">تومان</span>
                                             </div>
                                         </>
                                     ) : (
-                                        <button className="flex items-center gap-1.5 text-blue-600 text-xs font-bold hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors">
+                                        <button className="flex items-center gap-1.5 text-ocean text-xs font-bold hover:bg-ocean/10 px-3 py-1.5 rounded-lg transition-colors">
                                             <Phone className="w-3.5 h-3.5" />
                                             تماس بگیرید
                                         </button>

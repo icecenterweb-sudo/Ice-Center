@@ -71,7 +71,7 @@ export default function PricingBox({ product }: PricingBoxProps) {
 
             {/* Shipping */}
             <div className="flex items-center gap-2 px-1">
-                <CheckCircle2 className={`w-4 h-4 ${isInStock ? 'text-cyan-600' : 'text-gray-400'}`} />
+                <CheckCircle2 className={`w-4 h-4 ${isInStock ? 'text-ocean' : 'text-gray-400'}`} />
                 <span className="text-xs font-medium text-gray-700">
                     {inventoryLabel}
                     {isInStock && <span className="mr-1 text-gray-400 text-[10px]">(ارسال از ۳ روز کاری آینده)</span>}
@@ -84,12 +84,12 @@ export default function PricingBox({ product }: PricingBoxProps) {
                 <div className="flex flex-col items-end mb-4">
                     {discount > 0 && product.listPrice && (
                         <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs text-gray-400 line-through tracking-wider">{formatPrice(product.listPrice)}</span>
+                            <span className="text-xs text-gray-400 line-through tracking-wider tabular-nums">{formatPrice(product.listPrice)}</span>
                             <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">%{discount}</span>
                         </div>
                     )}
                     <div className="flex items-center gap-1">
-                        <span className="text-2xl font-bold text-gray-900 tracking-tight">{formatPrice(product.price)}</span>
+                        <span className="text-2xl font-bold text-gray-900 tracking-tight tabular-nums">{formatPrice(product.price)}</span>
                         <span className="text-xs text-gray-500 font-medium">تومان</span>
                     </div>
                 </div>
