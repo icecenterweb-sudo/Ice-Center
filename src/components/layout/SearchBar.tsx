@@ -164,7 +164,7 @@ export default function SearchBar({
     return (
         <div className={`relative ${className}`}>
             {/* Search Input */}
-            <div className="relative">
+            <div className="relative shadow-[0_4px_20px_rgba(8,31,55,0.06)] rounded-full">
                 <input
                     ref={inputRef}
                     type="text"
@@ -173,13 +173,23 @@ export default function SearchBar({
                     onKeyDown={handleKeyDown}
                     onFocus={() => query.length >= 2 && hasResults && setIsOpen(true)}
                     placeholder={placeholder}
-                    className="w-full h-11 pl-10 pr-12 bg-gray-100 border-none rounded-xl text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-ocean/30 focus:bg-white transition-all"
+                    className="w-full h-12 pl-10 pr-14 bg-white border border-gray-100 rounded-full text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-ocean/30 focus:border-transparent transition-[box-shadow,border-color,background-color] duration-[150ms] ease-out"
                 />
 
-                {/* Search Icon */}
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                {/* Circular Search Button on leading edge (Right in RTL) */}
+                <button
+                    type="button"
+                    onClick={() => {
+                        if (query.trim()) {
+                            router.push(`/products?search=${encodeURIComponent(query)}`);
+                            closeDropdown();
+                        }
+                    }}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 w-10 h-10 bg-midnight hover:bg-ocean text-white rounded-full flex items-center justify-center cursor-pointer transition-[background-color,transform,box-shadow] duration-[150ms] ease-out shadow-sm active:scale-95"
+                    aria-label="جستجو"
+                >
                     <Search className="w-5 h-5" />
-                </div>
+                </button>
 
                 {/* Loading/Clear Button */}
                 <div className="absolute left-3 top-1/2 -translate-y-1/2">
@@ -189,7 +199,7 @@ export default function SearchBar({
                         <button
                             type="button"
                             onClick={closeDropdown}
-                            className="text-gray-400 hover:text-gray-600"
+                            className="text-gray-400 hover:text-gray-600 transition-[color,transform] duration-[150ms] ease-out active:scale-90"
                         >
                             <X className="w-5 h-5" />
                         </button>
@@ -198,11 +208,14 @@ export default function SearchBar({
             </div>
 
             {/* Dropdown Results */}
-            {isOpen && (
-                <div
-                    ref={dropdownRef}
-                    className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 max-h-[400px] overflow-y-auto"
-                >
+            <div
+                ref={dropdownRef}
+                className={`absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 max-h-[400px] overflow-y-auto origin-top transition-[opacity,transform] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+                    isOpen && (isLoading || hasResults)
+                        ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto'
+                        : 'opacity-0 -translate-y-1.5 scale-95 pointer-events-none'
+                }`}
+            >
                     {!hasResults && !isLoading && (
                         <div className="p-4 text-center text-gray-500 text-sm">
                             نتیجه‌ای یافت نشد
@@ -223,7 +236,7 @@ export default function SearchBar({
                                         href={`/categories/${category.slug}`}
                                         onClick={closeDropdown}
                                         className={`
-                      block px-4 py-3 hover:bg-gray-50 transition-colors
+                      block px-4 py-3 hover:bg-gray-50 transition-[background-color,color] duration-[125ms] ease-out
                       ${selectedIndex === itemIndex ? 'bg-ocean/10' : ''}
                     `}
                                     >
@@ -246,7 +259,7 @@ export default function SearchBar({
                                     href={`/products/${product.slug}`}
                                     onClick={closeDropdown}
                                     className={`
-                    flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors
+                    flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-[background-color,color] duration-[125ms] ease-out
                     ${selectedIndex === index ? 'bg-ocean/10' : ''}
                   `}
                                 >
@@ -283,13 +296,12 @@ export default function SearchBar({
                         <Link
                             href={`/products?search=${encodeURIComponent(query)}`}
                             onClick={closeDropdown}
-                            className="block px-4 py-3 text-center text-sm text-ocean font-medium hover:bg-ocean/5 border-t border-gray-100"
+                            className="block px-4 py-3 text-center text-sm text-ocean font-medium hover:bg-ocean/5 border-t border-gray-100 transition-[background-color,color] duration-[125ms] ease-out"
                         >
                             مشاهده همه نتایج
                         </Link>
                     )}
                 </div>
-            )}
         </div>
     );
 }
