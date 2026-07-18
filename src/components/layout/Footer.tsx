@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { Phone, Mail, MapPin, Instagram, Send } from 'lucide-react';
+import { Phone, Mail, MapPin, Instagram, Send, ShieldCheck, Award, CheckCircle2 } from 'lucide-react';
 
 /**
  * Jalali year — computed once at module load time, not inside render.
@@ -20,81 +20,134 @@ function computeJalaliYear(): number {
 const JALALI_YEAR = computeJalaliYear();
 
 const Footer: React.FC = () => {
-
   return (
-    <footer className="bg-gray-900 text-gray-300 mt-20">
-      <div className="max-w-[1600px] mx-auto px-4 py-12">
+    <footer className="bg-[#0A1424] noise-overlay text-gray-300 mt-20 border-t border-slate-800 select-none relative">
+      <div className="max-w-[1600px] mx-auto px-6 py-12 md:py-16 relative z-10">
 
-        {/* بخش اصلی */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+        {/* main grid */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
 
-          {/* درباره ما */}
-          <div>
-            <h3 className="text-white font-bold text-lg mb-4">آیس سنتر</h3>
-            <p className="text-sm leading-7">
-              فروشگاه تخصصی تجهیزات صنعتی بستنی، یخ‌سازی و سرمایش.
-              ارائه دستگاه‌های با کیفیت با گارانتی معتبر.
+          {/* 1. Contact Info Column (Rightmost in RTL) */}
+          <div className="text-right flex flex-col items-start order-1">
+            <h3 className="text-white font-extrabold text-base mb-5 pb-2 border-b-2 border-ocean/40 w-24">تماس با ما</h3>
+            <ul className="space-y-4 text-xs font-semibold">
+              <li className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-orange-400 shrink-0">
+                  <Phone size={14} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-gray-400">تلفن پشتیبانی و فروش</span>
+                  <span dir="ltr" className="text-white mt-0.5 text-xs font-bold">۰۲۱-۵۵۶۶۷۷۸۸</span>
+                </div>
+              </li>
+              <li className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-sky-breeze shrink-0">
+                  <Mail size={14} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-gray-400">پست الکترونیکی</span>
+                  <span className="text-white mt-0.5 text-xs font-bold font-sans">info@icecenter.ir</span>
+                </div>
+              </li>
+              <li className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-sky-breeze shrink-0 mt-0.5">
+                  <MapPin size={14} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-gray-400">دفتر مرکزی و نمایشگاه</span>
+                  <span className="text-white mt-0.5 leading-relaxed">تهران، خیابان ولیعصر، نرسیده به میدان تجریش، پلاک ۱۲۳</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          {/* 2. Customer Services Column */}
+          <div className="text-right flex flex-col items-start order-2">
+            <h3 className="text-white font-extrabold text-base mb-5 pb-2 border-b-2 border-ocean/40 w-28">خدمات مشتریان</h3>
+            <ul className="space-y-3 text-xs font-bold">
+              <li><Link href="/faq" className="hover:text-white hover:translate-x-[-4px] transition-all block">سوالات متداول راه‌اندازی</Link></li>
+              <li><Link href="/return-policy" className="hover:text-white hover:translate-x-[-4px] transition-all block">رویه بازگشت ۱۰ روزه کالا</Link></li>
+              <li><Link href="/privacy" className="hover:text-white hover:translate-x-[-4px] transition-all block">حریم خصوصی خریداران</Link></li>
+              <li><Link href="/terms" className="hover:text-white hover:translate-x-[-4px] transition-all block">شرایط و قوانین استفاده</Link></li>
+              <li><Link href="/complaints" className="hover:text-white hover:translate-x-[-4px] transition-all block">ثبت شکایات و پیشنهادات</Link></li>
+            </ul>
+          </div>
+
+          {/* 3. Quick Links Column */}
+          <div className="text-right flex flex-col items-start order-3">
+            <h3 className="text-white font-extrabold text-base mb-5 pb-2 border-b-2 border-ocean/40 w-24">دسترسی سریع</h3>
+            <ul className="space-y-3 text-xs font-bold">
+              <li><Link href="/about" className="hover:text-white hover:translate-x-[-4px] transition-all block">درباره آیس سنتر</Link></li>
+              <li><Link href="/contact" className="hover:text-white hover:translate-x-[-4px] transition-all block">تماس با ما</Link></li>
+              <li><Link href="/warranty" className="hover:text-white hover:translate-x-[-4px] transition-all block">شرایط گارانتی و خدمات پس از فروش</Link></li>
+              <li><Link href="/corporate" className="hover:text-white hover:translate-x-[-4px] transition-all block">طرح ویژه خرید سازمانی و عمده</Link></li>
+              <li><Link href="/blog" className="hover:text-white hover:translate-x-[-4px] transition-all block">بلاگ تخصصی صنایع غذایی</Link></li>
+            </ul>
+          </div>
+
+          {/* 4. Brand Summary Column (Leftmost in RTL) */}
+          <div className="text-right flex flex-col items-start order-4">
+            <h3 className="text-white font-extrabold text-base mb-5 pb-2 border-b-2 border-ocean/40 w-28">درباره آیس سنتر</h3>
+            <p className="text-xs leading-6 text-gray-400 font-medium mb-5">
+              آیس سنتر مرجع تخصصی تامین و راه‌اندازی انواع تجهیزات برودتی، بستنی‌سازهای قیفی شمس، دستگاه‌های اسپرسوساز صنعتی و کلیه ملزومات کافی‌شاپ و مطبخ‌های صنعتی در سراسر ایران است.
             </p>
-          </div>
-
-          {/* دسترسی سریع */}
-          <div>
-            <h3 className="text-white font-bold text-lg mb-4">دسترسی سریع</h3>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="/about" className="hover:text-white transition">درباره ما</Link></li>
-              <li><Link href="/contact" className="hover:text-white transition">تماس با ما</Link></li>
-              <li><Link href="/warranty" className="hover:text-white transition">گارانتی و خدمات</Link></li>
-              <li><Link href="/corporate" className="hover:text-white transition">خرید سازمانی</Link></li>
-              <li><Link href="/blog" className="hover:text-white transition">وبلاگ</Link></li>
-            </ul>
-          </div>
-
-          {/* خدمات مشتریان */}
-          <div>
-            <h3 className="text-white font-bold text-lg mb-4">خدمات مشتریان</h3>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="/faq" className="hover:text-white transition">سوالات متداول</Link></li>
-              <li><Link href="/return-policy" className="hover:text-white transition">رویه بازگشت کالا</Link></li>
-              <li><Link href="/privacy" className="hover:text-white transition">حریم خصوصی</Link></li>
-              <li><Link href="/terms" className="hover:text-white transition">قوانین و مقررات</Link></li>
-            </ul>
-          </div>
-
-          {/* تماس با ما */}
-          <div>
-            <h3 className="text-white font-bold text-lg mb-4">تماس با ما</h3>
-            <ul className="space-y-3 text-sm">
-              <li className="flex items-center gap-2">
-                <Phone size={16} />
-                <span dir="ltr">{process.env.NEXT_PUBLIC_PHONE || '021-12345678'}</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Mail size={16} />
-                <span>{process.env.NEXT_PUBLIC_EMAIL || 'info@icecenter.ir'}</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <MapPin size={16} className="mt-1" />
-                <span>{process.env.NEXT_PUBLIC_ADDRESS || 'تهران، خیابان ولیعصر، پلاک 123'}</span>
-              </li>
-            </ul>
-
-            {/* شبکه‌های اجتماعی */}
-            <div className="flex gap-3 mt-4">
-              <a href={process.env.NEXT_PUBLIC_INSTAGRAM || '#'} aria-label="اینستاگرام" className="w-9 h-9 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-blue-600 transition">
-                <Instagram size={18} aria-hidden="true" />
+            
+            {/* Social Icons */}
+            <div className="flex gap-3">
+              <a href="https://instagram.com/icecenter" target="_blank" rel="noopener noreferrer" aria-label="اینستاگرام" className="w-8 h-8 bg-white/5 border border-white/10 rounded-lg flex items-center justify-center hover:bg-orange-500 hover:text-white transition-all hover:scale-105">
+                <Instagram size={16} />
               </a>
-              <a href={process.env.NEXT_PUBLIC_TELEGRAM || '#'} aria-label="تلگرام" className="w-9 h-9 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-blue-600 transition">
-                <Send size={18} aria-hidden="true" />
+              <a href="https://t.me/icecenter" target="_blank" rel="noopener noreferrer" aria-label="تلگرام" className="w-8 h-8 bg-white/5 border border-white/10 rounded-lg flex items-center justify-center hover:bg-ocean hover:text-white transition-all hover:scale-105">
+                <Send size={16} />
               </a>
             </div>
           </div>
 
         </div>
 
-        {/* خط جداکننده */}
-        <div className="border-t border-gray-800 pt-6">
-          <p className="text-center text-sm text-gray-500">
-            © {JALALI_YEAR} تمامی حقوق این سایت متعلق به <span className="text-white font-bold">آیس سنتر</span> می‌باشد.
+        {/* Trust Certification Badges Row */}
+        <div className="border-t border-slate-800/80 py-8 flex flex-col md:flex-row justify-center items-center gap-6 select-none">
+          {/* Badge 1: Enamad */}
+          <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-2xl flex items-center gap-3 w-64 shadow-inner transition-colors hover:border-slate-700">
+            <div className="w-11 h-11 rounded-xl bg-ocean/10 text-sky-breeze flex items-center justify-center shrink-0 border border-ocean/20">
+              <ShieldCheck size={22} />
+            </div>
+            <div className="flex flex-col text-right">
+              <span className="text-[9px] text-gray-400">جمهوری اسلامی ایران</span>
+              <span className="text-xs font-bold text-white mt-1">نماد اعتماد الکترونیکی</span>
+              <span className="text-[9px] text-sky-breeze font-bold mt-0.5">۵ ستاره فعال</span>
+            </div>
+          </div>
+
+          {/* Badge 2: Samandehi */}
+          <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-2xl flex items-center gap-3 w-64 shadow-inner transition-colors hover:border-slate-700">
+            <div className="w-11 h-11 rounded-xl bg-orange-500/10 text-orange-400 flex items-center justify-center shrink-0 border border-orange-500/20">
+              <Award size={22} />
+            </div>
+            <div className="flex flex-col text-right">
+              <span className="text-[9px] text-gray-400">وزارت فرهنگ و ارشاد</span>
+              <span className="text-xs font-bold text-white mt-1">نشان ملی ثبت دیجیتال</span>
+              <span className="text-[9px] text-orange-400 font-bold mt-0.5">ثبت طلایی رسانه</span>
+            </div>
+          </div>
+
+          {/* Badge 3: Virtual Businesses */}
+          <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-2xl flex items-center gap-3 w-64 shadow-inner transition-colors hover:border-slate-700">
+            <div className="w-11 h-11 rounded-xl bg-ocean/10 text-sky-breeze flex items-center justify-center shrink-0 border border-ocean/20">
+              <CheckCircle2 size={22} />
+            </div>
+            <div className="flex flex-col text-right">
+              <span className="text-[9px] text-gray-400">کسب‌وکارهای اینترنتی</span>
+              <span className="text-xs font-bold text-white mt-1">عضو اتحادیه کشوری</span>
+              <span className="text-[9px] text-sky-breeze font-bold mt-0.5">رسمی کشوری</span>
+            </div>
+          </div>
+        </div>
+
+        {/* copyright */}
+        <div className="border-t border-slate-850 pt-6">
+          <p className="text-center text-xs text-gray-500 font-medium">
+            حقوق مادی و معنوی این سایت متعلق به هلدینگ بازرگانی و فروشگاه آنلاین <span className="text-white font-bold">آیس سنتر</span> می‌باشد. © {JALALI_YEAR}
           </p>
         </div>
 
