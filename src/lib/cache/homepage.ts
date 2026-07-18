@@ -44,6 +44,7 @@ export interface CategoryForDisplay {
     slug: string;
     image: string | null;
     productCount: number;
+    subcategories?: Array<{ id: number; name: string }>;
 }
 
 export interface ProductForDisplay {
@@ -167,6 +168,8 @@ export async function getCachedCategories(): Promise<CategoryForDisplay[]> {
             image: true,
             subcategories: {
                 select: {
+                    id: true,
+                    name: true,
                     _count: { select: { products: true } }
                 }
             }
@@ -179,7 +182,8 @@ export async function getCachedCategories(): Promise<CategoryForDisplay[]> {
         name: category.name,
         slug: category.slug,
         image: category.image,
-        productCount: category.subcategories.reduce((sum, sub) => sum + sub._count.products, 0)
+        productCount: category.subcategories.reduce((sum, sub) => sum + sub._count.products, 0),
+        subcategories: category.subcategories.map(sub => ({ id: sub.id, name: sub.name }))
     }));
 }
 

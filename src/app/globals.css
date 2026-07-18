@@ -1,6 +1,10 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+html {
+  scroll-behavior: smooth;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -23,7 +27,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #0c1220;
     --foreground: #ededed;
   }
 }
@@ -36,6 +40,29 @@ body {
 
 .font-yekan {
   font-family: var(--font-yekan), sans-serif;
+}
+
+/* ============================================================
+   Fluid typography scale (responsive-design skill, Pattern 2)
+   Each token scales smoothly between a min (≈360px viewport)
+   and max (≈1280px viewport) instead of stepping at breakpoints.
+   ============================================================ */
+:root {
+  --fluid-sm: clamp(0.75rem, 0.71rem + 0.18vw, 0.875rem);
+  --fluid-base: clamp(0.875rem, 0.83rem + 0.22vw, 1rem);
+  --fluid-lg: clamp(1rem, 0.9rem + 0.5vw, 1.25rem);
+  --fluid-xl: clamp(1.125rem, 0.98rem + 0.71vw, 1.5rem);
+  --fluid-2xl: clamp(1.375rem, 1.12rem + 1.25vw, 2rem);
+}
+
+/* Section titles scale fluidly with the viewport */
+.fluid-heading {
+  font-size: var(--fluid-xl);
+  line-height: 1.3;
+}
+.fluid-heading-lg {
+  font-size: var(--fluid-2xl);
+  line-height: 1.25;
 }
 
 /* Tiptap editor headings - using !important to override Tailwind resets */
@@ -258,4 +285,131 @@ div.ProseMirror blockquote,
   background: rgba(255, 255, 255, 0.4) !important;
 }
 
+/* ==========================================
+   ANIMATION & INTERFACE FEEL UTILITIES
+   ========================================== */
+
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-hover: ease;
+  --transition-fast: 150ms;
+  --transition-medium: 200ms;
+
+  /* Tinted brand shadows (navy-based instead of pure black) */
+  --shadow-card: 0 4px 15px rgba(8, 31, 55, 0.04);
+  --shadow-card-hover: 0 12px 35px rgba(8, 31, 55, 0.10);
+  --shadow-elevated: 0 20px 50px rgba(8, 31, 55, 0.15);
+
+  /* Z-index scale */
+  --z-dropdown: 50;
+  --z-sticky: 40;
+  --z-modal: 100;
+}
+
+/* Base button active press state */
+.active-press {
+  transition: transform 120ms var(--ease-out) !important;
+}
+.active-press:active {
+  transform: scale(0.97) !important;
+}
+
+/* Interactive hover cards - Gated behind fine hover pointer media query */
+.interactive-card-hover {
+  transition: border-color var(--transition-medium) var(--ease-hover), 
+              box-shadow var(--transition-medium) var(--ease-hover),
+              transform var(--transition-medium) var(--ease-out) !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .interactive-card-hover:hover {
+    border-color: #2E79BA !important; /* var(--color-ocean) */
+    box-shadow: 0 12px 35px rgba(8, 31, 55, 0.10) !important;
+    transform: translateY(-4px) !important;
+  }
+}
+
+/* Image zoom transition */
+.image-zoom-hover {
+  transition: transform 300ms var(--ease-out) !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .group:hover .image-zoom-hover {
+    transform: scale(1.05) !important;
+  }
+}
+
+/* Preferences for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-delay: -1ms !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    background-attachment: initial !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+  }
+  .active-press:active,
+  .interactive-card-hover:hover,
+  .interactive-card-hover,
+  .image-zoom-hover {
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+/* ==========================================
+   DESIGN SYSTEM UTILITIES
+   ========================================== */
+
+/* Tabular figures for price alignment */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Balanced text wrap for headings */
+.text-balance {
+  text-wrap: balance;
+}
+
+/* Subtle grain noise overlay for dark surfaces */
+.noise-overlay {
+  position: relative;
+}
+.noise-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+/* Shimmer animation for skeleton loaders */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    #e5e7eb 25%,
+    #f3f4f6 37%,
+    #e5e7eb 63%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
 
