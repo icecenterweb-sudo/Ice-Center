@@ -1,7 +1,7 @@
 import { GoogleAnalytics } from '@next/third-parties/google';
 
 // Google Analytics Measurement ID
-const GA_MEASUREMENT_ID = 'G-C9MG3EGDGP';
+const GA_MEASUREMENT_ID = 'G-7D1WHDXW82';
 
 export default function Analytics() {
     return <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />;
