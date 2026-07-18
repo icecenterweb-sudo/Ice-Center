@@ -6,19 +6,19 @@ export default function NotFound() {
         <div className="min-h-screen bg-frost flex items-center justify-center p-4">
             <div className="max-w-lg w-full text-center space-y-8">
                 {/* Icon */}
-                <div className="relative mx-auto w-32 h-32">
-                    <div className="absolute inset-0 bg-ocean/10 rounded-full animate-pulse" />
+                <div className="relative mx-auto w-32 h-32 group/icon select-none">
+                    <div className="absolute inset-0 bg-ocean/10 rounded-full transition-transform duration-500 group-hover/icon:scale-110" />
                     <div className="absolute inset-4 bg-ocean/20 rounded-full" />
                     <div className="absolute inset-0 flex items-center justify-center">
-                        <Snowflake className="w-16 h-16 text-ocean" />
+                        <Snowflake className="w-16 h-16 text-ocean transition-transform duration-700 group-hover/icon:rotate-90" />
                     </div>
                 </div>
 
                 {/* Text */}
                 <div>
-                    <h1 className="text-6xl font-bold text-midnight mb-3">۴۰۴</h1>
-                    <h2 className="text-xl font-bold text-gray-800 mb-2">صفحه مورد نظر یافت نشد</h2>
-                    <p className="text-gray-500 text-sm leading-7">
+                    <h1 className="text-7xl font-extrabold text-midnight mb-3 tracking-tighter">۴۰۴</h1>
+                    <h2 className="text-xl font-bold text-gray-800 mb-2 text-balance">صفحه مورد نظر یافت نشد</h2>
+                    <p className="text-gray-500 text-sm leading-7 text-balance max-w-sm mx-auto">
                         متأسفانه صفحه‌ای که به دنبال آن هستید وجود ندارد یا منتقل شده است.
                     </p>
                 </div>

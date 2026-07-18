@@ -28,7 +28,7 @@ export default function ShopLayout({
             <Suspense fallback={<div className="h-16 md:h-20 bg-white" />}>
               <Header />
             </Suspense>
-            <main className="min-h-screen pb-16 md:pb-0">
+            <main id="main-content" className="min-h-screen pb-16 md:pb-0">
               {children}
             </main>
             <Footer />

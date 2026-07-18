@@ -30,6 +30,18 @@ const yekan = localFont({
 export const metadata: Metadata = {
     title: "آیس سنتر | تجهیزات صنعتی بستنی و یخچال",
     description: "فروشگاه تخصصی دستگاه بستنی‌ساز، یخ‌ساز، آبمیوه‌گیری، فریزر و یخچال صنعتی",
+    openGraph: {
+        title: "آیس سنتر | تجهیزات صنعتی بستنی و یخچال",
+        description: "فروشگاه تخصصی دستگاه بستنی‌ساز، یخ‌ساز، آبمیوه‌گیری، فریزر و یخچال صنعتی",
+        type: "website",
+        siteName: "آیس سنتر",
+        locale: "fa_IR",
+    },
+    twitter: {
+        card: "summary_large_image",
+        title: "آیس سنتر | تجهیزات صنعتی بستنی و یخچال",
+        description: "فروشگاه تخصصی دستگاه بستنی‌ساز، یخ‌ساز، آبمیوه‌گیری، فریزر و یخچال صنعتی",
+    },
 };
 
 export default function RootLayout({
@@ -40,6 +52,12 @@ export default function RootLayout({
     return (
         <html lang="fa" dir="rtl">
             <body className={`${yekan.variable} font-yekan antialiased`}>
+                <a
+                    href="#main-content"
+                    className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:right-4 focus:z-[200] focus:bg-white focus:text-midnight focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg focus:font-bold focus:text-sm"
+                >
+                    رفتن به محتوا
+                </a>
                 {children}
                 <Toaster position="bottom-center" />
                 <Analytics />
