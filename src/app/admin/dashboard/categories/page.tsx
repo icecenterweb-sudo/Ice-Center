@@ -6,9 +6,11 @@ import DeleteCategoryButton from './DeleteCategoryButton';
 import DeleteSubcategoryButton from './DeleteSubcategoryButton';
 import { connection } from 'next/server';
 import { Suspense } from 'react';
+import { requireRolePage } from '@/lib/admin-auth';
 
 async function CategoriesContent() {
     await connection(); // Opt out of caching for this page
+    await requireRolePage('CATEGORIES');
 
     // Fetch all categories with their subcategories
     const categories = await prisma.category.findMany({

@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server'
+import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import { verifyAdminToken, ADMIN_TOKEN_COOKIE, type AdminTokenPayload } from '@/lib/jwt'
 import { AdminRole } from '@prisma/client'
+import { ROLE_PERMISSIONS, canAccessSection, hasAdminRole, type AdminSection } from '@/lib/admin-roles'
+
+// Re-export client-safe role utilities for backward compatibility
+export { ROLE_PERMISSIONS, canAccessSection, hasAdminRole }
+export type { AdminSection }
 
 type AdminAuthResult =
     | { ok: true; payload: AdminTokenPayload }
@@ -88,44 +94,28 @@ export async function requireAdminAction(): Promise<AdminTokenPayload> {
 }
 
 /**
- * Helper to check if the authenticated admin has any of the required roles.
- * SUPER_ADMIN has bypass permissions.
- */
-export function hasAdminRole(payload: AdminTokenPayload, requiredRoles: string[]): boolean {
-    if (!payload.roles) return false;
-    if (payload.roles.includes('SUPER_ADMIN')) return true;
-    return requiredRoles.some(role => payload.roles.includes(role));
-}
-
-/**
- * Role-based access mapping for each admin section.
- * SUPER_ADMIN bypasses all checks (handled in hasAdminRole).
- */
-export const ROLE_PERMISSIONS = {
-    PRODUCTS: ['SUPER_ADMIN', 'GENERAL_MANAGER', 'INVENTORY_MANAGER', 'EDITOR'],
-    CATEGORIES: ['SUPER_ADMIN', 'GENERAL_MANAGER', 'INVENTORY_MANAGER', 'EDITOR'],
-    ORDERS: ['SUPER_ADMIN', 'GENERAL_MANAGER', 'SUPPORT_ADMIN'],
-    BLOG: ['SUPER_ADMIN', 'GENERAL_MANAGER', 'BLOG_WRITER'],
-    COUPONS: ['SUPER_ADMIN', 'GENERAL_MANAGER'],
-    BANNERS: ['SUPER_ADMIN', 'GENERAL_MANAGER', 'EDITOR'],
-    OFFERS: ['SUPER_ADMIN', 'GENERAL_MANAGER'],
-    SLIDES: ['SUPER_ADMIN', 'GENERAL_MANAGER', 'EDITOR'],
-    ADMIN_MANAGEMENT: ['SUPER_ADMIN'],
-} as const;
-
-export type AdminSection = keyof typeof ROLE_PERMISSIONS;
-
-/**
  * Require admin authentication + specific role for Server Actions.
  * Throws if the admin doesn't have the required role.
  */
 export async function requireRoleAction(section: AdminSection): Promise<AdminTokenPayload> {
     const payload = await requireAdminAction();
     const requiredRoles = ROLE_PERMISSIONS[section] as readonly string[];
-    if (!hasAdminRole(payload, [...requiredRoles])) {
+    if (!hasAdminRole(payload.roles, [...requiredRoles])) {
         throw new Error('شما دسترسی لازم برای این عملیات را ندارید.');
     }
     return payload;
+}
+
+/**
+ * Require admin authentication + specific role for Server Component Pages.
+ * Redirects to dashboard with forbidden parameter if permission is lacking.
+ */
+export async function requireRolePage(section: AdminSection): Promise<AdminTokenPayload> {
+    try {
+        return await requireRoleAction(section);
+    } catch {
+        redirect('/admin/dashboard?forbidden=' + section);
+    }
 }
 
 /**
@@ -140,7 +130,7 @@ export async function requireRole(
     if (!auth.ok) return auth;
 
     const requiredRoles = ROLE_PERMISSIONS[section] as readonly string[];
-    if (!hasAdminRole(auth.payload, [...requiredRoles])) {
+    if (!hasAdminRole(auth.payload.roles, [...requiredRoles])) {
         return {
             ok: false,
             response: NextResponse.json(
@@ -151,3 +141,4 @@ export async function requireRole(
     }
     return auth;
 }
+

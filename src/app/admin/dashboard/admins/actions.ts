@@ -24,11 +24,31 @@ export async function updateAdminRolesAction(adminId: number, roles: AdminRole[]
         // Retrieve admin first
         const adminToUpdate = await prisma.admin.findUnique({
             where: { id: adminId },
-            select: { id: true, name: true, phone: true }
+            select: { id: true, name: true, phone: true, roles: true }
         });
 
         if (!adminToUpdate) {
             throw new Error('مدیر مورد نظر یافت نشد.');
+        }
+
+        // 1. Only SUPER_ADMIN can edit a target who is currently a SUPER_ADMIN
+        if (adminToUpdate.roles.includes('SUPER_ADMIN') && !adminPayload.roles.includes('SUPER_ADMIN')) {
+            throw new Error('فقط سوپر ادمین می‌تواند نقش‌های یک سوپر ادمین دیگر را تغییر دهد.');
+        }
+
+        // 2. Prevent removing the last active SUPER_ADMIN from system
+        if (adminToUpdate.roles.includes('SUPER_ADMIN') && !roles.includes('SUPER_ADMIN')) {
+            const superCount = await prisma.admin.count({
+                where: { roles: { has: 'SUPER_ADMIN' }, status: 'ACTIVE' }
+            });
+            if (superCount <= 1) {
+                throw new Error('نمی‌توان تنها سوپر ادمین فعال سیستم را سلب نقش نمود.');
+            }
+        }
+
+        // 3. Prevent self-demotion out of SUPER_ADMIN
+        if (adminId === adminPayload.adminId && adminToUpdate.roles.includes('SUPER_ADMIN') && !roles.includes('SUPER_ADMIN')) {
+            throw new Error('شما نمی‌توانید دسترسی سوپر ادمین خود را کاهش دهید.');
         }
 
         // Update database roles array

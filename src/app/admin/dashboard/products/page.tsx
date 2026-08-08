@@ -3,10 +3,12 @@ import { Plus } from 'lucide-react';
 import { prisma } from '@/lib/db';
 import { connection } from 'next/server';
 import { Suspense } from 'react';
+import { requireRolePage } from '@/lib/admin-auth';
 import ProductsTableClient from './ProductsTableClient';
 
 async function ProductsContent() {
     await connection(); // Opt out of caching for this page
+    await requireRolePage('PRODUCTS');
 
     // Fetch products and categories in parallel
     const [products, categories] = await Promise.all([

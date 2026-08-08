@@ -3,6 +3,7 @@ import { Plus, Edit, Eye, MessageCircle } from 'lucide-react';
 import { prisma } from '@/lib/db';
 import { connection } from 'next/server';
 import { Suspense } from 'react';
+import { requireRolePage } from '@/lib/admin-auth';
 import DeletePostButton from './DeletePostButton';
 
 async function getBlogPosts() {
@@ -22,6 +23,7 @@ async function getPendingCommentsCount() {
 }
 
 async function BlogContent() {
+    await requireRolePage('BLOG');
     const [posts, pendingComments] = await Promise.all([getBlogPosts(), getPendingCommentsCount()]);
 
     const getStatusBadge = (status: string) => {

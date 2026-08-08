@@ -19,27 +19,34 @@ import {
     BarChart3,
     MessageSquare,
     Terminal,
-    Shield
+    Shield,
+    Settings
 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { canAccessSection, AdminSection } from '@/lib/admin-roles';
 
-const menuItems = [
-    { icon: LayoutDashboard, label: 'داشبورد', href: '/admin/dashboard' },
-    { icon: Package, label: 'محصولات', href: '/admin/dashboard/products' },
-    { icon: Tag, label: 'پیشنهادها', href: '/admin/dashboard/offers' },
-    { icon: FolderTree, label: 'دسته‌بندی‌ها', href: '/admin/dashboard/categories' },
-    { icon: FileText, label: 'بلاگ', href: '/admin/dashboard/blog' },
-    { icon: BarChart3, label: 'سئو و آنالیتیکس', href: '/admin/dashboard/analytics' },
-    { icon: Palette, label: 'ظاهر', href: '/admin/dashboard/appearance' },
-    { icon: Users, label: 'کاربران', href: '/admin/dashboard/users' },
-    { icon: ShoppingCart, label: 'سفارشات', href: '/admin/dashboard/orders' },
-    { icon: MessageSquare, label: 'پشتیبانی آنلاین', href: '/admin/dashboard/support' },
-    { icon: Terminal, label: 'مدیریت خطاها', href: '/admin/dashboard/errors' },
-    { icon: Shield, label: 'مدیریت دسترسی‌ها', href: '/admin/dashboard/admins' },
+const menuItems: { icon: any; label: string; href: string; section: AdminSection }[] = [
+    { icon: LayoutDashboard, label: 'داشبورد', href: '/admin/dashboard', section: 'DASHBOARD' },
+    { icon: Package, label: 'محصولات', href: '/admin/dashboard/products', section: 'PRODUCTS' },
+    { icon: Tag, label: 'پیشنهادها', href: '/admin/dashboard/offers', section: 'OFFERS' },
+    { icon: FolderTree, label: 'دسته‌بندی‌ها', href: '/admin/dashboard/categories', section: 'CATEGORIES' },
+    { icon: FileText, label: 'بلاگ', href: '/admin/dashboard/blog', section: 'BLOG' },
+    { icon: BarChart3, label: 'سئو و آنالیتیکس', href: '/admin/dashboard/analytics', section: 'ANALYTICS' },
+    { icon: Palette, label: 'ظاهر', href: '/admin/dashboard/appearance', section: 'APPEARANCE' },
+    { icon: Settings, label: 'تنظیمات عمومی', href: '/admin/dashboard/settings', section: 'SETTINGS' },
+    { icon: Users, label: 'کاربران', href: '/admin/dashboard/users', section: 'USERS' },
+    { icon: ShoppingCart, label: 'سفارشات', href: '/admin/dashboard/orders', section: 'ORDERS' },
+    { icon: MessageSquare, label: 'پشتیبانی آنلاین', href: '/admin/dashboard/support', section: 'SUPPORT' },
+    { icon: Terminal, label: 'مدیریت خطاها', href: '/admin/dashboard/errors', section: 'ERRORS' },
+    { icon: Shield, label: 'مدیریت دسترسی‌ها', href: '/admin/dashboard/admins', section: 'ADMIN_MANAGEMENT' },
 ];
 
 export default function Sidebar() {
     const pathname = usePathname();
     const { isCollapsed, isMobileOpen, setIsMobileOpen } = useAdminSidebar();
+    const { user } = useAuth();
+
+    const visibleMenuItems = menuItems.filter(item => canAccessSection(user?.adminRoles, item.section));
 
     const handleLogout = async () => {
         await fetch('/api/admin/auth/logout', { method: 'POST' });
@@ -101,7 +108,7 @@ export default function Sidebar() {
 
                 {/* Navigation */}
                 <nav className="relative flex-1 px-4 space-y-2 overflow-y-auto custom-scrollbar">
-                    {menuItems.map((item, index) => {
+                    {visibleMenuItems.map((item, index) => {
                         const Icon = item.icon;
                         const isActive = pathname === item.href;
 

@@ -2,12 +2,14 @@ import { Suspense } from 'react';
 import { getOrders } from './actions';
 import OrdersClient from './OrdersClient';
 import { OrderStatus } from '@prisma/client';
+import { requireRolePage } from '@/lib/admin-auth';
 
 export default async function OrdersPage({
     searchParams,
 }: {
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+    await requireRolePage('ORDERS');
     const params = await searchParams;
     const page = Number(params.page) || 1;
     const search = params.search as string || '';

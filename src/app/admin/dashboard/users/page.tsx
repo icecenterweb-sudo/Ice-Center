@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db';
 import { connection } from 'next/server';
 import { Suspense } from 'react';
+import { requireRolePage } from '@/lib/admin-auth';
 import UsersContentClient from './UsersContentClient';
 
 async function getUsers() {
@@ -19,6 +20,7 @@ async function getUsers() {
 }
 
 async function UsersContent() {
+    await requireRolePage('USERS');
     const users = await getUsers();
     return <UsersContentClient initialUsers={users} />;
 }

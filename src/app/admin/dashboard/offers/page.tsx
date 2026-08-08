@@ -6,6 +6,7 @@ import { formatPersianNumber } from '@/lib/persian';
 import DeleteOfferButton from './DeleteOfferButton';
 import { connection } from 'next/server';
 import { Suspense } from 'react';
+import { requireRolePage } from '@/lib/admin-auth';
 
 // Helper to get offer status
 function getOfferStatus(offer: { isActive: boolean; startDate: Date; endDate: Date }) {
@@ -19,6 +20,7 @@ function getOfferStatus(offer: { isActive: boolean; startDate: Date; endDate: Da
 
 async function OffersContent() {
     await connection(); // Opt out of caching for this page
+    await requireRolePage('OFFERS');
 
     const offers = await prisma.offer.findMany({
         include: {

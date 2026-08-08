@@ -2,10 +2,10 @@
 
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
-import { requireAdminAction } from '@/lib/admin-auth';
+import { requireRoleAction } from '@/lib/admin-auth';
 
 export async function deleteErrorLogAction(id: number) {
-    await requireAdminAction();
+    await requireRoleAction('ERRORS');
     try {
         await prisma.errorLog.delete({ where: { id } });
         revalidatePath('/admin/dashboard/errors');
@@ -17,7 +17,7 @@ export async function deleteErrorLogAction(id: number) {
 }
 
 export async function bulkDeleteErrorLogsAction(ids: number[]) {
-    await requireAdminAction();
+    await requireRoleAction('ERRORS');
     if (!ids || ids.length === 0) {
         throw new Error('هیچ خطایی انتخاب نشده است.');
     }
@@ -34,7 +34,7 @@ export async function bulkDeleteErrorLogsAction(ids: number[]) {
 }
 
 export async function clearAllErrorLogsAction() {
-    await requireAdminAction();
+    await requireRoleAction('ERRORS');
     try {
         await prisma.errorLog.deleteMany();
         revalidatePath('/admin/dashboard/errors');
