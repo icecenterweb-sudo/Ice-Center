@@ -100,12 +100,15 @@ async function runBackup() {
   // -f: output file path
   // --clean: include DROP TABLE statements
   // --if-exists: avoid errors during drops if tables don't exist
-  const command = `${pgDumpCmd} -d "${databaseUrl}" -F p --clean --if-exists -f "${outputPath}"`;
+  // --no-owner: skip ownership commands (safe for cross-server restores)
+  const command = `${pgDumpCmd} -d "${databaseUrl}" -F p --clean --if-exists --no-owner -f "${outputPath}"`;
 
   try {
     await execAsync(command);
+    const stats = fs.statSync(outputPath);
+    const sizeMB = (stats.size / (1024 * 1024)).toFixed(2);
     console.log('✅ Backup completed successfully!');
-    console.log(`📄 SQL Backup file saved at: ${path.relative(process.cwd(), outputPath)}`);
+    console.log(`📄 File: ${path.relative(process.cwd(), outputPath)} (${sizeMB} MB)`);
   } catch (error: any) {
     console.error('❌ Backup failed!');
     console.error(error.message);

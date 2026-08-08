@@ -12,6 +12,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
+    "db:backup": "tsx scripts/backup-db.ts",
+    "db:import": "node scripts/import-backup-fast.js",
     "convert:webp": "tsx scripts/convert-to-webp.ts",
     "postinstall": "prisma generate"
   },
