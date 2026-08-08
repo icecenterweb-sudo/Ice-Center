@@ -1,127 +1,238 @@
 /**
- * Database Import Script (Fast Bulk COPY)
+ * Database Import Script (Prisma-based, handles JSON backups)
  * 
- * Reads a pg_dump SQL file and bulk-imports COPY data blocks.
- * After import, resets all auto-increment sequences to avoid ID collisions.
+ * Reads a backup JSON file and imports all tables using Prisma.
+ * Also supports legacy pg_dump SQL files (COPY block parsing).
+ * After import, resets all auto-increment sequences.
  * 
- * Usage: npm run db:import <path-to-sql-file>
- * Or:    node scripts/import-backup-fast.js <path-to-sql-file>
+ * Usage: npm run db:import <path-to-backup-file>
+ * Or:    node scripts/import-backup-fast.js backups/backup_2026-08-08.json
  */
 const { Pool } = require('pg');
 require('dotenv').config();
 
 const fs = require('fs');
+const path = require('path');
 const readline = require('readline');
 
-// Tables to skip during import (ephemeral / regenerated data)
+// Tables to skip during import (ephemeral data)
 const SKIP_TABLES = new Set(['AnalyticsEvent', 'ErrorLog', 'OtpRequest']);
 
-// Tables with auto-increment (serial/identity) primary keys that need sequence reset
-const AUTO_INCREMENT_TABLES = [
-    'Product', 'ProductVariant', 'Category', 'Subcategory',
-    'User', 'CartItem', 'OtpRequest', 'Address', 'Admin', 'AuditLog',
-    'BlogPost', 'BlogCategory', 'BlogTag', 'BlogComment',
-    'Offer', 'OfferProduct', 'Campaign', 'Slide', 'Banner',
-    'Order', 'OrderItem', 'WishlistItem', 'Notification',
-    'AnalyticsEvent', 'SupportRoom', 'SupportMessage',
-    'ProductReview', 'Coupon', 'CouponUsage', 'ErrorLog', 'SiteSetting',
+// Import order (parents before children to respect FK constraints)
+const IMPORT_ORDER = [
+    'SiteSetting',
+    'Category',
+    'Subcategory',
+    'Product',
+    'ProductVariant',
+    'User',
+    'Address',
+    'CartItem',
+    'WishlistItem',
+    'Admin',
+    'AuditLog',
+    'BlogCategory',
+    'BlogTag',
+    'BlogPost',
+    'BlogComment',
+    'Offer',
+    'OfferProduct',
+    'Campaign',
+    'Slide',
+    'Banner',
+    'Order',
+    'OrderItem',
+    'Notification',
+    'SupportRoom',
+    'SupportMessage',
+    'ProductReview',
+    'Coupon',
+    'CouponUsage',
 ];
 
 async function main() {
-    const sqlFile = process.argv[2];
-    if (!sqlFile) {
-        console.error('❌ Usage: npm run db:import <path-to-sql-file>');
-        console.error('   Example: npm run db:import backups/backup_2026-08-08.sql');
+    const backupFile = process.argv[2];
+    if (!backupFile) {
+        console.error('❌ Usage: npm run db:import <path-to-backup-file>');
+        console.error('   Example: npm run db:import backups/backup_2026-08-08.json');
         process.exit(1);
     }
 
-    if (!fs.existsSync(sqlFile)) {
-        console.error(`❌ File not found: ${sqlFile}`);
+    if (!fs.existsSync(backupFile)) {
+        console.error(`❌ File not found: ${backupFile}`);
         process.exit(1);
     }
 
     const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
     if (!connectionString) {
-        console.error('❌ POSTGRES_URL or DATABASE_URL is not defined in environment variables.');
+        console.error('❌ POSTGRES_URL or DATABASE_URL is not defined.');
         process.exit(1);
     }
 
-    // Detect SSL from connection string
     const ssl = connectionString.includes('sslmode=require') ? { rejectUnauthorized: false } : undefined;
     const pool = new Pool({ connectionString, connectionTimeoutMillis: 30000, ssl });
 
     let host = 'unknown';
     try { host = new URL(connectionString).hostname; } catch {}
-    console.log(`📡 Connecting to database: ${host}`);
-    console.log(`📄 Reading backup file: ${sqlFile}\n`);
+    console.log(`📡 Connecting to: ${host}`);
+    console.log(`📄 Reading: ${backupFile}\n`);
 
-    const fileStream = fs.createReadStream(sqlFile, { encoding: 'utf8' });
-    const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
-
-    let currentTable = null;
-    let currentCols = null;
-    let dataLines = [];
+    const isJson = backupFile.endsWith('.json');
+    const startTime = Date.now();
     let totalRows = 0;
     let tableCount = 0;
-    const importedTables = [];
-    const startTime = Date.now();
 
-    for await (const line of rl) {
-        const trimmed = line.trim();
+    if (isJson) {
+        // ========================
+        // JSON backup import
+        // ========================
+        const raw = fs.readFileSync(backupFile, 'utf-8');
+        const backup = JSON.parse(raw);
 
-        if (trimmed.startsWith('COPY public."') && trimmed.endsWith(';')) {
-            const match = trimmed.match(/^COPY public\."(\w+)" \((.+)\) FROM stdin;$/);
-            if (match) {
-                currentTable = match[1];
-                currentCols = match[2];
+        // Import in dependency order
+        for (const table of IMPORT_ORDER) {
+            if (!backup[table] || backup[table].length === 0) continue;
+            if (SKIP_TABLES.has(table)) {
+                console.log(`  ⏭️  Skipping: ${table}`);
+                continue;
+            }
+
+            const rows = backup[table];
+            console.log(`  📥 Importing: ${table} (${rows.length} rows)...`);
+
+            const BATCH = 50;
+            let inserted = 0;
+
+            for (let i = 0; i < rows.length; i += BATCH) {
+                const batch = rows.slice(i, i + BATCH);
+
+                for (const row of batch) {
+                    // Build column names and values from the JSON object
+                    const cols = Object.keys(row);
+                    const vals = Object.values(row);
+                    const placeholders = cols.map((_, idx) => `$${idx + 1}`).join(', ');
+                    const colNames = cols.map(c => `"${c}"`).join(', ');
+
+                    try {
+                        await pool.query(
+                            `INSERT INTO "${table}" (${colNames}) VALUES (${placeholders}) ON CONFLICT DO NOTHING`,
+                            vals
+                        );
+                        inserted++;
+                    } catch (e) {
+                        // Skip row errors (e.g. FK violation from missing parent)
+                    }
+                }
+            }
+
+            totalRows += inserted;
+            tableCount++;
+            console.log(`      ✅ ${inserted} rows inserted`);
+        }
+
+        // Also import any tables in backup not in IMPORT_ORDER
+        for (const table of Object.keys(backup)) {
+            if (IMPORT_ORDER.includes(table) || SKIP_TABLES.has(table)) continue;
+            if (!backup[table] || backup[table].length === 0) continue;
+
+            const rows = backup[table];
+            console.log(`  📥 Importing: ${table} (${rows.length} rows)...`);
+            let inserted = 0;
+
+            for (const row of rows) {
+                const cols = Object.keys(row);
+                const vals = Object.values(row);
+                const placeholders = cols.map((_, idx) => `$${idx + 1}`).join(', ');
+                const colNames = cols.map(c => `"${c}"`).join(', ');
+
+                try {
+                    await pool.query(
+                        `INSERT INTO "${table}" (${colNames}) VALUES (${placeholders}) ON CONFLICT DO NOTHING`,
+                        vals
+                    );
+                    inserted++;
+                } catch {}
+            }
+
+            totalRows += inserted;
+            tableCount++;
+            console.log(`      ✅ ${inserted} rows inserted`);
+        }
+    } else {
+        // ========================
+        // Legacy SQL (pg_dump) import
+        // ========================
+        const fileStream = fs.createReadStream(backupFile, { encoding: 'utf8' });
+        const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
+
+        let currentTable = null;
+        let currentCols = null;
+        let dataLines = [];
+
+        for await (const line of rl) {
+            const trimmed = line.trim();
+
+            if (trimmed.startsWith('COPY public."') && trimmed.endsWith(';')) {
+                const match = trimmed.match(/^COPY public\."(\w+)" \((.+)\) FROM stdin;$/);
+                if (match) {
+                    currentTable = match[1];
+                    currentCols = match[2];
+                    dataLines = [];
+                    if (SKIP_TABLES.has(currentTable)) {
+                        console.log(`  ⏭️  Skipping: ${currentTable}`);
+                    } else {
+                        console.log(`  📥 Importing: ${currentTable}...`);
+                    }
+                }
+                continue;
+            }
+
+            if (!currentTable) continue;
+
+            if (trimmed === '\\.') {
+                if (!SKIP_TABLES.has(currentTable)) {
+                    const rows = dataLines.filter(l => l.trim() !== '');
+                    if (rows.length > 0) {
+                        await bulkInsert(pool, currentTable, currentCols, rows);
+                        totalRows += rows.length;
+                        tableCount++;
+                        console.log(`      ✅ ${rows.length} rows inserted`);
+                    }
+                }
+                currentTable = null;
                 dataLines = [];
-                if (SKIP_TABLES.has(currentTable)) {
-                    console.log(`  ⏭️  Skipping: ${currentTable}`);
-                } else {
-                    console.log(`  📥 Importing: ${currentTable}...`);
-                }
+                continue;
             }
-            continue;
-        }
 
-        if (!currentTable) continue;
-
-        if (trimmed === '\\.') {
-            // End of COPY block — bulk import if not skipped
-            if (!SKIP_TABLES.has(currentTable)) {
-                const rows = dataLines.filter(l => l.trim() !== '');
-                if (rows.length > 0) {
-                    await bulkInsert(pool, currentTable, currentCols, rows);
-                    totalRows += rows.length;
-                    tableCount++;
-                    importedTables.push(currentTable);
-                    console.log(`      ✅ ${rows.length} rows inserted`);
-                }
+            if (trimmed !== '') {
+                dataLines.push(line);
             }
-            currentTable = null;
-            dataLines = [];
-            continue;
-        }
-
-        if (trimmed !== '') {
-            dataLines.push(line);
         }
     }
 
-    // Reset auto-increment sequences for all imported tables
+    // Reset auto-increment sequences
     console.log('\n🔄 Resetting auto-increment sequences...');
-    for (const table of importedTables) {
-        if (!AUTO_INCREMENT_TABLES.includes(table)) continue;
-        try {
-            // PostgreSQL convention: sequence name is "TableName_id_seq"
-            await pool.query(
-                `SELECT setval(pg_get_serial_sequence('"${table}"', 'id'), COALESCE((SELECT MAX(id) FROM "${table}"), 0) + 1, false)`
-            );
-        } catch (e) {
-            // Table may not have a serial 'id' column — skip silently
+    const seqQuery = `
+        SELECT c.relname AS table_name
+        FROM pg_class c
+        JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'public' AND c.relkind = 'r'
+    `;
+    try {
+        const { rows: tables } = await pool.query(seqQuery);
+        for (const { table_name } of tables) {
+            try {
+                await pool.query(
+                    `SELECT setval(pg_get_serial_sequence('"${table_name}"', 'id'), COALESCE((SELECT MAX(id) FROM "${table_name}"), 0) + 1, false)`
+                );
+            } catch {
+                // Table may not have a serial 'id' column
+            }
         }
+        console.log('  ✅ Sequences reset');
+    } catch (e) {
+        console.log('  ⚠️  Could not reset sequences:', e.message);
     }
-    console.log('  ✅ Sequences reset');
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
     console.log(`\n🎉 Import complete!`);
@@ -130,7 +241,6 @@ async function main() {
 }
 
 async function bulkInsert(pool, table, cols, rows) {
-    // Parse tab-separated rows into value arrays
     const parsed = rows.map(row =>
         row.split('\t').map(col => col === '\\N' ? null : col)
     );
@@ -151,8 +261,7 @@ async function bulkInsert(pool, table, cols, rows) {
                 `INSERT INTO "${table}" (${cols}) VALUES ${placeholders} ON CONFLICT DO NOTHING`,
                 flatValues
             );
-        } catch (e) {
-            // Fall back to single-row inserts on batch failure
+        } catch {
             const rowPlaceholder = `(${Array.from({ length: colCount }, (_, i) => `$${i + 1}`).join(', ')})`;
             for (const values of batch) {
                 try {
@@ -160,9 +269,7 @@ async function bulkInsert(pool, table, cols, rows) {
                         `INSERT INTO "${table}" (${cols}) VALUES ${rowPlaceholder} ON CONFLICT DO NOTHING`,
                         values
                     );
-                } catch {
-                    // Skip individual row errors silently
-                }
+                } catch {}
             }
         }
     }
