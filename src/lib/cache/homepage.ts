@@ -7,10 +7,24 @@
  * ⚠️ Time logic (new Date()) is INSIDE cached functions, not in UI
  */
 
-import { cacheLife, cacheTag } from 'next/cache';
+import { cacheLife, cacheTag, revalidatePath, revalidateTag } from 'next/cache';
 import { prisma } from '@/lib/db';
 import { BannerPosition, DiscountType } from '@prisma/client';
 import { getProductPricing } from '@/lib/offers/pricing';
+
+const CACHE_PROFILE = { expire: 600 };
+
+export function revalidateHomepageTag(tag?: string) {
+    try {
+        revalidatePath('/');
+        revalidateTag('homepage', CACHE_PROFILE);
+        if (tag) {
+            revalidateTag(tag, CACHE_PROFILE);
+        }
+    } catch {
+        // fallback
+    }
+}
 
 // ============================================
 // Types
@@ -274,11 +288,27 @@ export async function getCachedOffers() {
     return items;
 }
 
+function shuffleArray<T>(array: T[]): T[] {
+    const arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
+
 /**
  * Get products by category for homepage carousels
  * Note: new Date() is INSIDE cached function
  */
-export async function getCachedCategoryProducts(): Promise<{ categories: CategoryWithProducts[]; newestProducts: ProductForDisplay[] }> {
+export async function getCachedCategoryProducts(): Promise<{
+    categories: CategoryWithProducts[];
+    newestProducts: ProductForDisplay[];
+    popularProducts: ProductForDisplay[];
+    juicerProducts: ProductForDisplay[];
+    iceCreamProducts: ProductForDisplay[];
+    fridgeProducts: ProductForDisplay[];
+}> {
     'use cache';
     cacheLife({
         stale: 300,
@@ -289,51 +319,102 @@ export async function getCachedCategoryProducts(): Promise<{ categories: Categor
 
     const now = new Date(); // Time logic inside cache
 
-    const categories = await prisma.category.findMany({
-        select: {
-            id: true,
-            name: true,
-            slug: true,
-            subcategories: {
-                select: {
-                    products: {
-                        where: { isActive: true },
-                        select: {
-                            id: true,
-                            name: true,
-                            slug: true,
-                            price: true,
-                            listPrice: true,
-                            thumbnail: true,
-                            hasActiveOffer: true,
-                            offerProducts: {
-                                where: {
-                                    offer: {
-                                        isActive: true,
-                                        startDate: { lte: now },
-                                        endDate: { gt: now },
-                                    }
-                                },
-                                select: {
-                                    customDiscountValue: true,
-                                    offer: {
-                                        select: {
-                                            discountType: true,
-                                            discountValue: true,
-                                        }
-                                    }
-                                },
-                                take: 1
-                            }
-                        },
-                        take: 12,
-                    },
+    const productSelect = {
+        id: true,
+        name: true,
+        slug: true,
+        price: true,
+        listPrice: true,
+        thumbnail: true,
+        hasActiveOffer: true,
+        offerProducts: {
+            where: {
+                offer: {
+                    isActive: true,
+                    startDate: { lte: now },
+                    endDate: { gt: now },
                 }
-            }
-        },
-        orderBy: { name: 'asc' },
-        take: 6
-    });
+            },
+            select: {
+                customDiscountValue: true,
+                offer: {
+                    select: {
+                        discountType: true,
+                        discountValue: true,
+                    }
+                }
+            },
+            take: 1
+        }
+    };
+
+    const [categories, rawNewest, rawJuicers, rawIceCream, rawFridges, rawAll] = await Promise.all([
+        prisma.category.findMany({
+            select: {
+                id: true,
+                name: true,
+                slug: true,
+                subcategories: {
+                    select: {
+                        products: {
+                            where: { isActive: true },
+                            select: productSelect,
+                            take: 12,
+                        },
+                    }
+                }
+            },
+            orderBy: { name: 'asc' },
+            take: 6
+        }),
+        prisma.product.findMany({
+            where: { isActive: true },
+            select: productSelect,
+            orderBy: { createdAt: 'desc' },
+            take: 10
+        }),
+        prisma.product.findMany({
+            where: {
+                isActive: true,
+                subcategory: {
+                    category: {
+                        slug: { in: ['juice-and-blender', 'drink-machines'] }
+                    }
+                }
+            },
+            select: productSelect,
+            take: 20
+        }),
+        prisma.product.findMany({
+            where: {
+                isActive: true,
+                subcategory: {
+                    category: {
+                        slug: { in: ['soft-ice-machines', 'hardening-machines'] }
+                    }
+                }
+            },
+            select: productSelect,
+            take: 20
+        }),
+        prisma.product.findMany({
+            where: {
+                isActive: true,
+                subcategory: {
+                    category: {
+                        slug: { in: ['refrigeration', 'dairy-equipment'] }
+                    }
+                }
+            },
+            select: productSelect,
+            take: 20
+        }),
+        prisma.product.findMany({
+            where: { isActive: true },
+            select: productSelect,
+            take: 50
+        })
+    ]);
 
     const categoriesWithProducts = categories
         .map(category => {
@@ -347,9 +428,20 @@ export async function getCachedCategoryProducts(): Promise<{ categories: Categor
         })
         .filter(cat => cat.products.length > 0);
 
-    const newestProducts = categoriesWithProducts.flatMap(cat => cat.products).slice(0, 12);
+    const newestProducts = transformProducts(rawNewest);
+    const juicerProducts = shuffleArray(transformProducts(rawJuicers));
+    const iceCreamProducts = shuffleArray(transformProducts(rawIceCream));
+    const fridgeProducts = shuffleArray(transformProducts(rawFridges));
+    const popularProducts = shuffleArray(transformProducts(rawAll));
 
-    return { categories: categoriesWithProducts, newestProducts };
+    return {
+        categories: categoriesWithProducts,
+        newestProducts,
+        popularProducts,
+        juicerProducts,
+        iceCreamProducts,
+        fridgeProducts,
+    };
 }
 
 /**

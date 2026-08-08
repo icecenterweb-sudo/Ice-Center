@@ -8,6 +8,8 @@ interface User {
     firstName: string | null
     lastName: string | null
     isVerified: boolean
+    isAdmin?: boolean
+    adminRoles?: string[]
 }
 
 interface AuthContextType {

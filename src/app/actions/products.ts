@@ -29,7 +29,7 @@ const createProductSchema = z.object({
     subcategoryId: z.number().int().positive().optional().nullable(),
     images: z.array(z.string()).default([]),
     features: z.array(z.string()).default([]),
-    specifications: z.any().optional().nullable(),
+    specifications: z.record(z.string(), z.any()).optional().nullable(),
     isActive: z.boolean().default(true),
 });
 
@@ -112,7 +112,7 @@ export async function createProduct(formData: FormData) {
                 images: data.images,
                 thumbnail,
                 features: data.features,
-                specifications: data.specifications,
+                specifications: data.specifications ?? undefined,
             }
         });
 
@@ -168,7 +168,7 @@ export async function updateProduct(id: number, formData: FormData) {
         updateData.images = data.images;
         updateData.thumbnail = data.images.length > 0 ? data.images[0] : null;
         updateData.features = data.features;
-        updateData.specifications = data.specifications ?? null;
+        updateData.specifications = data.specifications ?? undefined;
 
         const product = await prisma.product.update({
             where: { id },

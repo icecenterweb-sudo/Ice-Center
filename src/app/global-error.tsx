@@ -1,75 +1,43 @@
-'use client'
+'use client';
 
-import { useEffect } from 'react'
-import Link from 'next/link'
-import { RefreshCw, Home, AlertTriangle } from 'lucide-react'
-import localFont from 'next/font/local'
-
-const yekan = localFont({
-    src: [
-        {
-            path: "./fonts/YekanBakhFamily/webfonts/woff2/YekanBakh-Regular.woff2",
-            weight: "400",
-            style: "normal",
-        },
-        {
-            path: "./fonts/YekanBakhFamily/webfonts/woff2/YekanBakh-SemiBold.woff2",
-            weight: "600",
-            style: "normal",
-        },
-        {
-            path: "./fonts/YekanBakhFamily/webfonts/woff2/YekanBakh-Bold.woff2",
-            weight: "700",
-            style: "normal",
-        },
-    ],
-    variable: "--font-yekan",
-    display: "swap",
-});
+import { useEffect } from 'react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 export default function GlobalError({
     error,
     reset,
 }: {
-    error: Error & { digest?: string }
-    reset: () => void
+    error: Error & { digest?: string };
+    reset: () => void;
 }) {
     useEffect(() => {
-        console.error('Global error:', error)
-    }, [error])
+        console.error('Global Layout Error:', error);
+    }, [error]);
 
     return (
-        <html lang="fa" dir="rtl" className={yekan.variable}>
-            <body className="min-h-screen bg-gray-50 flex items-center justify-center p-4"
-                style={{ fontFamily: 'var(--font-yekan), sans-serif' }}>
-                <div className="max-w-md w-full text-center space-y-6">
-                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
-                        <AlertTriangle className="w-8 h-8 text-red-500" />
+        <html lang="fa" dir="rtl">
+            <body className="min-h-screen bg-slate-900 flex items-center justify-center p-6 text-right font-sans text-white select-none">
+                <div className="max-w-md w-full bg-slate-800 rounded-3xl p-8 shadow-2xl border border-slate-700 text-center space-y-6">
+                    <div className="w-16 h-16 bg-rose-500/20 text-rose-400 rounded-3xl flex items-center justify-center mx-auto border border-rose-500/30">
+                        <AlertTriangle size={32} />
                     </div>
-                    <div>
-                        <h2 className="text-xl font-bold text-gray-800 mb-2">خطای غیرمنتظره</h2>
-                        <p className="text-gray-500 text-sm">
-                            متأسفانه مشکلی پیش آمده است. لطفاً دوباره تلاش کنید.
+
+                    <div className="space-y-2">
+                        <h1 className="text-xl font-black text-white">خطای سیستمی در سامانه</h1>
+                        <p className="text-xs text-gray-400 font-medium leading-relaxed">
+                            اختلالی در بارگذاری قالب اصلی برنامه رخ داده است. لطفاً صفحه را تازه‌سازی کنید.
                         </p>
                     </div>
-                    <div className="flex gap-3 justify-center">
-                        <button
-                            onClick={reset}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                        >
-                            <RefreshCw className="w-4 h-4" />
-                            تلاش مجدد
-                        </button>
-                        <Link
-                            href="/"
-                            className="flex items-center gap-2 px-5 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
-                        >
-                            <Home className="w-4 h-4" />
-                            صفحه اصلی
-                        </Link>
-                    </div>
+
+                    <button
+                        onClick={() => reset()}
+                        className="w-full inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-6 py-3 rounded-2xl transition-all cursor-pointer"
+                    >
+                        <RefreshCw size={14} />
+                        <span>بازنشانی صفحه</span>
+                    </button>
                 </div>
             </body>
         </html>
-    )
+    );
 }

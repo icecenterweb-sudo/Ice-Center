@@ -239,8 +239,8 @@ export default function DashboardView({
                     icon={Package}
                     title="محصولات فعال"
                     value={toPersianNumber(productCount)}
-                    trend={productCount > 0 ? "در حال نمایش" : ""}
-                    trendUp
+                    trend={productCount > 0 ? "در حال نمایش" : "بدون محصول"}
+                    subtitle="کاتالوگ فروشگاه"
                     color="blue"
                     index={0}
                 />
@@ -248,8 +248,8 @@ export default function DashboardView({
                     icon={Users}
                     title="کاربران ثبت‌نامی"
                     value={toPersianNumber(userCount)}
-                    trend={userCount > 0 ? "عضو سایت" : ""}
-                    trendUp
+                    trend={userCount > 0 ? "فعال در سیستم" : "بدون کاربر"}
+                    subtitle="کل کاربران"
                     color="purple"
                     index={1}
                 />
@@ -257,8 +257,8 @@ export default function DashboardView({
                     icon={ShoppingCart}
                     title="سفارشات جدید"
                     value={toPersianNumber(newOrdersCount)}
-                    trend={newOrdersCount > 0 ? "در انتظار بررسی" : "بدون سفارش جدید"}
-                    trendUp={false}
+                    trend={newOrdersCount > 0 ? "در انتظار بررسی" : "ثبت شده"}
+                    subtitle="وضعیت سفارش‌ها"
                     color="cyan"
                     index={2}
                 />
@@ -266,8 +266,8 @@ export default function DashboardView({
                     icon={TrendingUp}
                     title="فروش این ماه"
                     value={monthlySales > 0 ? formatPersianNumber(monthlySales) + " تومان" : "۰ تومان"}
-                    trend={monthlySales > 0 ? "مجموع فروش" : ""}
-                    trendUp
+                    trend={monthlySales > 0 ? "ثبت شده" : "به‌روزرسانی"}
+                    subtitle="مجموع درآمد"
                     color="orange"
                     index={3}
                 />
@@ -275,8 +275,8 @@ export default function DashboardView({
                     icon={FileText}
                     title="پست‌های بلاگ"
                     value={toPersianNumber(blogPostCount)}
-                    trend={blogPostCount > 0 ? "منتشر شده" : ""}
-                    trendUp
+                    trend={blogPostCount > 0 ? "منتشر شده" : "بدون مقاله"}
+                    subtitle="مقالات تخصصی"
                     color="green"
                     index={4}
                 />
@@ -284,8 +284,8 @@ export default function DashboardView({
                     icon={MessageCircle}
                     title="نظرات معلق"
                     value={toPersianNumber(pendingComments)}
-                    trend={pendingComments > 0 ? "نیازمند تایید" : "کاملاً تایید شده"}
-                    trendUp={false}
+                    trend={pendingComments > 0 ? "نیازمند بررسی" : "تماماً تأیید شده"}
+                    subtitle="بازخورد کاربران"
                     color="yellow"
                     index={5}
                 />
@@ -383,7 +383,7 @@ export default function DashboardView({
                                 مدیریت مجله محتوا
                             </button>
                             <button onClick={() => router.push('/admin/dashboard/appearance')} className="p-3 rounded-xl bg-purple-50 text-purple-600 hover:bg-purple-100 transition-colors text-xs font-bold text-center">
-                                مدیریت اسلایدر
+                                مدیریت ظاهر و بنرها
                             </button>
                         </div>
                     </div>

@@ -30,6 +30,7 @@ export const metadata: Metadata = {
 
 export default async function CategoriesPage({ searchParams }: Props) {
     const sp = await searchParams;
+    const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ice-center.ir';
 
     const page = parseInt(sp.page || '1');
     const sort = sp.sort || 'newest';
@@ -57,13 +58,13 @@ export default async function CategoriesPage({ searchParams }: Props) {
                         '@type': 'ListItem',
                         'position': 1,
                         'name': 'آیس سنتر',
-                        'item': 'https://ice-center.ir'
+                        'item': SITE_URL
                     },
                     {
                         '@type': 'ListItem',
                         'position': 2,
                         'name': 'همه محصولات',
-                        'item': 'https://ice-center.ir/categories'
+                        'item': `${SITE_URL}/categories`
                     }
                 ]
             },
@@ -71,7 +72,7 @@ export default async function CategoriesPage({ searchParams }: Props) {
                 '@type': 'CollectionPage',
                 'name': 'همه محصولات | آیس سنتر',
                 'description': 'مشاهده همه محصولات - دستگاه بستنی قیفی، یخچال، فریزر، آبمیوه‌گیری و تجهیزات صنعتی',
-                'url': 'https://ice-center.ir/categories',
+                'url': `${SITE_URL}/categories`,
                 'numberOfItems': totalCount,
                 'mainEntity': {
                     '@type': 'ItemList',
@@ -82,7 +83,7 @@ export default async function CategoriesPage({ searchParams }: Props) {
                         'item': {
                             '@type': 'Product',
                             'name': product.name,
-                            'url': `https://ice-center.ir/products/${product.slug}`,
+                            'url': `${SITE_URL}/products/${product.slug}`,
                             'image': product.thumbnail || undefined,
                             'offers': {
                                 '@type': 'Offer',

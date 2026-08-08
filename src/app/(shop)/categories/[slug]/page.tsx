@@ -12,6 +12,8 @@ import {
 import type { CachedProduct } from '@/lib/cache/category';
 import { InventoryStatus } from '@prisma/client';
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ice-center.ir';
+
 type Props = {
     params: Promise<{ slug: string }>;
     searchParams: Promise<{
@@ -141,19 +143,19 @@ export default async function CategoryPage({ params, searchParams }: Props) {
                         '@type': 'ListItem',
                         'position': 1,
                         'name': 'آیس سنتر',
-                        'item': 'https://ice-center.ir'
+                        'item': `${SITE_URL}`
                     },
                     {
                         '@type': 'ListItem',
                         'position': 2,
                         'name': 'همه محصولات',
-                        'item': 'https://ice-center.ir/categories'
+                        'item': `${SITE_URL}/categories`
                     },
                     {
                         '@type': 'ListItem',
                         'position': 3,
                         'name': category.name,
-                        'item': `https://ice-center.ir/categories/${category.slug}`
+                        'item': `${SITE_URL}/categories/${category.slug}`
                     }
                 ]
             },
@@ -161,7 +163,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
                 '@type': 'CollectionPage',
                 'name': `${category.name} | آیس سنتر`,
                 'description': category.description || `خرید ${category.name}`,
-                'url': `https://ice-center.ir/categories/${category.slug}`,
+                'url': `${SITE_URL}/categories/${category.slug}`,
                 'numberOfItems': totalCount,
                 'mainEntity': {
                     '@type': 'ItemList',
@@ -172,7 +174,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
                         'item': {
                             '@type': 'Product',
                             'name': product.name,
-                            'url': `https://ice-center.ir/products/${product.slug}`,
+                            'url': `${SITE_URL}/products/${product.slug}`,
                             'image': product.thumbnail || undefined,
                             'offers': {
                                 '@type': 'Offer',

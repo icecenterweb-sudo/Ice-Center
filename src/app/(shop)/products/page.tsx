@@ -13,6 +13,7 @@ type Props = {
         brands?: string;
         availability?: string;
         discount?: string;
+        search?: string;
     }>;
 };
 
@@ -38,12 +39,15 @@ export default async function ProductsPage({ searchParams }: Props) {
     const brands = sp.brands ? sp.brands.split(',').filter(Boolean) : undefined;
     const availability = sp.availability ? sp.availability.split(',').filter(Boolean) as InventoryStatus[] : undefined;
     const onlyDiscount = sp.discount === 'true';
+    const search = sp.search?.trim() || undefined;
 
     const [categories, availableBrands, { products, totalCount, totalPages, currentPage }] = await Promise.all([
         getAllCategories(),
         getAvailableBrands(categoryId),
-        getProducts({ page, sort, categoryId, minPrice, maxPrice, brands, availability, onlyDiscount, limit: 12 })
+        getProducts({ page, sort, categoryId, minPrice, maxPrice, brands, availability, onlyDiscount, search, limit: 12 })
     ]);
+
+    const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ice-center.ir';
 
     // JSON-LD Structured Data
     const jsonLd = {
@@ -56,13 +60,13 @@ export default async function ProductsPage({ searchParams }: Props) {
                         '@type': 'ListItem',
                         'position': 1,
                         'name': 'آیس سنتر',
-                        'item': 'https://ice-center.ir'
+                        'item': SITE_URL
                     },
                     {
                         '@type': 'ListItem',
                         'position': 2,
                         'name': 'محصولات',
-                        'item': 'https://ice-center.ir/products'
+                        'item': `${SITE_URL}/products`
                     }
                 ]
             },
@@ -70,7 +74,7 @@ export default async function ProductsPage({ searchParams }: Props) {
                 '@type': 'CollectionPage',
                 'name': 'محصولات آیس سنتر | تجهیزات صنعتی و کارگاهی',
                 'description': 'مشاهده و خرید تجهیزات صنعتی و کارگاهی - انواع دستگاه بستنی قیفی، یخچال و فریزر صنعتی، یخ‌ساز و آبمیوه‌گیری با بهترین قیمت',
-                'url': 'https://ice-center.ir/products',
+                'url': `${SITE_URL}/products`,
                 'numberOfItems': totalCount,
                 'mainEntity': {
                     '@type': 'ItemList',
@@ -81,7 +85,7 @@ export default async function ProductsPage({ searchParams }: Props) {
                         'item': {
                             '@type': 'Product',
                             'name': product.name,
-                            'url': `https://ice-center.ir/products/${product.slug}`,
+                            'url': `${SITE_URL}/products/${product.slug}`,
                             'image': product.thumbnail || undefined,
                             'offers': {
                                 '@type': 'Offer',
@@ -115,6 +119,7 @@ export default async function ProductsPage({ searchParams }: Props) {
                 currentSort={sort}
                 availableBrands={availableBrands}
                 selectedCategoryId={categoryId}
+                searchQuery={search}
             />
         </>
     );

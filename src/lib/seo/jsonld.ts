@@ -70,10 +70,11 @@ export function generateCollectionPageJsonLd({
  * Generate Product JSON-LD schema
  */
 export function generateProductJsonLd(product: Product) {
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ice-center.ir';
     return {
         '@type': 'Product',
         'name': product.name,
-        'url': `https://ice-center.ir/products/${product.slug}`,
+        'url': `${baseUrl}/products/${product.slug}`,
         'image': product.thumbnail || undefined,
         'offers': {
             '@type': 'Offer',

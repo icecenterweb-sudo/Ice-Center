@@ -30,13 +30,20 @@ import {
   getCachedCategories,
   getCachedCategoryProducts,
   getCachedBlogPosts,
+  getCachedSlides,
+  getCachedDoubleBanners,
+  getCachedSingleBanners,
+  getCachedOffers,
   type BlogPostForDisplay,
+  type SlideForDisplay,
+  type BannerForDisplay,
 } from '@/lib/cache/homepage';
 
 import { formatPersianCurrency, toPersianDigits } from '@/lib/persian';
 
 // Client components
 import HeroCarousel from '@/components/home/HeroCarousel';
+import OfferCarousel from '@/components/home/OfferCarousel';
 import ScrollDriftIcon from '@/components/home/ScrollDriftIcon';
 
 // Skeletal fallback while streaming
@@ -46,40 +53,66 @@ import { HeroSkeleton } from '@/components/home/Skeletons';
 // Helper Sub-components (Server Side)
 // ============================================
 
-// 1. Hero Promotional Area (Desktop single-card slider / Mobile carousel)
-function HeroPromoArea() {
-  const heroBanners = [
+interface HeroPromoAreaProps {
+  slides?: SlideForDisplay[];
+  doubleBanners?: BannerForDisplay[];
+}
+
+// 1. Hero Promotional Area (Desktop single-card slider / Mobile carousel synced with Admin Panel)
+function HeroPromoArea({ slides = [], doubleBanners = [] }: HeroPromoAreaProps) {
+  const defaultHeroBanners = [
     {
-      bg: 'bg-gradient-to-br from-teal-800 via-teal-900 to-[#0A1424] text-white',
-      accent: 'تجهیزات کافی‌شاپ و بستنی',
-      title: 'دستگاه بستنی قیفی شمس، مدل سناتور جدید',
-      badge: '۱۸ ماه گارانتی شرکتی و نصب رایگان سراسر کشور',
-      image: '/uploads/products/1781933621437-wmnkpa6dorxel02sn1gx.jpg',
-      link: '/products/dstgah-bstny-ghyfy-shms-mdl-snatvr',
+      image: '/uploads/custom/banner_ice_cream_persian.png',
+      link: '/categories/soft-ice-machines',
+      alt: 'دستگاه بستنی قیفی شمس، مدل سناتور جدید',
       isDouble: true,
     },
     {
-      bg: 'bg-gradient-to-br from-[#4C1D95] via-[#5B21B6] to-[#0A1424] text-white',
-      accent: 'تضمین اصالت و گارانتی طلایی',
-      title: 'آبمیوه‌گیری ایتالیایی سیدو Ceado ES900',
-      badge: 'موتور پرقدرت و بادوام اصلی ایتالیا',
-      image: '/uploads/products/0a5a6d9d-ffe6-446c-9e8e-ccf44d85249b.webp',
-      link: '/products/bmyvhgyry-aytalyayy-sydv-mdl-ceado-es900',
+      image: '/uploads/custom/hero_juicer.png',
+      link: '/categories/juice-and-blender',
+      alt: 'آبمیوه‌گیری و مخلوط‌کن صنعتی',
       isDouble: false,
     },
     {
-      bg: 'bg-gradient-to-br from-[#C2410C] via-[#EA580C] to-[#0A1424] text-white',
-      accent: 'صنایع برودتی البرز سرمایش',
-      title: 'دستگاه بارسفت کن تنوری البرز',
-      badge: 'طرح ویژه خرید اقساطی بلند مدت بدون ضامن',
-      image: '/uploads/products/1781933614219-yudsihpnpsnzocft1yrk.jpg',
-      link: '/products/alborz-batch-freezer',
+      image: '/uploads/custom/hero_coffee.png',
+      link: '/categories/drink-machines',
+      alt: 'اسپرسوساز و تجهیزات کافی‌شاپ',
       isDouble: false,
     },
   ];
 
+  let mapped: any[] = [];
+
+  if (slides && slides.length > 0) {
+    mapped = slides.map((s, idx) => ({
+      image: s.desktopImage,
+      desktopImage: s.desktopImage,
+      mobileImage: s.mobileImage,
+      link: s.link,
+      alt: s.alt,
+      isDouble: idx === 0,
+    }));
+  } else if (doubleBanners && doubleBanners.length > 0) {
+    mapped = doubleBanners.map((b, idx) => ({
+      image: b.desktopImage,
+      desktopImage: b.desktopImage,
+      mobileImage: b.mobileImage,
+      link: b.link,
+      alt: b.alt || b.title,
+      isDouble: idx === 0,
+    }));
+  }
+
+  // Ensure 3 banner covers (Right double + Middle single + Left single) always fill all 4 grid columns
+  const heroBanners = [
+    mapped[0] || defaultHeroBanners[0],
+    mapped[1] || defaultHeroBanners[1],
+    mapped[2] || defaultHeroBanners[2],
+  ];
+
   return <HeroCarousel banners={heroBanners} />;
 }
+
 
 // 2. Trust Bar (Deeply rounded capsule bar - appears exactly once)
 function TrustBar() {
@@ -117,18 +150,19 @@ function TrustBar() {
   ];
 
   return (
-    <div className="w-full bg-[#0A1424] noise-overlay border border-slate-800 text-white rounded-[32px] px-6 py-5 md:px-10 md:py-6 mb-16 shadow-[0_12px_40px_rgba(8,31,55,0.15)] select-none">
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6 text-right">
+    <div className="w-full bg-[#0A1424] noise-overlay border border-slate-800 text-white rounded-2xl md:rounded-[32px] px-4 py-4 md:px-10 md:py-6 mb-10 md:mb-16 shadow-[0_12px_40px_rgba(8,31,55,0.15)] select-none">
+      {/* Mobile: horizontal scroll row | Desktop: 5-column grid */}
+      <div className="flex md:grid md:grid-cols-5 gap-4 md:gap-6 text-right overflow-x-auto scrollbar-hide md:overflow-visible">
         {items.map((item, index) => {
           const Icon = item.icon;
           return (
-            <div key={index} className="flex flex-col md:flex-row items-center md:items-start text-center md:text-right gap-3 group">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${item.colorClass}`}>
-                <Icon size={20} />
+            <div key={index} className="flex flex-col items-center text-center md:flex-row md:items-start md:text-right gap-2 md:gap-3 group shrink-0 min-w-[100px] md:min-w-0">
+              <div className={`w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${item.colorClass}`}>
+                <Icon size={18} className="md:w-5 md:h-5" />
               </div>
               <div className="flex flex-col">
-                <span className="text-xs font-bold text-slate-100 leading-normal">{item.title}</span>
-                <span className="text-[10px] text-slate-400 mt-1 leading-relaxed">{item.subtitle}</span>
+                <span className="text-[10px] md:text-xs font-bold text-slate-100 leading-normal">{item.title}</span>
+                <span className="hidden md:block text-[10px] text-slate-400 mt-1 leading-relaxed">{item.subtitle}</span>
               </div>
             </div>
           );
@@ -140,16 +174,19 @@ function TrustBar() {
 
 // 3. Top Products and Vertical Sticky Sidebar
 interface TopProductsProps {
-  products: any[];
+  popularProducts?: any[];
+  newestProducts?: any[];
+  juicerProducts?: any[];
+  iceCreamProducts?: any[];
 }
 
-// Single product card used inside the popular-equipment grids
+// Single product card used inside product grids
 function TopProductCard({ p }: { p: any }) {
   const isCallForPrice = p.price === 0 || p.price === null || p.price === undefined;
   return (
     <Link
       href={p.href}
-      className="group bg-white border border-gray-100 rounded-[20px] flex flex-col justify-between select-none shadow-[0_4px_15px_rgba(8,31,55,0.02)] overflow-hidden interactive-card-hover"
+      className="group bg-white border border-gray-100 rounded-[20px] flex flex-col justify-between select-none shadow-[0_4px_15px_rgba(8,31,55,0.02)] overflow-hidden interactive-card-hover shrink-0 w-[160px] sm:w-[190px] md:w-auto snap-start"
     >
       {/* Photo on neutral backdrop - Full Bleed */}
       <div className="w-full aspect-square bg-gray-50/50 overflow-hidden relative">
@@ -163,7 +200,7 @@ function TopProductCard({ p }: { p: any }) {
       </div>
 
       {/* Info block */}
-      <div className="flex flex-col text-right mt-4 px-4 pb-4">
+      <div className="flex flex-col text-right mt-4 px-3 md:px-4 pb-3 md:pb-4">
         <h3 className="text-xs font-bold text-gray-800 line-clamp-2 leading-relaxed min-h-[36px]">
           {p.title}
         </h3>
@@ -192,65 +229,23 @@ function TopProductCard({ p }: { p: any }) {
   );
 }
 
-function TopProductsSection({ products }: TopProductsProps) {
-  // Filler pool guarantees at least 10 cards for the two 5-column grids
-  const fillerProducts = [
-    { id: 99, title: 'دستگاه اسپرسوساز صنعتی جیمبالی Cimbali M26 دو گروپ', price: 185000000, image: '/uploads/custom/hero_coffee.png', href: '/products' },
-    { id: 98, title: 'آب پرتقال گیر صنعتی اتوماتیک زومکس Zumex Soul', price: 120000000, image: '/uploads/custom/hero_juicer.png', href: '/products' },
-    { id: 97, title: 'فریزر صندوقی درب شیشه‌ای بستنی آیس‌من ۶۰۰ لیتری', price: 42000000, image: '/uploads/custom/hero_appliances.png', href: '/products' },
-    { id: 96, title: 'دستگاه بستنی ساز قیفی شمس مدل سناتور سه فاز', price: 295000000, image: '/uploads/custom/hero_ice_cream.png', href: '/products' },
-    { id: 95, title: 'بلندر صنعتی کاوردار همیلتون بیچ مدل HBH850', price: 68000000, image: '/uploads/custom/hero_juicer.png', href: '/products' },
-    { id: 94, title: 'یخساز حبه‌ای صنعتی آیس‌تک مدل IT-200 دویست کیلوگرم', price: 98000000, image: '/uploads/custom/hero_appliances.png', href: '/products' },
-    { id: 93, title: 'شیکر میلک‌شیک سه‌کاره صنعتی همیلتون بیچ HMD400', price: 54000000, image: '/uploads/custom/hero_juicer.png', href: '/products' },
-    { id: 92, title: 'ویترین بستنی تاپینگ ۱۲ لگنه صنعتی کینگ‌استار', price: 76000000, image: '/uploads/custom/hero_ice_cream.png', href: '/products' },
-    { id: 91, title: 'آسیاب قهوه صنعتی ثابت‌دان مازر مدل Major', price: 62000000, image: '/uploads/custom/hero_coffee.png', href: '/products' },
-    { id: 90, title: 'دستگاه قهوه‌ساز فیلتر صنعتی مارکو مدل Jet 6', price: 48000000, image: '/uploads/custom/hero_coffee.png', href: '/products' },
-  ];
-
-  const pool = [...products, ...fillerProducts];
-  const firstRowProducts = pool.slice(0, 5);
-
-  // Juicers & Blenders block — shares the right column beneath the popular grids
-  const juicerFillerProducts = [
-    { id: 89, title: 'آب پرتقال گیر صنعتی اتوماتیک زومکس Zumex Soul', price: 120000000, image: '/uploads/custom/hero_juicer.png', href: '/products' },
-    { id: 88, title: 'بلندر صنعتی کاوردار همیلتون بیچ مدل HBH850', price: 68000000, image: '/uploads/custom/hero_juicer.png', href: '/products' },
-    { id: 87, title: 'آبمیوه‌گیری ایتالیایی سیدو Ceado ES900', price: 145000000, image: '/uploads/custom/hero_juicer.png', href: '/products' },
-    { id: 86, title: 'مخلوط کن صنعتی وایتامیکس Vitamix The Quiet One', price: 98000000, image: '/uploads/custom/hero_juicer.png', href: '/products' },
-    { id: 85, title: 'آب هویج گیر صنعتی سانتوس Santos مدل ۲۸', price: 72000000, image: '/uploads/custom/hero_juicer.png', href: '/products' },
-    { id: 84, title: 'اسموتی ساز صنعتی بلندتک Blendtec مدل Connoisseur', price: 84000000, image: '/uploads/custom/hero_juicer.png', href: '/products' },
-    { id: 83, title: 'آبمیوه‌گیری آهسته صنعتی هوروم Hurom مدل H-AA', price: 46000000, image: '/uploads/custom/hero_juicer.png', href: '/products' },
-    { id: 82, title: 'مخلوط کن دو جام صنعتی وارینگ Waring MX1500', price: 58000000, image: '/uploads/custom/hero_juicer.png', href: '/products' },
-    { id: 81, title: 'آب انار گیر صنعتی تمام استیل مدل صنعت‌کار', price: 39000000, image: '/uploads/custom/hero_juicer.png', href: '/products' },
-    { id: 80, title: 'بلندر بار صنعتی سه‌کاره همیلتون بیچ HBB250', price: 51000000, image: '/uploads/custom/hero_juicer.png', href: '/products' },
-  ];
-  const juicerPool = [...products, ...juicerFillerProducts];
-  const juicerFirstRow = juicerPool.slice(0, 5);
-
-  // Refrigerators & Freezers block — shares the right column beneath the juicer grids
-  const fridgeFillerProducts = [
-    { id: 79, title: 'یخچال ایستاده صنعتی چهار درب استیل مدل کینگ‌استار', price: 132000000, image: '/uploads/custom/hero_appliances.png', href: '/products' },
-    { id: 78, title: 'فریزر صندوقی درب شیشه‌ای بستنی آیس‌من ۶۰۰ لیتری', price: 42000000, image: '/uploads/custom/hero_appliances.png', href: '/products' },
-    { id: 77, title: 'یخچال ویترینی عمودی نوشیدنی مدل امرسان', price: 58000000, image: '/uploads/custom/hero_appliances.png', href: '/products' },
-    { id: 76, title: 'فریزر ایستاده صنعتی شش کشو استیل مدل الکترواستیل', price: 96000000, image: '/uploads/custom/hero_appliances.png', href: '/products' },
-    { id: 75, title: 'یخچال تاپینگ سالادبار صنعتی ۱.۵ متری کینگ‌استار', price: 74000000, image: '/uploads/custom/hero_appliances.png', href: '/products' },
-    { id: 74, title: 'یخچال زیرکانتری میزکار صنعتی سه درب استیل', price: 88000000, image: '/uploads/custom/hero_appliances.png', href: '/products' },
-    { id: 73, title: 'فریزر ویترینی افقی درب کشویی بستنی ۳۰۰ لیتری', price: 36000000, image: '/uploads/custom/hero_appliances.png', href: '/products' },
-    { id: 72, title: 'یخچال ایستاده تک درب صنعتی استیل مدل کول‌استار', price: 64000000, image: '/uploads/custom/hero_appliances.png', href: '/products' },
-    { id: 71, title: 'فریزر و یخچال دوقلو صنعتی استیل مدل هایسنس پرو', price: 118000000, image: '/uploads/custom/hero_appliances.png', href: '/products' },
-    { id: 70, title: 'یخچال ویترینی شیرینی و کیک منحنی صنعتی', price: 82000000, image: '/uploads/custom/hero_appliances.png', href: '/products' },
-  ];
-  const fridgePool = [...products, ...fridgeFillerProducts];
-  const fridgeFirstRow = fridgePool.slice(0, 5);
+function TopProductsSection({
+  popularProducts = [],
+  newestProducts = [],
+  juicerProducts = [],
+  iceCreamProducts = []
+}: TopProductsProps) {
+  const popularRow = popularProducts.slice(0, 5);
+  const newestRow = newestProducts.slice(0, 5);
+  const juicerRow = juicerProducts.slice(0, 5);
+  const iceCreamRow = iceCreamProducts.slice(0, 5);
 
   return (
-    <div className="w-full mb-16">
-      <div className="flex flex-col lg:flex-row gap-6 items-start">
+    <div className="w-full mb-10 md:mb-16">
+      <div className="flex flex-col lg:flex-row gap-4 md:gap-6 items-start">
 
-        {/* Left Side (Desktop): Vertical Warranty Card — sticky wrapper.
-            NOTE: keep positioning (sticky) on THIS element only. Do NOT add
-            `noise-overlay` here — that class sets `position: relative` later in
-            the cascade and would silently override `position: sticky`. */}
-        <div className="w-full lg:w-72 shrink-0 self-start lg:sticky lg:top-28">
+        {/* Left Side (Desktop): Vertical Warranty Card — sticky wrapper. */}
+        <div className="hidden lg:block w-full lg:w-72 shrink-0 self-start lg:sticky lg:top-28">
           <div className="group relative overflow-hidden bg-gradient-to-br from-royal via-ocean to-steel text-white p-6 rounded-[24px] shadow-md hover:shadow-xl transition-shadow noise-overlay">
             {/* Ambient glow + oversized watermark */}
             <div className="pointer-events-none absolute -bottom-20 -left-16 w-52 h-52 bg-sky-breeze/10 rounded-full blur-3xl transition-transform duration-500 group-hover:scale-110" />
@@ -307,9 +302,9 @@ function TopProductsSection({ products }: TopProductsProps) {
           </div>
         </div>
 
-        {/* Right Side (Desktop): Product Grid */}
+        {/* Right Side (Desktop): Product Grids */}
         <div className="flex-grow flex flex-col w-full">
-          {/* Section Header */}
+          {/* Block 1: Popular Equipment */}
           <div className="flex justify-between items-center mb-5 px-1">
             <h2 className="fluid-heading font-extrabold text-midnight text-balance">محبوب‌ترین تجهیزات صنعتی</h2>
             <Link href="/products" className="text-xs font-bold text-ocean hover:text-royal transition flex items-center gap-1">
@@ -318,41 +313,62 @@ function TopProductsSection({ products }: TopProductsProps) {
             </Link>
           </div>
 
-          {/* 5-Column Grid — single row */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-            {firstRowProducts.map((p) => (
+          <div className="flex overflow-x-auto scrollbar-hide snap-x md:grid md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 pb-2 -mx-1 px-1 md:mx-0 md:px-0">
+            {popularRow.map((p) => (
               <TopProductCard key={p.id} p={p} />
             ))}
           </div>
 
-          {/* Juicers & Blenders — second block sharing the same sticky sidebar */}
-          <div className="flex justify-between items-center mb-5 mt-10 px-1">
+          {/* Block 2: Recently Added Products (sorted strictly by createdAt: desc) */}
+          {newestRow.length > 0 && (
+            <>
+              <div className="flex justify-between items-center mb-4 md:mb-5 mt-6 md:mt-10 px-1">
+                <div className="flex items-center gap-2">
+                  <span className="bg-sky-breeze text-midnight font-extrabold text-[10px] md:text-xs px-2.5 py-0.5 rounded-full shadow-xs">
+                    جدید
+                  </span>
+                  <h2 className="fluid-heading font-extrabold text-midnight text-balance">جدیدترین محصولات افزوده‌شده</h2>
+                </div>
+                <Link href="/products" className="text-xs font-bold text-ocean hover:text-royal transition flex items-center gap-1">
+                  <span>مشاهده همه</span>
+                  <ArrowLeft size={13} />
+                </Link>
+              </div>
+
+              <div className="flex overflow-x-auto scrollbar-hide snap-x md:grid md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 pb-2 -mx-1 px-1 md:mx-0 md:px-0">
+                {newestRow.map((p) => (
+                  <TopProductCard key={p.id} p={p} />
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Block 3: Juicers & Blenders */}
+          <div className="flex justify-between items-center mb-4 md:mb-5 mt-6 md:mt-10 px-1">
             <h2 className="fluid-heading font-extrabold text-midnight text-balance">آبمیوه گیری و مخلوط کن</h2>
-            <Link href="/products" className="text-xs font-bold text-ocean hover:text-royal transition flex items-center gap-1">
+            <Link href="/categories/juice-and-blender" className="text-xs font-bold text-ocean hover:text-royal transition flex items-center gap-1">
               <span>مشاهده همه</span>
               <ArrowLeft size={13} />
             </Link>
           </div>
 
-          {/* 5-Column Grid — single row */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-            {juicerFirstRow.map((p) => (
+          <div className="flex overflow-x-auto scrollbar-hide snap-x md:grid md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 pb-2 -mx-1 px-1 md:mx-0 md:px-0">
+            {juicerRow.map((p) => (
               <TopProductCard key={p.id} p={p} />
             ))}
           </div>
 
-          {/* Refrigerators & Freezers — third block sharing the same sticky sidebar */}
-          <div className="flex justify-between items-center mb-5 mt-10 px-1">
-            <h2 className="fluid-heading font-extrabold text-midnight text-balance">یخچال و فریزر</h2>
-            <Link href="/products" className="text-xs font-bold text-ocean hover:text-royal transition flex items-center gap-1">
+          {/* Block 4: Ice Cream Machines & Batch Freezers */}
+          <div className="flex justify-between items-center mb-4 md:mb-5 mt-6 md:mt-10 px-1">
+            <h2 className="fluid-heading font-extrabold text-midnight text-balance">دستگاه بستنی ساز و بارسفت کن</h2>
+            <Link href="/categories/soft-ice-machines" className="text-xs font-bold text-ocean hover:text-royal transition flex items-center gap-1">
               <span>مشاهده همه</span>
               <ArrowLeft size={13} />
             </Link>
           </div>
 
-          {/* 5-Column Grid — single row */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-            {fridgeFirstRow.map((p) => (
+          <div className="flex overflow-x-auto scrollbar-hide snap-x md:grid md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 pb-2 -mx-1 px-1 md:mx-0 md:px-0">
+            {iceCreamRow.map((p) => (
               <TopProductCard key={p.id} p={p} />
             ))}
           </div>
@@ -368,20 +384,20 @@ interface CategorySectionProps {
   categories: any[];
 }
 function ShopByCategorySection({ categories }: CategorySectionProps) {
-  // Split database categories dynamically into two balanced rows
-  const midPoint = Math.ceil(categories.length / 2);
-  const row1Categories = categories.slice(0, midPoint);
-  const row2Categories = categories.slice(midPoint);
+  if (!categories || categories.length === 0) return null;
+
+  // On mobile display up to 9 categories in a clean 3x3 grid
+  const displayCategories = categories;
 
   return (
-    <div className="w-full mb-20 px-4">
-      <div className="text-center mb-12">
+    <div className="w-full mb-12 md:mb-20 px-2 md:px-4">
+      <div className="text-center mb-6 md:mb-12">
         <h2 className="fluid-heading-lg font-extrabold text-midnight text-balance">دسته بندی محصولات</h2>
       </div>
 
-      {/* Row 1 Flex Wrapper */}
-      <div className="flex flex-wrap justify-center gap-x-6 gap-y-12 mb-12 max-w-6xl mx-auto">
-        {row1Categories.map((c, i) => {
+      {/* Grid: 3 columns x 3 rows on mobile, flex-wrap on desktop */}
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:flex md:flex-wrap md:justify-center gap-x-3 gap-y-7 md:gap-x-6 md:gap-y-12 max-w-6xl mx-auto">
+        {displayCategories.map((c, i) => {
           const categoryImage = c.image || '/no-image.svg';
           const subText = c.subcategories && c.subcategories.length > 0
             ? c.subcategories.slice(0, 2).map((s: any) => s.name).join(' ، ') + ' و ...'
@@ -391,72 +407,29 @@ function ShopByCategorySection({ categories }: CategorySectionProps) {
             <Link 
               key={c.id || i} 
               href={`/categories/${c.slug}`}
-              className="group flex flex-col items-center text-center select-none w-48 md:w-52 shrink-0"
+              className="group flex flex-col items-center text-center select-none md:w-48 lg:w-52 md:shrink-0"
             >
-              <div className="w-44 h-52 relative flex items-center justify-center mb-4">
-                {/* Vibrant blue offset backdrop — intentionally smaller so the product overflows it */}
-                <div className="w-36 h-36 bg-gradient-to-br from-royal via-ocean to-steel rounded-[22px] absolute bottom-4 left-1/2 -translate-x-1/2 -z-10 shadow-[0_12px_30px_rgba(0,0,0,0)] group-hover:scale-105 transition-transform duration-[200ms] ease-[cubic-bezier(0.23,1,0.32,1)]" />
+              <div className="w-26 h-30 sm:w-32 sm:h-40 md:w-44 md:h-52 relative flex items-center justify-center mb-2 md:mb-4">
+                {/* Vibrant blue offset backdrop — rounded & enlarged on mobile */}
+                <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-36 md:h-36 bg-gradient-to-br from-royal via-ocean to-steel rounded-2xl md:rounded-[22px] absolute bottom-2 md:bottom-4 left-1/2 -translate-x-1/2 -z-10 shadow-[0_12px_30px_rgba(0,0,0,0)] group-hover:scale-105 transition-transform duration-[200ms] ease-[cubic-bezier(0.23,1,0.32,1)]" />
 
-                {/* Oversized product image — pops out above/around the blue pill */}
-                <div className="w-48 h-48 relative select-none pointer-events-none z-10 flex items-center justify-center drop-shadow-[0_14px_18px_rgba(15,23,42,0.18)]">
+                {/* Oversized product image — enlarged for bold visual impact */}
+                <div className="w-28 h-28 sm:w-36 sm:h-36 md:w-48 md:h-48 relative select-none pointer-events-none z-10 flex items-center justify-center drop-shadow-[0_14px_18px_rgba(15,23,42,0.18)]">
                   <Image
                     src={categoryImage}
                     alt={c.name}
                     width={192}
                     height={192}
-                    className="object-contain max-h-[192px] transform group-hover:scale-110 group-hover:-translate-y-2 transition-transform duration-[200ms] ease-[cubic-bezier(0.23,1,0.32,1)]"
+                    className="object-contain max-h-[110px] sm:max-h-[144px] md:max-h-[192px] transform group-hover:scale-110 group-hover:-translate-y-2 transition-transform duration-[200ms] ease-[cubic-bezier(0.23,1,0.32,1)]"
                   />
                 </div>
               </div>
 
-              <div className="flex flex-col items-center w-full px-2">
-                <h4 className="text-sm md:text-base font-extrabold text-gray-800 group-hover:text-ocean transition-colors line-clamp-1 w-full">
+              <div className="flex flex-col items-center w-full px-1 md:px-2">
+                <h4 className="text-[11px] sm:text-sm md:text-base font-extrabold text-gray-800 group-hover:text-ocean transition-colors line-clamp-1 w-full">
                   {c.name}
                 </h4>
-                <p className="text-[10px] md:text-xs text-ocean font-bold mt-1.5 leading-relaxed line-clamp-1 w-full">
-                  {subText}
-                </p>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
-
-      {/* Row 2 Flex Wrapper */}
-      <div className="flex flex-wrap justify-center gap-x-6 gap-y-12 max-w-5xl mx-auto">
-        {row2Categories.map((c, i) => {
-          const categoryImage = c.image || '/no-image.svg';
-          const subText = c.subcategories && c.subcategories.length > 0
-            ? c.subcategories.slice(0, 2).map((s: any) => s.name).join(' ، ') + ' و ...'
-            : 'تجهیزات و لوازم جانبی';
-
-          return (
-            <Link 
-              key={c.id || i} 
-              href={`/categories/${c.slug}`}
-              className="group flex flex-col items-center text-center select-none w-48 md:w-52 shrink-0"
-            >
-              <div className="w-44 h-52 relative flex items-center justify-center mb-4">
-                {/* Vibrant blue offset backdrop — intentionally smaller so the product overflows it */}
-                <div className="w-36 h-36 bg-gradient-to-br from-royal via-ocean to-steel rounded-[22px] absolute bottom-4 left-1/2 -translate-x-1/2 -z-10 shadow-[0_12px_30px_rgba(0,0,0,0)] group-hover:scale-105 transition-transform duration-[200ms] ease-[cubic-bezier(0.23,1,0.32,1)]" />
-
-                {/* Oversized product image — pops out above/around the blue pill */}
-                <div className="w-48 h-48 relative select-none pointer-events-none z-10 flex items-center justify-center drop-shadow-[0_14px_18px_rgba(15,23,42,0.18)]">
-                  <Image
-                    src={categoryImage}
-                    alt={c.name}
-                    width={192}
-                    height={192}
-                    className="object-contain max-h-[192px] transform group-hover:scale-110 group-hover:-translate-y-2 transition-transform duration-[200ms] ease-[cubic-bezier(0.23,1,0.32,1)]"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex flex-col items-center w-full px-2">
-                <h4 className="text-sm md:text-base font-extrabold text-gray-800 group-hover:text-ocean transition-colors line-clamp-1 w-full">
-                  {c.name}
-                </h4>
-                <p className="text-[10px] md:text-xs text-ocean font-bold mt-1.5 leading-relaxed line-clamp-1 w-full">
+                <p className="hidden sm:block text-[10px] md:text-xs text-ocean font-bold mt-1 md:mt-1.5 leading-relaxed line-clamp-1 w-full">
                   {subText}
                 </p>
               </div>
@@ -476,14 +449,10 @@ function TwoColumnPromoModule({ products }: PromoProps) {
   const displayProducts = products.length >= 4 ? products.slice(0, 4) : products;
 
   return (
-    <div className="w-full grid grid-cols-1 xl:grid-cols-[288px_1fr] gap-6 mb-16 items-start">
+    <div className="w-full grid grid-cols-1 lg:grid-cols-[288px_1fr] gap-4 md:gap-6 mb-10 md:mb-16 items-start">
 
-      {/* Column A: Spare Parts feature panel (dark, single strong message).
-          NOTE: keep positioning (sticky) on the wrapper only. Do NOT add
-          `noise-overlay` to the sticky element — that class sets
-          `position: relative` later in the cascade and would silently
-          override `position: sticky`. */}
-      <div className="self-start xl:sticky xl:top-28">
+      {/* Column A: Spare Parts feature panel (dark, single strong message). */}
+      <div className="self-start lg:sticky lg:top-28">
         <Link
           href="/categories/spare-parts"
           className="group relative flex flex-col justify-between overflow-hidden rounded-[24px] bg-gradient-to-br from-royal via-ocean to-steel text-white p-6 shadow-md hover:shadow-xl transition-shadow select-none noise-overlay"
@@ -593,11 +562,12 @@ function TwoColumnPromoModule({ products }: PromoProps) {
 // 6. Three vertical "stand" promotional banners (side by side)
 interface StandBannerTrioProps {
   products: any[];
+  singleBanners?: BannerForDisplay[];
 }
-function StandBannerTrio({ products: _products }: StandBannerTrioProps) {
-  const banners = [
+function StandBannerTrio({ products: _products, singleBanners = [] }: StandBannerTrioProps) {
+  const defaultBanners = [
     {
-      href: '/categories/ice-cream-machines',
+      href: '/categories/soft-ice-machines',
       image: '/uploads/custom/hero_ice_cream.png',
       badge: 'پرفروش‌ترین',
       badgeClass: 'bg-orange-500',
@@ -605,41 +575,54 @@ function StandBannerTrio({ products: _products }: StandBannerTrioProps) {
       subtitle: 'موتور ایتالیایی، بازدهی بالا و کیفیت تضمینی',
     },
     {
-      href: '/categories/coffee-machines',
-      image: '/uploads/custom/hero_coffee.png',
-      badge: 'ویژه کافی‌شاپ',
+      href: '/categories/hardening-machines',
+      image: '/uploads/custom/hero_ice_cream.png',
+      badge: 'ویژه بستنی‌فروشی',
       badgeClass: 'bg-sky-breeze text-midnight',
-      title: 'اسپرسوسازهای حرفه‌ای چندگروپ',
-      subtitle: 'مناسب کافی‌شاپ‌های پرتردد و پرحجم',
+      title: 'دستگاه‌های بار سفت‌کن صنعتی',
+      subtitle: 'تولید بستنی سنتی و جلاتو با سرعت بالا',
       gradient: 'from-teal-800 via-[#081F37] to-[#0A1424]',
     },
     {
-      href: '/categories/juicers',
+      href: '/categories/juice-and-blender',
       image: '/uploads/custom/hero_juicer.png',
-      badge: 'اقساط بدون ضامن',
+      badge: 'کیفیت تضمینی',
       badgeClass: 'bg-emerald-500',
       title: 'آبمیوه و مرکبات‌گیرهای صنعتی',
       subtitle: 'بدنه استیل، تیغه مقاوم و راندمان بالا',
       gradient: 'from-[#0A1424] via-[#081F37] to-[#1E549F]',
     },
     {
-      href: '/categories/appliances',
+      href: '/categories/refrigeration',
       image: '/uploads/custom/hero_appliances.png',
       badge: 'تحویل فوری',
       badgeClass: 'bg-purple-500',
-      title: 'یخچال و فریزرهای ویترینی صنعتی',
+      title: 'یخچال و فریزرهای صنعتی',
       subtitle: 'مصرف بهینه، فضای گسترده و دوام بالا',
       gradient: 'from-[#0A1424] via-[#102A43] to-[#334E68]',
     },
   ];
 
+  const badgeClasses = ['bg-orange-500', 'bg-sky-breeze text-midnight', 'bg-emerald-500', 'bg-purple-500'];
+
+  const banners = (singleBanners && singleBanners.length > 0)
+    ? singleBanners.map((b, idx) => ({
+        href: b.link,
+        image: b.desktopImage,
+        badge: 'ویژه',
+        badgeClass: badgeClasses[idx % badgeClasses.length],
+        title: b.title,
+        subtitle: b.alt || 'تجهیزات تخصصی سرمایشی',
+      }))
+    : defaultBanners;
+
   return (
-    <div className="w-full max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-16">
+    <div className="w-full max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-10 md:mb-16">
       {banners.map((b, i) => (
         <Link
           key={i}
           href={b.href}
-          className="group relative flex flex-col justify-end overflow-hidden rounded-[24px] text-white shadow-md hover:shadow-xl transition-shadow aspect-[3/4] lg:aspect-[9/16] select-none"
+          className="group relative flex flex-col justify-end overflow-hidden rounded-2xl md:rounded-[24px] text-white shadow-md hover:shadow-xl transition-shadow aspect-[4/5] lg:aspect-[9/16] select-none"
         >
           {/* Full-bleed background image */}
           <Image
@@ -654,21 +637,21 @@ function StandBannerTrio({ products: _products }: StandBannerTrioProps) {
           <div className="absolute inset-0 bg-gradient-to-t from-[#0A1424]/95 via-[#0A1424]/45 to-transparent" />
 
           {/* Badge (top-right corner) */}
-          <span className={`absolute top-4 right-4 z-10 inline-block text-[10px] font-bold text-white px-3 py-1 rounded-lg shadow-sm ${b.badgeClass}`}>
+          <span className={`absolute top-2 right-2 md:top-4 md:right-4 z-10 inline-block text-[9px] md:text-[10px] font-bold text-white px-2 py-0.5 md:px-3 md:py-1 rounded-md md:rounded-lg shadow-sm ${b.badgeClass}`}>
             {b.badge}
           </span>
 
           {/* Content anchored to the bottom */}
-          <div className="relative z-10 p-5 text-right">
-            <h3 className="text-base md:text-lg font-extrabold leading-snug">{b.title}</h3>
-            <p className="text-[11px] md:text-xs text-slate-200 mt-2 leading-relaxed">
+          <div className="relative z-10 p-3 md:p-5 text-right">
+            <h3 className="text-sm md:text-lg font-extrabold leading-snug">{b.title}</h3>
+            <p className="hidden sm:block text-[11px] md:text-xs text-slate-200 mt-1 md:mt-2 leading-relaxed">
               {b.subtitle}
             </p>
 
             {/* CTA */}
-            <div className="mt-4 flex items-center justify-between text-xs font-bold bg-white/10 group-hover:bg-white/20 border border-white/15 px-4 py-3 rounded-xl transition-colors backdrop-blur-sm">
+            <div className="mt-2 md:mt-4 flex items-center justify-between text-[10px] md:text-xs font-bold bg-white/10 group-hover:bg-white/20 border border-white/15 px-3 py-2 md:px-4 md:py-3 rounded-lg md:rounded-xl transition-colors backdrop-blur-sm">
               <span>مشاهده محصولات</span>
-              <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
+              <ArrowLeft size={12} className="md:w-3.5 md:h-3.5 group-hover:-translate-x-0.5 transition-transform" />
             </div>
           </div>
         </Link>
@@ -681,111 +664,85 @@ function StandBannerTrio({ products: _products }: StandBannerTrioProps) {
 interface BlogSectionProps {
   posts: BlogPostForDisplay[];
 }
-
-function formatBlogDate(date: Date | null): string {
-  if (!date) return '';
-  try {
-    return new Intl.DateTimeFormat('fa-IR', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    }).format(new Date(date));
-  } catch {
-    return '';
-  }
-}
-
 function BlogSection({ posts }: BlogSectionProps) {
-  // Don't render the block at all when there's nothing to show
   if (!posts || posts.length === 0) return null;
 
-  const [lead, ...rest] = posts;
-  const sidePosts = rest.slice(0, 4);
+  const leadPost = posts[0];
+  const sidePosts = posts.slice(1, 4);
 
   return (
-    <div className="w-full mb-20">
-      {/* Section header */}
-      <div className="flex items-end justify-between mb-6 gap-4">
-        <div className="text-right">
-          <div className="flex items-center gap-2 justify-start">
-            <Newspaper size={18} className="text-ocean" />
-            <h2 className="fluid-heading font-extrabold text-midnight text-balance">مجله آیس سنتر</h2>
-          </div>
-          <p className="text-xs text-gray-400 mt-2">راهنمای خرید، آموزش و جدیدترین اخبار تجهیزات صنعتی و سرمایشی</p>
+    <div className="w-full mb-12 md:mb-20 px-1 md:px-4">
+      {/* Section Title */}
+      <div className="flex justify-between items-center mb-6 md:mb-10 border-b border-gray-100 pb-4">
+        <div>
+          <h2 className="fluid-heading-lg font-extrabold text-midnight">مجله تخصصی سرمایش و بستنی</h2>
+          <p className="text-xs text-gray-500 font-medium mt-1">آخرین مقالات، راهنمای خرید و اخبار صنعتی</p>
         </div>
-        <Link
-          href="/blog"
-          className="hidden sm:flex items-center gap-1.5 text-[11px] font-bold text-ocean hover:text-royal transition-colors shrink-0"
-        >
+        <Link href="/blog" className="text-xs font-bold text-ocean hover:text-royal transition flex items-center gap-1 shrink-0">
           <span>مشاهده همه مقالات</span>
-          <ArrowLeft size={12} className="group-hover:translate-x-[-2px] transition-transform" />
+          <ArrowLeft size={13} />
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Lead article — large */}
-        <Link
-          href={`/blog/${lead.slug}`}
-          className="relative h-[280px] md:h-[360px] rounded-[24px] overflow-hidden group shadow-md select-none block border border-gray-100 interactive-card-hover"
-        >
-          <Image
-            src={lead.coverImage || lead.thumbnail || '/no-image.svg'}
-            alt={lead.title}
-            fill
-            sizes="(max-width: 1024px) 100vw, 50vw"
-            className="object-cover image-zoom-hover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0A1424]/95 via-black/40 to-transparent flex flex-col justify-end p-6 text-right text-white">
-            {lead.publishedAt && (
-              <div className="flex items-center gap-1.5 text-[10px] text-gray-300 mb-2 font-medium">
-                <CalendarDays size={11} className="text-sky-breeze" />
-                <span>{toPersianDigits(formatBlogDate(lead.publishedAt))}</span>
-              </div>
-            )}
-            <h3 className="text-base md:text-xl font-extrabold text-slate-50 leading-snug line-clamp-2">
-              {lead.title}
-            </h3>
-            {lead.summary && (
-              <p className="text-[11px] md:text-xs text-gray-300 mt-2 font-normal leading-relaxed line-clamp-2 max-w-[95%]">
-                {lead.summary}
-              </p>
-            )}
-            <div className="flex items-center gap-1.5 text-[11px] font-bold text-sky-breeze mt-3 group-hover:text-white transition-colors">
-              <span>ادامه مطلب</span>
-              <ArrowLeft size={11} />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Lead Article (Left 7 Cols) */}
+        {leadPost && (
+          <Link
+            href={`/blog/${leadPost.slug}`}
+            className="lg:col-span-7 group relative flex flex-col justify-end overflow-hidden rounded-2xl md:rounded-[24px] text-white shadow-sm hover:shadow-xl transition-all h-[200px] sm:h-[280px] md:h-[360px] select-none"
+          >
+            <Image
+              src={leadPost.coverImage || leadPost.thumbnail || '/no-image.svg'}
+              alt={leadPost.title}
+              fill
+              className="object-cover group-hover:scale-105 transition-transform duration-700 ease-[cubic-bezier(0.23,1,0.32,1)]"
+              sizes="(max-width: 1024px) 100vw, 800px"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-midnight via-midnight/50 to-transparent" />
+            
+            <div className="relative z-10 p-5 md:p-8 text-right">
+              <span className="inline-block bg-sky-breeze text-midnight text-[10px] md:text-xs font-extrabold px-3 py-1 rounded-full mb-3 shadow-sm">
+                مقاله برتر
+              </span>
+              <h3 className="text-base sm:text-xl md:text-2xl font-black text-white leading-tight group-hover:text-sky-breeze transition-colors line-clamp-2">
+                {leadPost.title}
+              </h3>
+              {leadPost.summary && (
+                <p className="text-xs md:text-sm text-gray-200 mt-2 line-clamp-2 leading-relaxed hidden sm:block max-w-2xl">
+                  {leadPost.summary}
+                </p>
+              )}
             </div>
-          </div>
-        </Link>
+          </Link>
+        )}
 
-        {/* Side list — compact rows */}
-        <div className="flex flex-col gap-4">
+        {/* Side Articles (Right 5 Cols) */}
+        <div className="lg:col-span-5 flex flex-col gap-4">
           {sidePosts.map((post) => (
             <Link
               key={post.id}
               href={`/blog/${post.slug}`}
-              className="group flex items-center gap-4 bg-white rounded-2xl border border-gray-100 p-3 shadow-sm hover:shadow-md hover:border-ocean/30 transition-all select-none"
+              className="group flex gap-4 p-3 rounded-2xl bg-white border border-gray-150 hover:border-sky-breeze shadow-xs hover:shadow-md transition-all select-none items-center"
             >
-              <div className="relative w-32 md:w-36 aspect-video rounded-xl overflow-hidden shrink-0 bg-frost">
+              <div className="relative w-24 sm:w-32 md:w-36 h-20 sm:h-24 rounded-xl overflow-hidden shrink-0 bg-gray-100">
                 <Image
                   src={post.thumbnail || post.coverImage || '/no-image.svg'}
                   alt={post.title}
                   fill
-                  sizes="(max-width: 768px) 128px, 144px"
-                  className="object-cover image-zoom-hover"
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  sizes="144px"
                 />
               </div>
-              <div className="flex flex-col min-w-0 flex-1 text-right">
-                <h4 className="text-xs md:text-sm font-extrabold text-gray-800 group-hover:text-ocean transition-colors leading-snug line-clamp-2">
+              <div className="flex flex-col justify-center text-right flex-1 min-w-0 pr-1">
+                <h4 className="text-xs sm:text-sm font-extrabold text-midnight group-hover:text-ocean transition-colors line-clamp-2 leading-snug">
                   {post.title}
                 </h4>
-                {post.publishedAt && (
-                  <div className="flex items-center gap-1.5 text-[10px] text-gray-400 mt-2 font-medium">
-                    <CalendarDays size={10} className="text-ocean" />
-                    <span>{toPersianDigits(formatBlogDate(post.publishedAt))}</span>
-                  </div>
+                {post.summary && (
+                  <p className="text-[11px] text-gray-500 mt-1 line-clamp-1">
+                    {post.summary}
+                  </p>
                 )}
               </div>
-              <ChevronLeft size={16} className="text-gray-300 group-hover:text-ocean group-hover:-translate-x-0.5 transition-all shrink-0" />
             </Link>
           ))}
         </div>
@@ -813,33 +770,53 @@ export default async function Home() {
   // Load database tables in parallel
   const [
     dbCategories,
-    { newestProducts },
-    blogPosts
+    { newestProducts, popularProducts, juicerProducts, iceCreamProducts, fridgeProducts },
+    blogPosts,
+    dbSlides,
+    dbDoubleBanners,
+    dbSingleBanners,
+    dbOffers,
   ] = await Promise.all([
     getCachedCategories(),
     getCachedCategoryProducts(),
     getCachedBlogPosts(5),
+    getCachedSlides().catch(() => []),
+    getCachedDoubleBanners().catch(() => []),
+    getCachedSingleBanners().catch(() => []),
+    getCachedOffers().catch(() => []),
   ]);
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto px-4 md:px-6 pt-5">
+    <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 pt-3 md:pt-5">
       
-      {/* 1. Hero Promo Area (Client Carousel) */}
+      {/* 1. Hero Promo Area (Client Carousel synced with Admin Panel) */}
       <Suspense fallback={<HeroSkeleton />}>
-        <HeroPromoArea />
+        <HeroPromoArea slides={dbSlides} doubleBanners={dbDoubleBanners} />
       </Suspense>
 
       {/* 2. Capsule-shaped Trust Bar */}
       <TrustBar />
 
-      {/* 3. Top Products Grid + Sidebar */}
-      <TopProductsSection products={newestProducts} />
+      {/* 2.5 Active Offers Carousel (synced with Admin Panel) */}
+      {dbOffers && dbOffers.length > 0 && (
+        <div className="w-full mb-10 md:mb-16">
+          <OfferCarousel offers={dbOffers} />
+        </div>
+      )}
 
-      {/* 5. Three vertical stand promotional banners */}
-      <StandBannerTrio products={newestProducts} />
+      {/* 3. Top Products Grid + Sticky Warranty Sidebar (Includes Popular, Recently Added, Juicers, and Ice Cream blocks) */}
+      <TopProductsSection
+        popularProducts={popularProducts}
+        newestProducts={newestProducts}
+        juicerProducts={juicerProducts}
+        iceCreamProducts={iceCreamProducts}
+      />
+
+      {/* 5. Stand promotional banners (Synced with Admin Panel) */}
+      <StandBannerTrio products={newestProducts} singleBanners={dbSingleBanners} />
 
       {/* 4. Two-Column Promo Module */}
-      <TwoColumnPromoModule products={newestProducts} />
+      <TwoColumnPromoModule products={[...fridgeProducts, ...popularProducts, ...newestProducts].slice(0, 4)} />
 
       {/* 6. Shop by Category with custom group coding */}
       <ShopByCategorySection categories={dbCategories} />

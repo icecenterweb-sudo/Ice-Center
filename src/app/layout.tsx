@@ -27,22 +27,28 @@ const yekan = localFont({
     display: "swap",
 });
 
-export const metadata: Metadata = {
-    title: "آیس سنتر | تجهیزات صنعتی بستنی و یخچال",
-    description: "فروشگاه تخصصی دستگاه بستنی‌ساز، یخ‌ساز، آبمیوه‌گیری، فریزر و یخچال صنعتی",
-    openGraph: {
-        title: "آیس سنتر | تجهیزات صنعتی بستنی و یخچال",
-        description: "فروشگاه تخصصی دستگاه بستنی‌ساز، یخ‌ساز، آبمیوه‌گیری، فریزر و یخچال صنعتی",
-        type: "website",
-        siteName: "آیس سنتر",
-        locale: "fa_IR",
-    },
-    twitter: {
-        card: "summary_large_image",
-        title: "آیس سنتر | تجهیزات صنعتی بستنی و یخچال",
-        description: "فروشگاه تخصصی دستگاه بستنی‌ساز، یخ‌ساز، آبمیوه‌گیری، فریزر و یخچال صنعتی",
-    },
-};
+import { getSiteSettings } from "@/lib/settings";
+
+export async function generateMetadata(): Promise<Metadata> {
+    const settings = await getSiteSettings();
+    return {
+        title: `${settings.siteTitle} | ${settings.siteSlogan}`,
+        description: settings.aboutText,
+        icons: settings.faviconUrl ? { icon: settings.faviconUrl } : undefined,
+        openGraph: {
+            title: `${settings.siteTitle} | ${settings.siteSlogan}`,
+            description: settings.aboutText,
+            type: "website",
+            siteName: settings.siteTitle,
+            locale: "fa_IR",
+        },
+        twitter: {
+            card: "summary_large_image",
+            title: `${settings.siteTitle} | ${settings.siteSlogan}`,
+            description: settings.aboutText,
+        },
+    };
+}
 
 export default function RootLayout({
     children,

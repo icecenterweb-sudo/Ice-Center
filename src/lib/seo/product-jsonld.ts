@@ -59,7 +59,7 @@ export function generateProductBreadcrumbJsonLd(items: BreadcrumbItem[]) {
  * Generate full Product JSON-LD Schema
  */
 export function generateProductSchemaJsonLd(product: ProductJsonLdParams) {
-    const baseUrl = 'https://ice-center.ir';
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ice-center.ir';
 
     const schema: Record<string, unknown> = {
         '@type': 'Product',
@@ -107,7 +107,7 @@ export function generateProductPageJsonLd(params: {
     categorySlug?: string;
 }) {
     const { product, categorySlug } = params;
-    const baseUrl = 'https://ice-center.ir';
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ice-center.ir';
 
     // Build breadcrumb items
     const breadcrumbs: BreadcrumbItem[] = [

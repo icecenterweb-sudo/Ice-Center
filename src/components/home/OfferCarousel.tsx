@@ -72,8 +72,9 @@ const AmazingOfferCarousel = ({ offers }: AmazingOfferCarouselProps) => {
   // --- Timer Logic ---
   const calculateTimeLeft = useCallback(() => {
     const diff = Math.max(0, new Date(earliestEndDate).getTime() - Date.now());
+    const totalHours = Math.floor(diff / (1000 * 60 * 60));
     return {
-      hours: Math.floor(diff / (1000 * 60 * 60)),
+      hours: totalHours % 24,
       minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
       seconds: Math.floor((diff % (1000 * 60)) / 1000),
     };
@@ -291,15 +292,15 @@ const AmazingOfferCarousel = ({ offers }: AmazingOfferCarouselProps) => {
             {/* Timer */}
             <div className="flex gap-1.5 mb-4" dir="ltr">
               <div className="bg-white text-ocean w-9 h-9 rounded-lg flex items-center justify-center font-bold text-base shadow-md">
-                {formatTime(time.hours)}
+                {toPersianDigits(formatTime(time.hours))}
               </div>
               <span className="text-white font-bold self-center text-lg">:</span>
               <div className="bg-white text-ocean w-9 h-9 rounded-lg flex items-center justify-center font-bold text-base shadow-md">
-                {formatTime(time.minutes)}
+                {toPersianDigits(formatTime(time.minutes))}
               </div>
               <span className="text-white font-bold self-center text-lg">:</span>
               <div className="bg-white text-ocean w-9 h-9 rounded-lg flex items-center justify-center font-bold text-base shadow-md">
-                {formatTime(time.seconds)}
+                {toPersianDigits(formatTime(time.seconds))}
               </div>
             </div>
 

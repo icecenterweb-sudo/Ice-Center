@@ -18,6 +18,7 @@ export interface ProductFilterParams {
     brands?: string[];
     availability?: InventoryStatus[];
     onlyDiscount?: boolean;
+    search?: string;
 }
 
 export interface ProductResult {
@@ -144,8 +145,10 @@ export async function getProducts({
     brands,
     availability,
     onlyDiscount,
+    search,
 }: ProductFilterParams): Promise<ProductResult> {
-    const skip = (page - 1) * limit;
+    const safePage = Math.min(Math.max(1, page), 100);
+    const skip = (safePage - 1) * limit;
     const now = new Date();
 
     // Build where clause
@@ -190,52 +193,76 @@ export async function getProducts({
         ];
     }
 
+    // Search filter — matches name, slug, brand, model, tags
+    // Uses AND to not conflict with discount filter's OR
+    if (search && search.trim().length > 0) {
+        const q = search.trim();
+        const searchConditions = [
+            { name: { contains: q, mode: 'insensitive' as const } },
+            { slug: { contains: q, mode: 'insensitive' as const } },
+            { brand: { contains: q, mode: 'insensitive' as const } },
+            { model: { contains: q, mode: 'insensitive' as const } },
+            { tags: { has: q } },
+            { keywords: { has: q } },
+        ];
+        // Wrap search in AND so it doesn't merge with discount's OR
+        where.AND = [
+            ...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []),
+            { OR: searchConditions },
+        ];
+    }
+
     // Build orderBy
     let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: 'desc' };
     if (sort === 'price-asc') orderBy = { price: 'asc' };
     if (sort === 'price-desc') orderBy = { price: 'desc' };
 
-    // Fetch products with offer data
-    const allProducts = await prisma.product.findMany({
-        where,
-        orderBy,
-        select: {
-            id: true,
-            name: true,
-            slug: true,
-            price: true,
-            listPrice: true,
-            thumbnail: true,
-            inventoryStatus: true,
-            brand: true,
-            hasActiveOffer: true,
-            subcategoryId: true,
-            // Include active offers for price calculation
-            offerProducts: {
-                where: {
-                    offer: {
-                        isActive: true,
-                        startDate: { lte: now },
-                        endDate: { gt: now },
-                    }
-                },
-                select: {
-                    customDiscountValue: true,
-                    offer: {
-                        select: {
-                            discountType: true,
-                            discountValue: true,
+    // Get total count and paginated products in parallel
+    const [totalCount, dbProducts] = await Promise.all([
+        prisma.product.count({ where }),
+        prisma.product.findMany({
+            where,
+            orderBy,
+            skip,
+            take: limit,
+            select: {
+                id: true,
+                name: true,
+                slug: true,
+                price: true,
+                listPrice: true,
+                thumbnail: true,
+                inventoryStatus: true,
+                brand: true,
+                hasActiveOffer: true,
+                subcategoryId: true,
+                // Include active offers for price calculation
+                offerProducts: {
+                    where: {
+                        offer: {
+                            isActive: true,
+                            startDate: { lte: now },
+                            endDate: { gt: now },
                         }
-                    }
-                },
-                orderBy: { offer: { priority: 'desc' } },
-                take: 1
+                    },
+                    select: {
+                        customDiscountValue: true,
+                        offer: {
+                            select: {
+                                discountType: true,
+                                discountValue: true,
+                            }
+                        }
+                    },
+                    orderBy: { offer: { priority: 'desc' } },
+                    take: 1
+                }
             }
-        }
-    });
+        })
+    ]);
 
-    // Calculate effective prices for each product
-    const productsWithPricing = allProducts.map(product => {
+    // Calculate effective prices for each product on the current page
+    const products = dbProducts.map(product => {
         const pricing = getProductPricing(product);
 
         return {
@@ -252,15 +279,6 @@ export async function getProducts({
             subcategoryId: product.subcategoryId,
         };
     });
-
-    // Apply discount filter post-processing
-    let filteredProducts = productsWithPricing;
-    if (onlyDiscount) {
-        filteredProducts = productsWithPricing.filter(p => p.hasOffer);
-    }
-
-    const totalCount = filteredProducts.length;
-    const products = filteredProducts.slice(skip, skip + limit);
 
     return {
         products,

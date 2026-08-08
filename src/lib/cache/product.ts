@@ -99,8 +99,23 @@ export async function getCachedProductStatic(slug: string): Promise<ProductStati
     });
     cacheTag('product', `product:${slug}`);
 
-    const product = await prisma.product.findUnique({
-        where: { slug },
+    let decodedSlug = slug;
+    try {
+        decodedSlug = decodeURIComponent(slug);
+    } catch {
+        decodedSlug = slug;
+    }
+
+    const cleanSlug = decodedSlug.trim();
+
+    const product = await prisma.product.findFirst({
+        where: {
+            OR: [
+                { slug: cleanSlug },
+                { slug },
+            ],
+            isActive: true,
+        },
         select: {
             id: true,
             name: true,

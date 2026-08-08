@@ -3,12 +3,17 @@
 import { useState, useRef, useEffect } from 'react'
 import { toPersianDigits } from '@/lib/persian'
 import Link from 'next/link'
-import { User, LogOut, Package, MapPin, ChevronDown } from 'lucide-react'
+import { User, LogOut, Package, MapPin, ChevronDown, ShieldCheck } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
 
-export default function UserButton() {
+interface UserButtonProps {
+    variant?: 'dark' | 'light';
+    className?: string;
+}
+
+export default function UserButton({ variant = 'dark', className = '' }: UserButtonProps) {
     const { user, isLoading, isAuthenticated, logout, openAuthModal } = useAuth()
     const [isOpen, setIsOpen] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
@@ -46,21 +51,29 @@ export default function UserButton() {
     // Loading state
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center w-11 h-11 border border-gray-200 rounded-lg">
-                <div className="w-5 h-5 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
+            <div className={`flex items-center justify-center w-9 h-9 border rounded-xl ${
+                variant === 'dark' ? 'border-white/20' : 'border-gray-200'
+            } ${className}`}>
+                <div className="w-4 h-4 border-2 border-sky-breeze border-t-transparent rounded-full animate-spin" />
             </div>
         )
     }
+
+    const isDark = variant === 'dark';
 
     // Not authenticated - show login button
     if (!isAuthenticated) {
         return (
             <button
                 onClick={() => openAuthModal()}
-                className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all"
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl transition-all cursor-pointer shadow-sm active:scale-95 select-none ${
+                    isDark
+                        ? 'bg-white/10 hover:bg-white/20 text-white border border-white/30 font-bold backdrop-blur-md hover:border-white/50'
+                        : 'bg-white border border-gray-200 text-gray-800 hover:bg-gray-50 font-semibold'
+                } ${className}`}
             >
-                <User size={18} />
-                <span className="text-sm font-medium">ورود</span>
+                <User size={16} className={isDark ? 'text-sky-breeze' : 'text-ocean'} />
+                <span className="text-xs md:text-sm font-bold">ورود</span>
             </button>
         )
     }
@@ -70,15 +83,24 @@ export default function UserButton() {
         <div ref={dropdownRef} className="relative">
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all"
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all cursor-pointer select-none ${
+                    isDark
+                        ? 'bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold backdrop-blur-md'
+                        : 'bg-white border border-gray-200 text-gray-800 hover:bg-gray-50 font-semibold'
+                } ${className}`}
             >
                 {/* Avatar */}
-                <div className="w-7 h-7 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                <div className="w-6 h-6 bg-royal text-white rounded-full flex items-center justify-center text-xs font-black shadow-sm">
                     {getInitial()}
                 </div>
+                <span className="text-xs font-bold truncate max-w-[110px]">
+                    {getDisplayName()}
+                </span>
                 <ChevronDown
-                    size={16}
-                    className={`text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                    size={14}
+                    className={`transition-transform ${isOpen ? 'rotate-180' : ''} ${
+                        isDark ? 'text-white/80' : 'text-gray-500'
+                    }`}
                 />
             </button>
 
@@ -90,42 +112,52 @@ export default function UserButton() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 8, scale: 0.96 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute left-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50"
+                        className="absolute left-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 text-gray-900"
                     >
                         {/* User Info */}
-                        <div className="px-4 py-3 border-b border-gray-100">
-                            <p className="text-sm font-medium text-gray-800 truncate">
+                        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/50 rounded-t-2xl">
+                            <p className="text-sm font-bold text-midnight truncate">
                                 {getDisplayName()}
                             </p>
-                            <p className="text-xs text-gray-500 dir-ltr text-right">
+                            <p className="text-xs text-gray-500 dir-ltr text-right mt-0.5">
                                 {toPersianDigits(user?.phone || '')}
                             </p>
                         </div>
 
                         {/* Menu Items */}
-                        <div className="py-1">
+                        <div className="py-1.5">
+                            {user?.isAdmin && (
+                                <Link
+                                    href="/admin/dashboard"
+                                    onClick={() => setIsOpen(false)}
+                                    className="flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 transition-colors border-b border-amber-100"
+                                >
+                                    <ShieldCheck size={16} className="text-amber-600" />
+                                    <span>ورود به پنل مدیریت</span>
+                                </Link>
+                            )}
                             <Link
                                 href="/profile"
                                 onClick={() => setIsOpen(false)}
-                                className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                className="flex items-center gap-3 px-4 py-2.5 text-xs font-medium text-gray-700 hover:bg-frost hover:text-royal transition-colors"
                             >
-                                <User size={18} className="text-gray-400" />
+                                <User size={16} className="text-ocean" />
                                 <span>حساب کاربری</span>
                             </Link>
                             <Link
                                 href="/profile/orders"
                                 onClick={() => setIsOpen(false)}
-                                className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                className="flex items-center gap-3 px-4 py-2.5 text-xs font-medium text-gray-700 hover:bg-frost hover:text-royal transition-colors"
                             >
-                                <Package size={18} className="text-gray-400" />
+                                <Package size={16} className="text-ocean" />
                                 <span>سفارش‌های من</span>
                             </Link>
                             <Link
                                 href="/profile/addresses"
                                 onClick={() => setIsOpen(false)}
-                                className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                className="flex items-center gap-3 px-4 py-2.5 text-xs font-medium text-gray-700 hover:bg-frost hover:text-royal transition-colors"
                             >
-                                <MapPin size={18} className="text-gray-400" />
+                                <MapPin size={16} className="text-ocean" />
                                 <span>آدرس‌های من</span>
                             </Link>
                         </div>
@@ -134,9 +166,9 @@ export default function UserButton() {
                         <div className="border-t border-gray-100 pt-1">
                             <button
                                 onClick={handleLogout}
-                                className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors w-full"
+                                className="flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 transition-colors w-full cursor-pointer"
                             >
-                                <LogOut size={18} />
+                                <LogOut size={16} />
                                 <span>خروج از حساب</span>
                             </button>
                         </div>

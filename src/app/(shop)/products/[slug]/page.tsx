@@ -1,3 +1,4 @@
+import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import ProductClient from './ProductClient';
 import { getProductWithCaching } from '@/lib/cache/product';
@@ -7,6 +8,37 @@ import { generateProductPageJsonLd } from '@/lib/seo/product-jsonld';
 type PageProps = {
     params: Promise<{ slug: string }>;
 };
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+    const { slug } = await params;
+    const product = await getProductWithCaching(slug);
+
+    if (!product) {
+        return {
+            title: 'محصول یافت نشد | آیس سنتر',
+        };
+    }
+
+    const title = `${product.name} | قیمت و خرید در آیس سنتر`;
+    const description = product.description
+        ? product.description.slice(0, 160)
+        : `خرید ${product.name} با بهترین قیمت و گارانتی معتبر از آیس سنتر.`;
+    const image = product.thumbnail || (product.images.length > 0 ? product.images[0] : '/no-image.svg');
+
+    return {
+        title,
+        description,
+        openGraph: {
+            title,
+            description,
+            type: 'website',
+            images: [image],
+        },
+        alternates: {
+            canonical: `/products/${slug}`,
+        },
+    };
+}
 
 export default async function ProductPage({ params }: PageProps) {
     const { slug } = await params;
@@ -111,14 +143,14 @@ export default async function ProductPage({ params }: PageProps) {
         getProductReviews(product.id),
     ]);
 
-    // Generate JSON-LD structured data
+    // Generate JSON-LD structured data with effective prices
     const jsonLd = generateProductPageJsonLd({
         product: {
             name: product.name,
             slug: product.slug,
             description: product.description || '',
-            price: product.price,
-            listPrice: product.listPrice,
+            price: product.effectivePrice, // Use effective/discounted price
+            listPrice: product.hasOffer ? product.originalPrice : null,
             images: product.images,
             sku: product.sku,
             brand: product.brand || 'آیس سنتر',

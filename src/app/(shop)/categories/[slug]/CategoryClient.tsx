@@ -4,8 +4,9 @@ import { useState, useCallback, useMemo, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ChevronLeft, ChevronDown, ChevronUp, X, SlidersHorizontal, ArrowUpDown, Tag, DollarSign, Package } from 'lucide-react';
+import { ChevronLeft, ChevronDown, ChevronUp, X, SlidersHorizontal, ArrowUpDown, Tag, DollarSign, Package, Layers } from 'lucide-react';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { toPersianDigits } from '@/lib/persian';
 
 type Product = {
     id: number;
@@ -623,56 +624,69 @@ export default function CategoryClient({
                             </div>
                         ) : (
                             <>
-                                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
                                     {initialProducts.map((product) => {
                                         const discount = getDiscount(product.price, product.listPrice);
+                                        const isCallForPrice = !product.price || product.price === 0;
 
                                         return (
                                             <Link
                                                 key={product.id}
                                                 href={`/products/${product.slug}`}
-                                                className="bg-white border border-transparent hover:border-neutral-200 rounded-xl p-4 transition-all duration-300 hover:shadow-lg group flex flex-col h-full"
+                                                className="relative bg-white border border-gray-100 rounded-xl p-3 sm:p-4 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group flex flex-col h-full select-none"
                                             >
-                                                {/* Image */}
-                                                <div className="relative aspect-[4/5] mb-3 overflow-hidden rounded-lg bg-neutral-50">
+                                                {/* Red Discount Badge (Top Right Corner) */}
+                                                {discount && discount > 0 && (
+                                                    <div className="absolute top-2.5 right-2.5 z-10 bg-rose-500 text-white text-[11px] sm:text-xs font-black px-2.5 py-1 rounded-xl flex items-center gap-0.5 shadow-sm">
+                                                        <span>٪</span>
+                                                        <span>{toPersianDigits(discount)}</span>
+                                                    </div>
+                                                )}
+
+                                                {/* Image Container */}
+                                                <div className="relative aspect-square mb-3 overflow-hidden rounded-2xl bg-white flex items-center justify-center p-2">
                                                     {product.thumbnail ? (
                                                         <Image
                                                             src={product.thumbnail}
                                                             alt={product.name}
                                                             fill
-                                                            className="object-contain p-4 group-hover:scale-105 transition-transform duration-500"
+                                                            className="object-contain p-3 group-hover:scale-105 transition-transform duration-500"
+                                                            sizes="(max-width: 640px) 50vw, 25vw"
                                                         />
                                                     ) : (
                                                         <div className="w-full h-full flex items-center justify-center text-neutral-300 text-xs">
                                                             تصویر ندارد
                                                         </div>
                                                     )}
-                                                    {discount && (
-                                                        <div className="absolute top-2 right-2 bg-rose-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow-sm">
-                                                            {discount}%
-                                                        </div>
-                                                    )}
                                                 </div>
 
-                                                {/* Content */}
-                                                <div className="flex flex-col flex-1">
-                                                    <h3 className="text-sm text-neutral-700 leading-6 line-clamp-2 min-h-[48px] group-hover:text-blue-600 transition-colors mb-2">
+                                                {/* Content & Price Container */}
+                                                <div className="flex flex-col flex-1 text-right">
+                                                    <h3 className="text-xs sm:text-sm font-bold text-slate-800 leading-snug line-clamp-2 min-h-[38px] group-hover:text-ocean transition-colors mb-3">
                                                         {product.name}
                                                     </h3>
 
-                                                    <div className="mt-auto">
-                                                        <div className="flex flex-col items-end gap-1">
-                                                            {product.listPrice && product.listPrice > product.price && (
-                                                                <div className="text-xs text-neutral-400 line-through decoration-neutral-400/60">
-                                                                    {formatPrice(product.listPrice)}
-                                                                </div>
-                                                            )}
-                                                            <div className="flex items-center gap-1 text-neutral-900">
-                                                                <span className="font-bold text-lg">
-                                                                    {formatPrice(product.price)}
-                                                                </span>
-                                                                <span className="text-[10px] font-light">تومان</span>
+                                                    {/* Price Section (Positioned on Left Side of Box, Toman to the Left of Price Number) */}
+                                                    <div className="mt-auto pt-3 border-t border-gray-50 flex flex-col items-start w-full">
+                                                        {product.listPrice && product.listPrice > product.price && (
+                                                            <div className="text-[12px] text-gray-400 line-through text-left w-full mb-0.5 font-medium dir-ltr">
+                                                                {formatPrice(product.listPrice)}
                                                             </div>
+                                                        )}
+
+                                                        <div className="w-full flex items-baseline justify-end gap-1">
+                                                            {isCallForPrice ? (
+                                                                <span className="text-xs sm:text-sm font-bold text-orange-600">تماس بگیرید</span>
+                                                            ) : (
+                                                                <>
+                                                                    <span className="text-lg font-black text-[#0f172a] tracking-tight">
+                                                                        {formatPrice(product.price)}
+                                                                    </span>
+                                                                    <span className="text-[10px] font-bold text-rose-500 shrink-0">
+                                                                        تومان
+                                                                    </span>
+                                                                </>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -746,6 +760,51 @@ export default function CategoryClient({
                         </div>
 
                         <div className="p-4">
+                            {/* Subcategories */}
+                            {subcategories.length > 0 && (
+                                <div className="mb-6">
+                                    <div className="flex items-center gap-2 mb-3 text-sm font-medium text-neutral-700">
+                                        <Layers size={16} />
+                                        <span>دسته‌بندی‌ها</span>
+                                    </div>
+                                    <div className="space-y-1 max-h-48 overflow-y-auto">
+                                        <label className="flex items-center gap-2.5 py-2 px-2 cursor-pointer hover:bg-blue-50 rounded-lg transition-colors group">
+                                            <input
+                                                type="radio"
+                                                name="mobile-subcategory"
+                                                checked={!initialSubcategoryId}
+                                                onChange={() => handleSubcategoryFilter(null)}
+                                                className="w-4 h-4 text-blue-500 border-neutral-300 focus:ring-blue-500 focus:ring-offset-0"
+                                            />
+                                            <span className={`text-sm flex-1 ${!initialSubcategoryId ? 'text-blue-600 font-medium' : 'text-neutral-600 group-hover:text-neutral-800'}`}>
+                                                همه موارد
+                                            </span>
+                                        </label>
+
+                                        {subcategories.map((sub) => (
+                                            <label
+                                                key={sub.id}
+                                                className="flex items-center gap-2.5 py-2 px-2 cursor-pointer hover:bg-blue-50 rounded-lg transition-colors group"
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    name="mobile-subcategory"
+                                                    checked={initialSubcategoryId === sub.id}
+                                                    onChange={() => handleSubcategoryFilter(sub.id)}
+                                                    className="w-4 h-4 text-blue-500 border-neutral-300 focus:ring-blue-500 focus:ring-offset-0"
+                                                />
+                                                <span className={`text-sm flex-1 ${initialSubcategoryId === sub.id ? 'text-blue-600 font-medium' : 'text-neutral-600 group-hover:text-neutral-800'}`}>
+                                                    {sub.name}
+                                                </span>
+                                                <span className="text-[10px] text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded-full">
+                                                    {sub._count.products}
+                                                </span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Price ranges */}
                             <div className="mb-6">
                                 <div className="flex items-center gap-2 mb-3 text-sm font-medium text-neutral-700">

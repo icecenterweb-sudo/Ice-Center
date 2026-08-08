@@ -249,10 +249,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
         }
     }, [isAuthenticated, removeItem, saveLocalCart])
 
-    const clearCart = useCallback(() => {
+    const clearCart = useCallback(async () => {
         setItems([])
         localStorage.removeItem(CART_STORAGE_KEY)
-    }, [])
+        if (isAuthenticated) {
+            try {
+                await fetch('/api/cart', { method: 'DELETE' })
+            } catch (err) {
+                console.error('Failed to clear server cart:', err)
+            }
+        }
+    }, [isAuthenticated])
 
     return (
         <CartContext.Provider value={{
