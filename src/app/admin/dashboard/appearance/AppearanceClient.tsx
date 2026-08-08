@@ -6,27 +6,19 @@ import { Image } from 'lucide-react';
 export default function AppearancePage() {
     const sections = [
         {
-            title: 'اسلایدر اصلی',
-            description: 'مدیریت اسلایدهای صفحه اصلی',
+            title: 'بنرهای هیرو (بالای صفحه)',
+            description: 'مدیریت ۳ بنر بالای صفحه اصلی (بنر عریض راست + ۲ بنر مربع وسط و چپ)',
             href: '/admin/dashboard/appearance/slides',
             icon: Image,
             color: 'bg-blue-500',
         },
         {
-            title: 'بنرها',
-            description: 'مدیریت بنرهای صفحه اصلی',
+            title: 'بنرهای ایستاده (تبلیغاتی)',
+            description: 'مدیریت ۴ بنر عمودی تبلیغاتی وسط صفحه اصلی',
             href: '/admin/dashboard/appearance/banners',
             icon: Image,
             color: 'bg-green-500',
         },
-        // Can add more appearance sections here later
-        // {
-        //     title: 'تنظیمات تم',
-        //     description: 'رنگ‌ها و استایل سایت',
-        //     href: '/admin/dashboard/appearance/theme',
-        //     icon: Palette,
-        //     color: 'bg-purple-500',
-        // },
     ];
 
     return (

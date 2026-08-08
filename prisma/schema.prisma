@@ -198,7 +198,7 @@ model Admin {
   id        Int         @id @default(autoincrement())
   phone     String      @unique
   name      String?
-  roles     AdminRole[] @default([ADMIN])
+  roles     AdminRole[] @default([])
   status    AdminStatus @default(ACTIVE)
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
@@ -858,5 +858,15 @@ model ErrorLog {
 
   @@index([severity])
   @@index([createdAt])
+}
+
+model SiteSetting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
 }
 

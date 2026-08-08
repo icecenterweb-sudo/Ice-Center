@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowRight, ImageIcon, Link as LinkIcon, Loader2, Upload } from 'lucide-react';
+import { ArrowRight, FileImage, ImageIcon, Link as LinkIcon, Loader2, Upload } from 'lucide-react';
+import MediaGalleryModal from '@/components/admin/MediaGalleryModal';
 
 interface Product {
     id: number;
@@ -46,6 +47,10 @@ export default function EditSlideClient({ id }: { id: string }) {
     // Data for selects
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
+
+    // Media Gallery Modal State
+    const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+    const [galleryTarget, setGalleryTarget] = useState<'desktop' | 'mobile'>('desktop');
 
     // Clean up object URLs on unmount
     useEffect(() => {
@@ -236,7 +241,7 @@ export default function EditSlideClient({ id }: { id: string }) {
                 >
                     <ArrowRight className="w-5 h-5 text-gray-600" />
                 </Link>
-                <h1 className="text-2xl font-bold text-gray-800">ویرایش اسلاید</h1>
+                <h1 className="text-2xl font-bold text-gray-800">ویرایش بنر هیرو (بالای صفحه)</h1>
             </div>
 
             {error && (
@@ -297,6 +302,17 @@ export default function EditSlideClient({ id }: { id: string }) {
                                 {isUploadingDesktop ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
                                 آپلود
                             </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setGalleryTarget('desktop');
+                                    setIsGalleryOpen(true);
+                                }}
+                                className="px-4 py-3 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl transition-colors flex items-center gap-2 font-medium text-xs md:text-sm shrink-0"
+                            >
+                                <FileImage className="w-4 h-4 text-ocean" />
+                                انتخاب از گالری
+                            </button>
                         </div>
                         <p className="text-xs text-gray-500 mt-1">اندازه پیشنهادی: 1920×400 پیکسل</p>
                     </div>
@@ -335,8 +351,19 @@ export default function EditSlideClient({ id }: { id: string }) {
                                 {isUploadingMobile ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
                                 آپلود
                             </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setGalleryTarget('mobile');
+                                    setIsGalleryOpen(true);
+                                }}
+                                className="px-4 py-3 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl transition-colors flex items-center gap-2 font-medium text-xs md:text-sm shrink-0"
+                            >
+                                <FileImage className="w-4 h-4 text-ocean" />
+                                انتخاب از گالری
+                            </button>
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">اندازه پیشنهادی: 768×180 پیکسل</p>
+                        <p className="text-xs text-gray-500 mt-1">اندازه پیشنهادی موبایل: 800×860 پیکسل (بنر اصلی) یا 500×600 پیکسل (بنرهای دوتایی)</p>
                         <button
                             type="button"
                             onClick={() => {
@@ -398,9 +425,9 @@ export default function EditSlideClient({ id }: { id: string }) {
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                                             </svg>
-                                            موبایل (768×180)
+                                            موبایل (768×400)
                                         </p>
-                                        <div className="relative w-[180px] h-[45px] bg-gray-100 rounded-lg overflow-hidden mx-auto lg:mx-0">
+                                        <div className="relative w-[180px] h-[95px] bg-gray-100 rounded-lg overflow-hidden mx-auto lg:mx-0">
                                             {/* eslint-disable-next-line @next/next/no-img-element */}
                                             <img
                                                 src={mobilePreview}
@@ -522,6 +549,21 @@ export default function EditSlideClient({ id }: { id: string }) {
                     )}
                 </button>
             </form>
+
+            <MediaGalleryModal
+                isOpen={isGalleryOpen}
+                targetSize={galleryTarget === 'desktop' ? '1920x400' : '768x400'}
+                onClose={() => setIsGalleryOpen(false)}
+                onSelect={(url) => {
+                    if (galleryTarget === 'desktop') {
+                        setDesktopImage(url);
+                        setDesktopPreview(url);
+                    } else {
+                        setMobileImage(url);
+                        setMobilePreview(url);
+                    }
+                }}
+            />
         </div>
     );
 }

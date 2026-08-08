@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowRight, Link as LinkIcon, Loader2, Upload, ImageIcon } from 'lucide-react';
+import { ArrowRight, FileImage, Link as LinkIcon, Loader2, Upload, ImageIcon } from 'lucide-react';
+import MediaGalleryModal from '@/components/admin/MediaGalleryModal';
 
 interface Product {
     id: number;
@@ -48,6 +49,10 @@ export default function EditBannerClient({ id }: { id: string }) {
     // Data for selects
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
+
+    // Media Gallery Modal State
+    const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+    const [galleryTarget, setGalleryTarget] = useState<'desktop' | 'mobile'>('desktop');
 
     // Clean up object URLs on unmount
     useEffect(() => {
@@ -357,9 +362,20 @@ export default function EditBannerClient({ id }: { id: string }) {
                                 )}
                                 آپلود
                             </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setGalleryTarget('desktop');
+                                    setIsGalleryOpen(true);
+                                }}
+                                className="px-4 py-3 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl transition-colors flex items-center gap-2 font-medium text-xs md:text-sm shrink-0"
+                            >
+                                <FileImage className="w-4 h-4 text-ocean" />
+                                انتخاب از گالری
+                            </button>
                         </div>
                         <p className="text-xs text-gray-500 mt-1">
-                            {position === 'SINGLE_FULL' ? 'اندازه پیشنهادی: 1600×200 پیکسل' : 'اندازه پیشنهادی: 800×200 پیکسل'}
+                            {position === 'SINGLE_FULL' ? 'اندازه پیشنهادی دسکتاپ: 600×1060 پیکسل (ایستاده عمودی)' : 'اندازه پیشنهادی: 1600×400 پیکسل'}
                         </p>
                     </div>
 
@@ -402,8 +418,19 @@ export default function EditBannerClient({ id }: { id: string }) {
                                 )}
                                 آپلود
                             </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setGalleryTarget('mobile');
+                                    setIsGalleryOpen(true);
+                                }}
+                                className="px-4 py-3 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl transition-colors flex items-center gap-2 font-medium text-xs md:text-sm shrink-0"
+                            >
+                                <FileImage className="w-4 h-4 text-ocean" />
+                                انتخاب از گالری
+                            </button>
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">اندازه پیشنهادی: 768×256 پیکسل (نسبت 3:1)</p>
+                        <p className="text-xs text-gray-500 mt-1">اندازه پیشنهادی موبایل: 600×750 پیکسل (پوستر عمودی)</p>
                         <button
                             type="button"
                             onClick={() => {
@@ -594,6 +621,25 @@ export default function EditBannerClient({ id }: { id: string }) {
                     )}
                 </button>
             </form>
+
+            <MediaGalleryModal
+                isOpen={isGalleryOpen}
+                targetSize={
+                    galleryTarget === 'desktop'
+                        ? position === 'SINGLE_FULL' ? '1600x200' : '800x200'
+                        : '768x256'
+                }
+                onClose={() => setIsGalleryOpen(false)}
+                onSelect={(url) => {
+                    if (galleryTarget === 'desktop') {
+                        setDesktopImage(url);
+                        setDesktopPreview(url);
+                    } else {
+                        setMobileImage(url);
+                        setMobilePreview(url);
+                    }
+                }}
+            />
         </div>
     );
 }

@@ -105,8 +105,8 @@ export default function BannersPage() {
                         <ArrowRight className="w-5 h-5 text-gray-600" />
                     </Link>
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-800">بنرها</h1>
-                        <p className="text-sm text-gray-500">{banners.length} بنر</p>
+                        <h1 className="text-2xl font-bold text-gray-800">بنرهای ایستاده (تبلیغاتی)</h1>
+                        <p className="text-sm text-gray-500">{banners.length} بنر تبلیغاتی فعال</p>
                     </div>
                 </div>
                 <Link
@@ -114,8 +114,19 @@ export default function BannersPage() {
                     className="flex items-center gap-2 px-4 py-2 bg-ocean text-white rounded-xl hover:bg-ocean/90 transition-colors"
                 >
                     <Plus className="w-5 h-5" />
-                    افزودن بنر
+                    افزودن بنر ایستاده
                 </Link>
+            </div>
+
+            {/* Layout Guide Notice */}
+            <div className="mb-6 bg-emerald-50/80 border border-emerald-200 rounded-2xl p-4 text-sm text-emerald-900 leading-relaxed flex items-start gap-3">
+                <div className="font-bold shrink-0 text-base">📌</div>
+                <div>
+                    <strong>چیدمان ۴ بنر ایستاده تبلیغاتی وسط صفحه:</strong>
+                    <p className="text-xs text-emerald-800 mt-1">
+                        این بنرها به صورت ۴ کارت عمودی ایستاده (پرفروش‌ترین، ویژه کافی‌شاپ، اقساط و تحویل فوری) در وسط صفحه اصلی نمایش داده می‌شوند.
+                    </p>
+                </div>
             </div>
 
             {/* Banners List */}

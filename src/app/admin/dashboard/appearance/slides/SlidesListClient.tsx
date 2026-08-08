@@ -100,8 +100,8 @@ export default function SlidesPage() {
                         <ArrowRight className="w-5 h-5 text-gray-600" />
                     </Link>
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-800">اسلایدر اصلی</h1>
-                        <p className="text-sm text-gray-500">{slides.length} اسلاید</p>
+                        <h1 className="text-2xl font-bold text-gray-800">بنرهای هیرو (بالای صفحه)</h1>
+                        <p className="text-sm text-gray-500">{slides.length} بنر هیرو فعال</p>
                     </div>
                 </div>
                 <Link
@@ -109,8 +109,20 @@ export default function SlidesPage() {
                     className="flex items-center gap-2 px-4 py-2 bg-ocean text-white rounded-xl hover:bg-ocean/90 transition-colors"
                 >
                     <Plus className="w-5 h-5" />
-                    افزودن اسلاید
+                    افزودن بنر هیرو
                 </Link>
+            </div>
+
+            {/* Layout Guide Notice */}
+            <div className="mb-6 bg-blue-50/80 border border-blue-200 rounded-2xl p-4 text-sm text-blue-900 leading-relaxed flex items-start gap-3">
+                <div className="font-bold shrink-0 text-base">💡</div>
+                <div>
+                    <strong>راهنمای چیدمان ۳ بنر هیرو بالای صفحه اصلی:</strong>
+                    <ul className="list-disc list-inside mt-1 space-y-1 text-xs text-blue-800 font-medium">
+                        <li><strong>دسکتاپ:</strong> بنر اول (ترتیب ۱) به صورت عریض (دو ستون) و بنرهای ۲ و ۳ در سمت چپ آن قرار می‌گیرند.</li>
+                        <li><strong>موبایل:</strong> بنر اول به صورت پوستر عمودی و بلند (۷۶۸×۴۰۰) در بالا و بنرهای ۲ و ۳ کنار هم زیر آن قرار می‌گیرند.</li>
+                    </ul>
+                </div>
             </div>
 
             {/* Slides List */}
