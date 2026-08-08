@@ -14,6 +14,7 @@
     "prisma:studio": "prisma studio",
     "db:backup": "tsx scripts/backup-db.ts",
     "db:import": "node scripts/import-backup-fast.js",
+    "diagnose": "tsx scripts/diagnose-server.ts",
     "convert:webp": "tsx scripts/convert-to-webp.ts",
     "postinstall": "prisma generate"
   },
