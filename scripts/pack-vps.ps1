@@ -44,4 +44,4 @@ Remove-Item -Recurse -Force $staging
 $size = [math]::Round((Get-Item $zipPath).Length / 1MB, 2)
 Write-Host "==> Done: $zipPath ($size MB)" -ForegroundColor Green
 Write-Host "==> Transfer this zip to your VPS, unzip, then run:" -ForegroundColor Yellow
-Write-Host "    npm install && npx prisma generate && npm run build" -ForegroundColor Yellow
+Write-Host "    npm install && npx prisma generate && npx prisma db push && npm run build" -ForegroundColor Yellow

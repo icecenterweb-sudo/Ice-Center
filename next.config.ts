@@ -40,8 +40,7 @@ const nextConfig: NextConfig = {
   // Generate ETags for caching
   generateEtags: true,
 
-  // Strict mode for output
-  // output: 'standalone', // Better for Docker/containerized deployments
+  output: 'standalone', // Self-contained Docker/VPS deployment
 
   // Bundle analyzer (uncomment to analyze)
   // bundleAnalyzer: {
@@ -105,7 +104,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
-              "connect-src 'self'",
+              "connect-src 'self' https://api.melipayamak.com https://*.upstash.io https://*.google-analytics.com https://*.googletagmanager.com https://*.vercel.com https://analytics.vercel.com https://va.vercel-scripts.com https://vitals.vercel-insights.com https://*.neon.tech https://res.cloudinary.com ws: wss:;",
               "media-src 'self'",
             ].join('; '),
           },
