@@ -22,6 +22,22 @@ export default function AdminLoginPage() {
         }
     }, [countdown]);
 
+    // Single Sign-On check: Auto-redirect if already logged in as admin
+    useEffect(() => {
+        const checkAdminAuth = async () => {
+            try {
+                const response = await fetch('/api/auth/me');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.user?.isAdmin) {
+                        router.replace('/admin/dashboard');
+                    }
+                }
+            } catch {}
+        };
+        checkAdminAuth();
+    }, [router]);
+
     const handleSendOtp = async () => {
         if (!phone || phone.length < 10) {
             setError('شماره موبایل معتبر وارد کنید');

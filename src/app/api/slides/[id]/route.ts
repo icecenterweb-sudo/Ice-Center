@@ -11,6 +11,7 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
 import { requireRole } from '@/lib/admin-auth';
+import { revalidateHomepageTag } from '@/lib/cache/homepage';
 
 // Validation schema for updating a slide
 const updateSlideSchema = z.object({
@@ -135,6 +136,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             }
         });
 
+        revalidateHomepageTag('slides');
+
         return NextResponse.json({ success: true, slide });
 
     } catch (error) {
@@ -180,6 +183,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         await prisma.slide.delete({
             where: { id: slideId }
         });
+
+        revalidateHomepageTag('slides');
 
         return NextResponse.json({
             success: true,

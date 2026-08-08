@@ -14,16 +14,40 @@ const MIME_TO_EXTENSION: Record<string, string> = {
 };
 const ALLOWED_IMAGE_TYPES = new Set(Object.keys(MIME_TO_EXTENSION));
 
-async function uploadToLocalStorage(file: File, folder: string) {
+function validateMagicBytes(buffer: Buffer, mimeType: string): boolean {
+  if (buffer.length < 4) return false;
+  
+  if (mimeType === 'image/jpeg') {
+    return buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF;
+  }
+  if (mimeType === 'image/png') {
+    return buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47;
+  }
+  if (mimeType === 'image/gif') {
+    return buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x38;
+  }
+  if (mimeType === 'image/webp') {
+    return (
+      buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 &&
+      buffer.length >= 12 &&
+      buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50
+    );
+  }
+  return false;
+}
+
+async function uploadToLocalStorage(file: File, buffer: Buffer, folder: string) {
   const uploadDir = path.join(getUploadStorageRoot(), folder);
   await mkdir(uploadDir, { recursive: true });
 
-  const ext = MIME_TO_EXTENSION[file.type] || '.png';
+  const ext = MIME_TO_EXTENSION[file.type];
+  if (!ext) {
+    throw new Error('نوع فایل نامعتبر است');
+  }
+
   const filename = `${crypto.randomUUID()}${ext}`;
   const filePath = path.join(uploadDir, filename);
 
-  const bytes = await file.arrayBuffer();
-  const buffer = Buffer.from(bytes);
   await writeFile(filePath, buffer);
 
   return folder ? `/uploads/${folder}/${filename}` : `/uploads/${filename}`;
@@ -46,22 +70,32 @@ export async function POST(request: NextRequest) {
 
     if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
       return NextResponse.json(
-        { success: false, message: 'Invalid image type' },
+        { success: false, message: 'نوع تصویر نامعتبر است' },
         { status: 400 }
       );
     }
 
     if (file.size > MAX_UPLOAD_SIZE) {
       return NextResponse.json(
-        { success: false, message: 'Image size must be 5MB or less' },
+        { success: false, message: 'حجم تصویر باید ۵ مگابایت یا کمتر باشد' },
         { status: 413 }
+      );
+    }
+
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+
+    if (!validateMagicBytes(buffer, file.type)) {
+      return NextResponse.json(
+        { success: false, message: 'محتوای فایل با نوع تصویر مطابقت ندارد' },
+        { status: 400 }
       );
     }
 
     const folder = (formData.get('folder') as string || '').replace(/[^a-zA-Z0-9_\-\/]/g, '');
     const safeFolder = sanitizeUploadFolder(folder);
 
-    const url = await uploadToLocalStorage(file, safeFolder);
+    const url = await uploadToLocalStorage(file, buffer, safeFolder);
 
     return NextResponse.json({
       success: true,

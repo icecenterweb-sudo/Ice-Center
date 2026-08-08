@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { updatePostSchema } from '@/lib/blog/validation';
 import { getPostBySlug, getPublishedPostBySlug } from '@/lib/blog/queries';
 import { requireRole } from '@/lib/admin-auth';
+import { revalidateHomepageTag } from '@/lib/cache/homepage';
 
 interface RouteParams {
     params: Promise<{ slug: string }>;
@@ -113,6 +114,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             },
         });
 
+        revalidateHomepageTag('blog');
+
         return NextResponse.json(post);
     } catch (error) {
         console.error('Error updating blog post:', error);
@@ -146,6 +149,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         await prisma.blogPost.delete({
             where: { slug },
         });
+
+        revalidateHomepageTag('blog');
 
         return NextResponse.json({ message: 'پست با موفقیت حذف شد' });
     } catch (error) {

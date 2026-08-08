@@ -10,7 +10,11 @@ import { SignJWT, jwtVerify } from 'jose'
 // Secret & Config
 // ============================================
 
+let cachedJwtSecret: Uint8Array | null = null;
+
 function getJwtSecret(): Uint8Array {
+    if (cachedJwtSecret) return cachedJwtSecret;
+
     const secret = process.env.JWT_SECRET;
 
     if (!secret) {
@@ -21,10 +25,21 @@ function getJwtSecret(): Uint8Array {
         throw new Error('JWT_SECRET must be at least 32 characters long for security.');
     }
 
-    return new TextEncoder().encode(secret);
+    cachedJwtSecret = new TextEncoder().encode(secret);
+    return cachedJwtSecret;
+}
+
+// Perform startup verification if env variable is set
+try {
+    if (process.env.JWT_SECRET) {
+        getJwtSecret();
+    }
+} catch (error) {
+    console.error('⚠️ [JWT Config Error]:', error);
 }
 
 const JWT_EXPIRY = '30d' // 30 days
+const ADMIN_JWT_EXPIRY = '7d' // 7 days — shorter window limits blast radius of a leaked admin token
 
 // ============================================
 // Token Types
@@ -63,10 +78,12 @@ export async function generateToken<T extends TokenType>(
 
     const fullPayload = { ...payload, type: tokenType };
 
+    const expiry = tokenType === 'admin' ? ADMIN_JWT_EXPIRY : JWT_EXPIRY;
+
     const token = await new SignJWT(fullPayload as unknown as Record<string, unknown>)
         .setProtectedHeader({ alg: 'HS256' })
         .setIssuedAt()
-        .setExpirationTime(JWT_EXPIRY)
+        .setExpirationTime(expiry)
         .sign(JWT_SECRET)
 
     return token
@@ -143,4 +160,16 @@ export function getTokenCookieOptions(secure: boolean) {
 
 export function getTokenCookieOptionsForRequest(request: Request) {
     return getTokenCookieOptions(isSecureRequest(request))
+}
+
+// Admin cookie: shorter maxAge to match the 7-day admin JWT expiry above.
+export function getAdminTokenCookieOptions(secure: boolean) {
+    return {
+        ...getTokenCookieOptions(secure),
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+    }
+}
+
+export function getAdminTokenCookieOptionsForRequest(request: Request) {
+    return getAdminTokenCookieOptions(isSecureRequest(request))
 }

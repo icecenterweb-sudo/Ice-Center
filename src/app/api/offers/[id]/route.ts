@@ -12,6 +12,7 @@ import { prisma } from '@/lib/db';
 import { updateProductOfferFlag } from '@/lib/offers';
 import { z } from 'zod';
 import { requireRole } from '@/lib/admin-auth';
+import { revalidateHomepageTag } from '@/lib/cache/homepage';
 
 // Product with optional custom discount
 const productEntrySchema = z.object({
@@ -207,6 +208,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             await updateProductOfferFlag(productId);
         }
 
+        revalidateHomepageTag('offers');
+
         return NextResponse.json({ success: true, offer });
 
     } catch (error) {
@@ -261,6 +264,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         for (const productId of affectedProductIds) {
             await updateProductOfferFlag(productId);
         }
+
+        revalidateHomepageTag('offers');
 
         return NextResponse.json({
             success: true,

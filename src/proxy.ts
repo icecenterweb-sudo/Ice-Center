@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyAdminToken, verifyUserToken, ADMIN_TOKEN_COOKIE, USER_TOKEN_COOKIE } from '@/lib/jwt'
 
 /**
- * Next.js Proxy Middleware — Edge-level route protection.
- * Replaces middleware.ts to prevent Next.js config conflicts.
- * 
+ * Next.js Proxy — Edge-level route protection.
+ * (Renamed from middleware.ts to proxy.ts as per Next.js 16 convention)
+ *
  * Protects:
  * - /admin/dashboard/** — Requires valid admin token
  * - /api/admin/** (except /api/admin/auth/**) — Requires valid admin token

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireRole } from '@/lib/admin-auth';
 import { z } from 'zod';
+import { revalidateHomepageTag } from '@/lib/cache/homepage';
 
 const bannerPositionSchema = z.enum(['SINGLE_FULL', 'DOUBLE']);
 
@@ -121,6 +122,8 @@ export async function PUT(request: NextRequest, context: RouteContext) {
             data: updateData,
         });
 
+        revalidateHomepageTag('banners');
+
         return NextResponse.json({ success: true, banner });
     } catch (error) {
         console.error('Failed to update banner:', error);
@@ -150,6 +153,8 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
         await prisma.banner.delete({
             where: { id: bannerId },
         });
+
+        revalidateHomepageTag('banners');
 
         return NextResponse.json({ success: true });
     } catch (error) {

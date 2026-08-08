@@ -2,7 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { isValidIranianMobile, normalizePhone } from '@/lib/sms'
 import { verifyOtp } from '@/lib/otp'
-import { generateUserToken, USER_TOKEN_COOKIE, getTokenCookieOptionsForRequest } from '@/lib/jwt'
+import {
+    generateUserToken,
+    USER_TOKEN_COOKIE,
+    generateAdminToken,
+    ADMIN_TOKEN_COOKIE,
+    getTokenCookieOptionsForRequest,
+    getAdminTokenCookieOptionsForRequest,
+} from '@/lib/jwt'
 import { recordAnalyticsEvent } from '@/lib/analytics'
 import { toEnglishDigits } from '@/lib/persian'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
@@ -104,6 +111,14 @@ export async function POST(request: NextRequest) {
             phone: user.phone,
         })
 
+        // Check if user is an active admin for Single Sign-On
+        const admin = await prisma.admin.findUnique({
+            where: { phone: user.phone },
+            select: { id: true, phone: true, roles: true, status: true }
+        })
+
+        const isAdmin = !!(admin && admin.status === 'ACTIVE')
+
         // Create response
         const response = NextResponse.json({
             success: true,
@@ -112,6 +127,8 @@ export async function POST(request: NextRequest) {
                 phone: user.phone,
                 firstName: user.firstName,
                 lastName: user.lastName,
+                isAdmin,
+                adminRoles: isAdmin ? admin.roles : [],
             },
             isNewUser: result.isNewUser,
         })
@@ -121,6 +138,22 @@ export async function POST(request: NextRequest) {
             token,
             getTokenCookieOptionsForRequest(request)
         )
+
+        if (isAdmin && admin) {
+            const primaryRole = admin.roles[0] || 'ADMIN'
+            const adminToken = await generateAdminToken({
+                adminId: admin.id,
+                phone: admin.phone,
+                role: primaryRole,
+                roles: admin.roles,
+            })
+
+            response.cookies.set(
+                ADMIN_TOKEN_COOKIE,
+                adminToken,
+                getAdminTokenCookieOptionsForRequest(request)
+            )
+        }
 
         return response
 

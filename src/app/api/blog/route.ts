@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { createPostSchema, listPostsQuerySchema } from '@/lib/blog/validation';
 import { getPublishedPosts, getAllPosts } from '@/lib/blog/queries';
 import { requireRole } from '@/lib/admin-auth';
+import { revalidateHomepageTag } from '@/lib/cache/homepage';
 
 // GET /api/blog - List posts
 export async function GET(request: NextRequest) {
@@ -104,6 +105,8 @@ export async function POST(request: NextRequest) {
                 author: { select: { id: true, name: true } },
             },
         });
+
+        revalidateHomepageTag('blog');
 
         return NextResponse.json(post, { status: 201 });
     } catch (error) {

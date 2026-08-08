@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sendOtp } from '@/lib/sms'
 import { isValidIranianMobile, normalizePhone } from '@/lib/sms'
 import { canSendOtp, storeOtp } from '@/lib/otp'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 
 export async function POST(request: NextRequest) {
     try {
@@ -23,9 +24,22 @@ export async function POST(request: NextRequest) {
             )
         }
 
+        // Rate limit by IP (max 5 OTP requests per 10 minutes)
+        const clientIp = getClientIp(request)
+        const ipRateLimit = await checkRateLimit(`send-otp:ip:${clientIp}`, {
+            windowMs: 10 * 60 * 1000,
+            maxRequests: 5,
+        })
+        if (!ipRateLimit.allowed) {
+            return NextResponse.json(
+                { error: `تعداد درخواست بیش از حد مجاز از این IP. لطفاً ${ipRateLimit.resetIn} ثانیه دیگر تلاش کنید.` },
+                { status: 429 }
+            )
+        }
+
         const normalizedPhone = normalizePhone(phone)
 
-        // Check rate limit
+        // Check rate limit per phone
         const rateCheck = await canSendOtp(normalizedPhone)
         if (!rateCheck.allowed) {
             return NextResponse.json(

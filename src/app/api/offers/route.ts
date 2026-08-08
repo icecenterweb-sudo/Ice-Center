@@ -10,6 +10,7 @@ import { prisma } from '@/lib/db';
 import { getCarouselOffers } from '@/lib/offers';
 import { z } from 'zod';
 import { requireRole } from '@/lib/admin-auth';
+import { revalidateHomepageTag } from '@/lib/cache/homepage';
 
 // Product with optional custom discount
 const productEntrySchema = z.object({
@@ -175,6 +176,8 @@ export async function POST(request: NextRequest) {
                 data: { hasActiveOffer: true },
             });
         }
+
+        revalidateHomepageTag('offers');
 
         return NextResponse.json({
             success: true,

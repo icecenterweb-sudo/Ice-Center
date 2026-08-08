@@ -13,21 +13,28 @@ const globalForPrisma = globalThis as unknown as {
 
 const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
 
-// Pool configuration with connection limits
+// Pool configuration tuned for Cloud Postgres / Prisma Accelerate proxies
 const poolConfig: PoolConfig = {
   connectionString,
-  max: 20,                    // Maximum connections in pool
-  min: 2,                     // Minimum connections to keep
-  idleTimeoutMillis: 30000,   // Close idle connections after 30s
-  connectionTimeoutMillis: 5000, // Timeout for new connections
+  max: 10,                          // Max connections in pool
+  min: 0,                           // Set min to 0 so idle connections drain cleanly
+  idleTimeoutMillis: 10000,         // Close idle connections after 10s before remote proxy drops them
+  connectionTimeoutMillis: 10000,   // Connection timeout
+  keepAlive: true,                  // Enable TCP keepalive
+  keepAliveInitialDelayMillis: 10000,
+  ssl: connectionString?.includes('sslmode=require') ? { rejectUnauthorized: false } : undefined,
 };
 
 // Reuse pool in development to prevent connection exhaustion
 const pool = globalForPrisma.pool ?? new Pool(poolConfig);
 
-// Handle pool errors
+// Handle pool errors gracefully (suppress routine idle socket drops from remote proxy)
 pool.on('error', (err) => {
-  console.error('Unexpected PostgreSQL pool error:', err);
+  if (err.message && (err.message.includes('Connection terminated unexpectedly') || err.message.includes('terminating connection'))) {
+    // Routine idle connection termination by remote proxy — node-postgres handles reconnection automatically on next query
+    return;
+  }
+  console.error('PostgreSQL pool error:', err);
 });
 
 const adapter = new PrismaPg(pool);

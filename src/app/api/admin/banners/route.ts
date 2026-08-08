@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireRole } from '@/lib/admin-auth';
 import { z } from 'zod';
+import { revalidateHomepageTag } from '@/lib/cache/homepage';
 
 const bannerPositionSchema = z.enum(['SINGLE_FULL', 'DOUBLE']);
 
@@ -77,6 +78,8 @@ export async function POST(request: NextRequest) {
                 order: data.order,
             },
         });
+
+        revalidateHomepageTag('banners');
 
         return NextResponse.json({ success: true, banner });
     } catch (error) {

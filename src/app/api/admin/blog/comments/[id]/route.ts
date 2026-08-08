@@ -22,7 +22,7 @@ export async function PATCH(
 
         if (isNaN(commentId)) {
             return NextResponse.json(
-                { error: 'Invalid comment ID' },
+                { error: 'شناسه نظر نامعتبر است' },
                 { status: 400 }
             );
         }
@@ -32,7 +32,7 @@ export async function PATCH(
 
         if (!validation.success) {
             return NextResponse.json(
-                { error: 'Invalid status' },
+                { error: 'وضعیت نامعتبر است' },
                 { status: 400 }
             );
         }
@@ -68,9 +68,9 @@ export async function PATCH(
 
         return NextResponse.json({ success: true, comment });
     } catch (error) {
-        console.error('Failed to update comment:', error);
+        console.error('خطا در بروزرسانی نظر:', error);
         return NextResponse.json(
-            { error: 'Failed to update comment' },
+            { error: 'خطا در بروزرسانی نظر' },
             { status: 500 }
         );
     }
@@ -90,7 +90,7 @@ export async function DELETE(
 
         if (isNaN(commentId)) {
             return NextResponse.json(
-                { error: 'Invalid comment ID' },
+                { error: 'شناسه نظر نامعتبر است' },
                 { status: 400 }
             );
         }
@@ -101,9 +101,9 @@ export async function DELETE(
 
         return NextResponse.json({ success: true });
     } catch (error) {
-        console.error('Failed to delete comment:', error);
+        console.error('خطا در حذف نظر:', error);
         return NextResponse.json(
-            { error: 'Failed to delete comment' },
+            { error: 'خطا در حذف نظر' },
             { status: 500 }
         );
     }

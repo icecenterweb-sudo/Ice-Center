@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { ADMIN_TOKEN_COOKIE, generateAdminToken, getTokenCookieOptionsForRequest } from '@/lib/jwt'
+import { ADMIN_TOKEN_COOKIE, generateAdminToken, getAdminTokenCookieOptionsForRequest } from '@/lib/jwt'
 import { recordAnalyticsEvent } from '@/lib/analytics'
 import { checkRateLimit, getClientIp, RATE_LIMITS } from '@/lib/rate-limiter'
+import { hashOtp } from '@/lib/otp'
 
 export async function POST(request: NextRequest) {
     try {
@@ -11,7 +12,7 @@ export async function POST(request: NextRequest) {
         // Validate input
         if (!phone || !otp) {
             return NextResponse.json(
-                { error: 'Phone and OTP are required' },
+                { error: 'شماره موبایل و کد تأیید الزامی هستند' },
                 { status: 400 }
             )
         }
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
         const ipRateLimit = await checkRateLimit(`admin-login:ip:${clientIp}`, RATE_LIMITS.strict);
         if (!ipRateLimit.allowed) {
             return NextResponse.json(
-                { error: `Too many attempts. Try again in ${ipRateLimit.resetIn} seconds.` },
+                { error: `تعداد تلاش‌ها بیش از حد مجاز است. لطفاً ${ipRateLimit.resetIn} ثانیه دیگر تلاش کنید.` },
                 { status: 429 }
             )
         }
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
         });
         if (!phoneRateLimit.allowed) {
             return NextResponse.json(
-                { error: `Too many failed attempts. Try again in ${phoneRateLimit.resetIn} seconds.` },
+                { error: `تعداد تلاش‌های ناموفق بیش از حد است. لطفاً ${phoneRateLimit.resetIn} ثانیه دیگر تلاش کنید.` },
                 { status: 429 }
             )
         }
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
 
         if (!admin) {
             return NextResponse.json(
-                { error: 'Invalid credentials' },
+                { error: 'اعتبارنامه‌ها نامعتبر هستند' },
                 { status: 401 }
             )
         }
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
             orderBy: { createdAt: 'desc' },
         });
 
-        if (!validOtp || validOtp.code !== otp) {
+        if (!validOtp || validOtp.code !== hashOtp(otp)) {
             // Increment OTP attempts if exists
             if (validOtp) {
                 await prisma.otpRequest.update({
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
             }
 
             return NextResponse.json(
-                { error: 'Invalid or expired OTP code' },
+                { error: 'کد تأیید نامعتبر یا منقضی شده است' },
                 { status: 401 }
             )
         }
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
         // Check if admin is active
         if (admin.status !== 'ACTIVE') {
             return NextResponse.json(
-                { error: 'Admin account is blocked' },
+                { error: 'حساب کاربری ادمین شما غیرفعال یا مسدود است' },
                 { status: 403 }
             )
         }
@@ -113,7 +114,7 @@ export async function POST(request: NextRequest) {
         response.cookies.set(
             ADMIN_TOKEN_COOKIE,
             token,
-            getTokenCookieOptionsForRequest(request)
+            getAdminTokenCookieOptionsForRequest(request)
         )
 
         await recordAnalyticsEvent({
@@ -128,7 +129,7 @@ export async function POST(request: NextRequest) {
     } catch (error) {
         console.error('Login error:', error)
         return NextResponse.json(
-            { error: 'Internal server error' },
+            { error: 'خطای داخلی سرور در پردازش ورود ادمین' },
             { status: 500 }
         )
     }

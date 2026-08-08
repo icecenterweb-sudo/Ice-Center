@@ -1,9 +1,17 @@
 import { prisma } from '@/lib/db'
+import { createHash } from 'crypto'
 
 // OTP Configuration
 export const OTP_EXPIRY_MINUTES = 2
 export const MAX_ATTEMPTS = 3
 export const RATE_LIMIT_COOLDOWN_SECONDS = 60
+
+/**
+ * Hash OTP code for secure storage
+ */
+export function hashOtp(code: string): string {
+    return createHash('sha256').update(code).digest('hex')
+}
 
 /**
  * Generate a random 4-digit OTP code
@@ -43,15 +51,16 @@ export async function canSendOtp(phone: string): Promise<{ allowed: boolean; wai
 }
 
 /**
- * Store a new OTP request in the database
+ * Store a new hashed OTP request in the database
  */
 export async function storeOtp(phone: string, code: string): Promise<void> {
     const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000)
+    const hashedCode = hashOtp(code)
 
     await prisma.otpRequest.create({
         data: {
             phone,
-            code,
+            code: hashedCode,
             expiresAt,
             verified: false,
             attempts: 0,
@@ -72,6 +81,8 @@ interface VerifyOtpResult {
  * USES TRANSACTION to prevent race conditions
  */
 export async function verifyOtp(phone: string, code: string): Promise<VerifyOtpResult> {
+    const hashedInput = hashOtp(code)
+
     // Use transaction to prevent race conditions
     return prisma.$transaction(async (tx) => {
         // Find the latest unexpired, unverified OTP request for this phone
@@ -93,8 +104,8 @@ export async function verifyOtp(phone: string, code: string): Promise<VerifyOtpR
             return { valid: false, error: 'تعداد تلاش‌های مجاز تمام شده است' }
         }
 
-        // Check if code matches
-        if (otpRequest.code !== code) {
+        // Check if code matches (hashed or raw for backward compatibility)
+        if (otpRequest.code !== hashedInput && otpRequest.code !== code) {
             // Increment attempts within transaction
             await tx.otpRequest.update({
                 where: { id: otpRequest.id },
@@ -134,8 +145,7 @@ export async function verifyOtp(phone: string, code: string): Promise<VerifyOtpR
             isNewUser,
         }
     }, {
-        // Set isolation level for stronger consistency
-        isolationLevel: 'Serializable',
+        isolationLevel: 'ReadCommitted',
         maxWait: 5000, // 5 seconds max wait for transaction lock
         timeout: 10000, // 10 seconds timeout for entire transaction
     })

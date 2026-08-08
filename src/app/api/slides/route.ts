@@ -9,6 +9,7 @@ import { NextRequest, NextResponse, connection } from 'next/server';
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
 import { requireRole } from '@/lib/admin-auth';
+import { revalidateHomepageTag } from '@/lib/cache/homepage';
 
 // Validation schema for creating a slide
 const createSlideSchema = z.object({
@@ -132,6 +133,8 @@ export async function POST(request: NextRequest) {
                 category: { select: { id: true, name: true, slug: true } },
             }
         });
+
+        revalidateHomepageTag('slides');
 
         return NextResponse.json({
             success: true,

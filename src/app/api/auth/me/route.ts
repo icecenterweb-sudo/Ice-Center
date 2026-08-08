@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { connection } from 'next/server'
 import { prisma } from '@/lib/db'
-import { verifyUserToken, USER_TOKEN_COOKIE } from '@/lib/jwt'
+import {
+    verifyUserToken,
+    USER_TOKEN_COOKIE,
+    generateAdminToken,
+    verifyAdminToken,
+    ADMIN_TOKEN_COOKIE,
+    getAdminTokenCookieOptionsForRequest,
+} from '@/lib/jwt'
 
 export async function GET(request: NextRequest) {
     try {
@@ -59,18 +66,51 @@ export async function GET(request: NextRequest) {
             )
         }
 
-        // Check if user is blocked
-        if (user.status === 'BLOCKED') {
-            return NextResponse.json(
-                { error: 'حساب کاربری شما مسدود شده است' },
-                { status: 403 }
-            )
+        // Check if user is an active Admin
+        const admin = await prisma.admin.findUnique({
+            where: { phone: user.phone },
+            select: { id: true, phone: true, roles: true, status: true }
+        });
+
+        const isAdmin = !!(admin && admin.status === 'ACTIVE');
+        const adminRoles = isAdmin ? admin.roles : [];
+
+        const response = NextResponse.json({
+            success: true,
+            user: {
+                ...user,
+                isAdmin,
+                adminRoles,
+            },
+        });
+
+        // Single Sign-On: If user is an active admin, ensure ADMIN_TOKEN_COOKIE is set
+        if (isAdmin && admin) {
+            const existingAdminToken = request.cookies.get(ADMIN_TOKEN_COOKIE)?.value;
+            let needsNewToken = true;
+            if (existingAdminToken) {
+                const verified = await verifyAdminToken(existingAdminToken);
+                if (verified) needsNewToken = false;
+            }
+
+            if (needsNewToken) {
+                const primaryRole = admin.roles[0] || 'ADMIN';
+                const adminToken = await generateAdminToken({
+                    adminId: admin.id,
+                    phone: admin.phone,
+                    role: primaryRole,
+                    roles: admin.roles,
+                });
+
+                response.cookies.set(
+                    ADMIN_TOKEN_COOKIE,
+                    adminToken,
+                    getAdminTokenCookieOptionsForRequest(request)
+                );
+            }
         }
 
-        return NextResponse.json({
-            success: true,
-            user,
-        })
+        return response;
 
     } catch (error) {
         // Handle prerender interruption gracefully (expected during build)

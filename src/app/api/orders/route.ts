@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { prisma } from '@/lib/db';
 import { verifyUserToken } from '@/lib/jwt';
 import { cookies } from 'next/headers';
@@ -120,8 +121,8 @@ export async function POST(request: NextRequest) {
             };
         });
 
-        // Generate unique order number
-        const orderNumber = `ICE-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+        // Generate unique order number with crypto random bytes
+        const orderNumber = `ICE-${crypto.randomBytes(5).toString('hex').toUpperCase()}`;
 
         // Validate coupon (if provided) and compute discount server-side
         let discount = 0;
@@ -209,12 +210,15 @@ export async function POST(request: NextRequest) {
                     data: { stock: { decrement: item.quantity } },
                     select: { stock: true },
                 });
-                if (updated.stock <= 0) {
-                    await tx.product.update({
-                        where: { id: item.productId },
-                        data: { inventoryStatus: 'OUT_OF_STOCK' },
-                    });
-                }
+                const newStatus = updated.stock <= 0
+                    ? 'OUT_OF_STOCK'
+                    : updated.stock <= 5
+                    ? 'LOW_STOCK'
+                    : 'IN_STOCK';
+                await tx.product.update({
+                    where: { id: item.productId },
+                    data: { inventoryStatus: newStatus },
+                });
             }
 
             // Create order

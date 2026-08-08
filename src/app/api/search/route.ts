@@ -55,12 +55,17 @@ export async function GET(request: NextRequest) {
         // Truncate query if too long
         const sanitizedQuery = trimmedQuery.slice(0, MAX_QUERY_LENGTH);
 
-        // Search products - using lean selects
+        // Search products - matching name, slug, brand, model, description, tags, keywords
         const products = await prisma.product.findMany({
             where: {
                 OR: [
                     { name: { contains: sanitizedQuery, mode: 'insensitive' } },
+                    { slug: { contains: sanitizedQuery, mode: 'insensitive' } },
+                    { brand: { contains: sanitizedQuery, mode: 'insensitive' } },
+                    { model: { contains: sanitizedQuery, mode: 'insensitive' } },
                     { description: { contains: sanitizedQuery, mode: 'insensitive' } },
+                    { tags: { has: sanitizedQuery } },
+                    { keywords: { has: sanitizedQuery } },
                 ],
                 isActive: true,
             },
