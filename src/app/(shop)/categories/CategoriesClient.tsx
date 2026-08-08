@@ -5,7 +5,9 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import useEmblaCarousel from 'embla-carousel-react';
-import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, X, SlidersHorizontal, ArrowUpDown, Tag, DollarSign, Package, Grid3X3, Trash2, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, X, SlidersHorizontal, ArrowUpDown, Tag, DollarSign, Package, Grid3X3, Trash2, PanelLeftClose, PanelLeftOpen, Search } from 'lucide-react';
+import { toPersianDigits } from '@/lib/persian';
+import ProductCard from '@/components/product/ProductCard';
 
 type Category = {
     id: number;
@@ -36,6 +38,7 @@ type Props = {
     currentSort: string;
     availableBrands: string[];
     selectedCategoryId?: number;
+    searchQuery?: string;
 };
 
 const PRICE_RANGES = [
@@ -61,6 +64,7 @@ export default function CategoriesClient({
     currentSort,
     availableBrands,
     selectedCategoryId,
+    searchQuery,
 }: Props) {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -556,60 +560,68 @@ export default function CategoriesClient({
                             </div>
                         )}
 
+                        {/* Search Query Banner */}
+                        {searchQuery && (
+                            <div className="bg-gradient-to-l from-ocean/5 to-transparent border border-ocean/20 rounded-2xl px-5 py-4 mb-5 flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-3 text-right">
+                                    <div className="w-10 h-10 rounded-xl bg-ocean/10 flex items-center justify-center shrink-0">
+                                        <Search size={18} className="text-ocean" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-slate-800">
+                                            نتایج جستجو برای: <span className="text-ocean">&laquo;{searchQuery}&raquo;</span>
+                                        </p>
+                                        <p className="text-xs text-slate-500 mt-0.5">
+                                            {products.length > 0 ? `${toPersianDigits(totalCount)} محصول یافت شد` : 'محصولی یافت نشد'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <Link
+                                    href="/products"
+                                    className="text-xs font-bold text-ocean hover:text-royal transition-colors shrink-0 flex items-center gap-1"
+                                >
+                                    <X size={14} />
+                                    <span>پاک کردن</span>
+                                </Link>
+                            </div>
+                        )}
+
                         {/* Product Grid */}
                         {products.length === 0 ? (
                             <div className="bg-white rounded-xl border border-neutral-200 p-16 text-center shadow-sm">
                                 <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <SlidersHorizontal size={32} className="text-neutral-400" />
+                                    {searchQuery ? (
+                                        <Search size={32} className="text-neutral-400" />
+                                    ) : (
+                                        <SlidersHorizontal size={32} className="text-neutral-400" />
+                                    )}
                                 </div>
-                                <h3 className="text-neutral-800 font-bold mb-2">نتیجه‌ای یافت نشد</h3>
-                                <p className="text-sm text-neutral-500 mb-4">لطفاً فیلترهای خود را تغییر دهید.</p>
-                                {hasActiveFilters && (
-                                    <button onClick={clearFilters} className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600">
-                                        حذف فیلترها
-                                    </button>
+                                {searchQuery ? (
+                                    <>
+                                        <h3 className="text-neutral-800 font-bold mb-2">محصولی با عنوان &laquo;{searchQuery}&raquo; یافت نشد</h3>
+                                        <p className="text-sm text-neutral-500 mb-4">لطفاً عبارت دیگری را جستجو کنید یا از دسته‌بندی‌ها استفاده نمایید.</p>
+                                        <Link href="/products" className="px-4 py-2 bg-ocean text-white text-sm font-medium rounded-lg hover:bg-royal transition-colors inline-block">
+                                            مشاهده همه محصولات
+                                        </Link>
+                                    </>
+                                ) : (
+                                    <>
+                                        <h3 className="text-neutral-800 font-bold mb-2">نتیجه‌ای یافت نشد</h3>
+                                        <p className="text-sm text-neutral-500 mb-4">لطفاً فیلترهای خود را تغییر دهید.</p>
+                                        {hasActiveFilters && (
+                                            <button onClick={clearFilters} className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600">
+                                                حذف فیلترها
+                                            </button>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         ) : (
                             <>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
-                                    {products.map((product) => {
-                                        const discount = getDiscount(product.price, product.listPrice);
-                                        return (
-                                            <Link key={product.id} href={`/products/${product.slug}`}
-                                                className="bg-white border border-transparent hover:border-neutral-200 rounded-lg sm:rounded-xl p-2 sm:p-3 lg:p-4 transition-all duration-300 hover:shadow-lg group flex flex-col h-full">
-                                                <div className="relative aspect-[4/5] mb-3 overflow-hidden rounded-lg bg-neutral-50">
-                                                    {product.thumbnail ? (
-                                                        <Image src={product.thumbnail} alt={product.name} fill
-                                                            className="object-contain p-4 group-hover:scale-105 transition-transform duration-500" />
-                                                    ) : (
-                                                        <div className="w-full h-full flex items-center justify-center text-neutral-300 text-xs">تصویر ندارد</div>
-                                                    )}
-                                                    {discount && (
-                                                        <div className="absolute top-2 right-2 bg-rose-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow-sm">
-                                                            {discount}%
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="flex flex-col flex-1">
-                                                    <h3 className="text-[11px] sm:text-xs lg:text-sm text-neutral-700 leading-5 sm:leading-6 line-clamp-2 min-h-[40px] sm:min-h-[48px] group-hover:text-blue-600 transition-colors mb-1 sm:mb-2">
-                                                        {product.name}
-                                                    </h3>
-                                                    <div className="mt-auto">
-                                                        <div className="flex flex-col items-end gap-1">
-                                                            {product.listPrice && product.listPrice > product.price && (
-                                                                <div className="text-xs text-neutral-400 line-through">{formatPrice(product.listPrice)}</div>
-                                                            )}
-                                                            <div className="flex items-center gap-1 text-neutral-900">
-                                                                <span className="font-bold text-sm sm:text-base lg:text-lg">{formatPrice(product.price)}</span>
-                                                                <span className="text-[10px] font-light">تومان</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </Link>
-                                        );
-                                    })}
+                                    {products.map((product) => (
+                                        <ProductCard key={product.id} product={product} />
+                                    ))}
                                 </div>
 
                                 {/* Pagination */}

@@ -8,6 +8,7 @@ html {
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  color-scheme: light;
 }
 
 @theme inline {
@@ -25,11 +26,10 @@ html {
   --color-ice-white: #FCFEFF;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0c1220;
-    --foreground: #ededed;
-  }
+/* Global brand focus ring for accessibility (WCAG 2.4.7 Focus Visible) */
+*:focus-visible {
+  outline: 2px solid var(--color-ocean);
+  outline-offset: 2px;
 }
 
 body {

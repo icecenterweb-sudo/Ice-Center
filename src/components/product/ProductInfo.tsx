@@ -40,28 +40,20 @@ export default function ProductInfo({ product, advantages }: ProductInfoProps) {
                 </p>
             </div>
 
-            {/* Rating / Review / Recommendation */}
+            {/* Rating / Review */}
             <div className="flex items-center gap-4 text-xs border-b border-gray-100 pb-4">
                 <div className="flex items-center gap-1">
                     <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                     <span className="font-bold text-gray-900 text-sm">{product.rating.toFixed(1)}</span>
                     <span className="text-gray-400">({product.reviewCount})</span>
                 </div>
-                <div className="flex items-center gap-1 text-cyan-600">
-                    <span className="bg-cyan-50 px-2 py-0.5 rounded text-[11px] font-medium">
-                        ۸۹٪ از خریداران این کالا را پیشنهاد کرده‌اند
-                    </span>
-                </div>
-            </div>
-
-            {/* Colors (Mock) */}
-            <div className="space-y-2">
-                <div className="text-sm font-bold text-gray-800">رنگ: <span className="text-gray-500 font-normal">استیل</span></div>
-                <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-gray-300 border-2 border-white ring-2 ring-cyan-500 cursor-pointer flex items-center justify-center">
-                        <span className="block w-2 h-2 bg-white rounded-full"></span>
+                {product.reviewCount > 0 && (
+                    <div className="flex items-center gap-1 text-ocean">
+                        <span className="bg-frost text-ocean px-2 py-0.5 rounded text-[11px] font-medium">
+                            ارزیابی شده توسط خریداران
+                        </span>
                     </div>
-                </div>
+                )}
             </div>
 
             {/* Key Advantages / Features */}

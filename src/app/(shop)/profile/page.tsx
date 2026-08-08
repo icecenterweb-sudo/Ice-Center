@@ -106,19 +106,28 @@ export default function ProfilePage() {
             </div>
 
             {/* Quick Stats */}
-            <div className="grid grid-cols-3 gap-3 mb-4 lg:mb-6">
-                <div className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 text-center shadow-sm">
-                    <div className="text-xl lg:text-2xl font-bold text-gray-800">۰</div>
-                    <div className="text-[11px] lg:text-sm text-gray-500 mt-1">سفارش</div>
-                </div>
-                <div className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 text-center shadow-sm">
-                    <div className="text-xl lg:text-2xl font-bold text-gray-800">۰</div>
-                    <div className="text-[11px] lg:text-sm text-gray-500 mt-1">علاقه‌مندی</div>
-                </div>
-                <div className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 text-center shadow-sm">
-                    <div className="text-xl lg:text-2xl font-bold text-ocean">۰</div>
-                    <div className="text-[11px] lg:text-sm text-gray-500 mt-1">تومان</div>
-                </div>
+            <div className="grid grid-cols-3 gap-3 mb-4 lg:mb-6 select-none">
+                <Link href="/profile/orders" className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 text-center shadow-sm hover:border-ocean border border-transparent transition-all">
+                    <div className="text-xl lg:text-2xl font-bold text-gray-800">سفارش‌ها</div>
+                    <div className="text-[11px] lg:text-sm text-ocean font-medium mt-1 flex items-center justify-center gap-1">
+                        <span>مشاهده تاریخچه</span>
+                        <ChevronLeft className="w-3 h-3" />
+                    </div>
+                </Link>
+                <Link href="/profile/wishlist" className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 text-center shadow-sm hover:border-ocean border border-transparent transition-all">
+                    <div className="text-xl lg:text-2xl font-bold text-gray-800">علاقه‌مندی</div>
+                    <div className="text-[11px] lg:text-sm text-ocean font-medium mt-1 flex items-center justify-center gap-1">
+                        <span>لیست ذخیره‌ها</span>
+                        <ChevronLeft className="w-3 h-3" />
+                    </div>
+                </Link>
+                <Link href="/profile/wallet" className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 text-center shadow-sm hover:border-ocean border border-transparent transition-all">
+                    <div className="text-xl lg:text-2xl font-bold text-ocean">کیف پول</div>
+                    <div className="text-[11px] lg:text-sm text-gray-500 mt-1 flex items-center justify-center gap-1">
+                        <span>اعتبار اولیه</span>
+                        <ChevronLeft className="w-3 h-3" />
+                    </div>
+                </Link>
             </div>
 
             {/* Mobile: Main Menu (hidden on desktop - sidebar has this) */}

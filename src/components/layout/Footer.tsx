@@ -1,6 +1,9 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
 import { Phone, Mail, MapPin, Instagram, Send, ShieldCheck, Award, CheckCircle2 } from 'lucide-react';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 
 /**
  * Jalali year — computed once at module load time, not inside render.
@@ -20,6 +23,8 @@ function computeJalaliYear(): number {
 const JALALI_YEAR = computeJalaliYear();
 
 const Footer: React.FC = () => {
+  const { settings } = useSiteSettings();
+
   return (
     <footer className="bg-[#0A1424] noise-overlay text-gray-300 mt-20 border-t border-slate-800 select-none relative">
       <div className="max-w-[1600px] mx-auto px-6 py-12 md:py-16 relative z-10">
@@ -37,7 +42,9 @@ const Footer: React.FC = () => {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[10px] text-gray-400">تلفن پشتیبانی و فروش</span>
-                  <span dir="ltr" className="text-white mt-0.5 text-xs font-bold">۰۲۱-۵۵۶۶۷۷۸۸</span>
+                  <a href={`tel:${settings.phone}`} dir="ltr" className="text-white mt-0.5 text-xs font-bold hover:text-sky-breeze transition-colors">
+                    {settings.phoneFormatted || settings.phone}
+                  </a>
                 </div>
               </li>
               <li className="flex items-center gap-3">
@@ -46,7 +53,9 @@ const Footer: React.FC = () => {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[10px] text-gray-400">پست الکترونیکی</span>
-                  <span className="text-white mt-0.5 text-xs font-bold font-sans">info@icecenter.ir</span>
+                  <a href={`mailto:${settings.email}`} className="text-white mt-0.5 text-xs font-bold font-sans hover:text-sky-breeze transition-colors">
+                    {settings.email}
+                  </a>
                 </div>
               </li>
               <li className="flex items-start gap-3">
@@ -55,7 +64,7 @@ const Footer: React.FC = () => {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[10px] text-gray-400">دفتر مرکزی و نمایشگاه</span>
-                  <span className="text-white mt-0.5 leading-relaxed">تهران، خیابان ولیعصر، نرسیده به میدان تجریش، پلاک ۱۲۳</span>
+                  <span className="text-white mt-0.5 leading-relaxed">{settings.address}</span>
                 </div>
               </li>
             </ul>
@@ -77,7 +86,7 @@ const Footer: React.FC = () => {
           <div className="text-right flex flex-col items-start order-3">
             <h3 className="text-white font-extrabold text-base mb-5 pb-2 border-b-2 border-ocean/40 w-24">دسترسی سریع</h3>
             <ul className="space-y-3 text-xs font-bold">
-              <li><Link href="/about" className="hover:text-white hover:translate-x-[-4px] transition-all block">درباره آیس سنتر</Link></li>
+              <li><Link href="/about" className="hover:text-white hover:translate-x-[-4px] transition-all block">درباره {settings.siteTitle}</Link></li>
               <li><Link href="/contact" className="hover:text-white hover:translate-x-[-4px] transition-all block">تماس با ما</Link></li>
               <li><Link href="/warranty" className="hover:text-white hover:translate-x-[-4px] transition-all block">شرایط گارانتی و خدمات پس از فروش</Link></li>
               <li><Link href="/corporate" className="hover:text-white hover:translate-x-[-4px] transition-all block">طرح ویژه خرید سازمانی و عمده</Link></li>
@@ -87,59 +96,63 @@ const Footer: React.FC = () => {
 
           {/* 4. Brand Summary Column (Leftmost in RTL) */}
           <div className="text-right flex flex-col items-start order-4">
-            <h3 className="text-white font-extrabold text-base mb-5 pb-2 border-b-2 border-ocean/40 w-28">درباره آیس سنتر</h3>
+            <h3 className="text-white font-extrabold text-base mb-5 pb-2 border-b-2 border-ocean/40 w-28">درباره {settings.siteTitle}</h3>
             <p className="text-xs leading-6 text-gray-400 font-medium mb-5">
-              آیس سنتر مرجع تخصصی تامین و راه‌اندازی انواع تجهیزات برودتی، بستنی‌سازهای قیفی شمس، دستگاه‌های اسپرسوساز صنعتی و کلیه ملزومات کافی‌شاپ و مطبخ‌های صنعتی در سراسر ایران است.
+              {settings.aboutText}
             </p>
             
             {/* Social Icons */}
             <div className="flex gap-3">
-              <a href="https://instagram.com/icecenter" target="_blank" rel="noopener noreferrer" aria-label="اینستاگرام" className="w-8 h-8 bg-white/5 border border-white/10 rounded-lg flex items-center justify-center hover:bg-orange-500 hover:text-white transition-all hover:scale-105">
-                <Instagram size={16} />
-              </a>
-              <a href="https://t.me/icecenter" target="_blank" rel="noopener noreferrer" aria-label="تلگرام" className="w-8 h-8 bg-white/5 border border-white/10 rounded-lg flex items-center justify-center hover:bg-ocean hover:text-white transition-all hover:scale-105">
-                <Send size={16} />
-              </a>
+              {settings.instagramUrl && (
+                <a href={settings.instagramUrl} target="_blank" rel="noopener noreferrer" aria-label="اینستاگرام" className="w-8 h-8 bg-white/5 border border-white/10 rounded-lg flex items-center justify-center hover:bg-orange-500 hover:text-white transition-all hover:scale-105">
+                  <Instagram size={16} />
+                </a>
+              )}
+              {settings.telegramUrl && (
+                <a href={settings.telegramUrl} target="_blank" rel="noopener noreferrer" aria-label="تلگرام" className="w-8 h-8 bg-white/5 border border-white/10 rounded-lg flex items-center justify-center hover:bg-ocean hover:text-white transition-all hover:scale-105">
+                  <Send size={16} />
+                </a>
+              )}
             </div>
           </div>
 
         </div>
 
-        {/* Trust Certification Badges Row */}
+        {/* Genuine Service & Trust Commitments Row */}
         <div className="border-t border-slate-800/80 py-8 flex flex-col md:flex-row justify-center items-center gap-6 select-none">
-          {/* Badge 1: Enamad */}
+          {/* Commitment 1: Originality */}
           <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-2xl flex items-center gap-3 w-64 shadow-inner transition-colors hover:border-slate-700">
             <div className="w-11 h-11 rounded-xl bg-ocean/10 text-sky-breeze flex items-center justify-center shrink-0 border border-ocean/20">
               <ShieldCheck size={22} />
             </div>
             <div className="flex flex-col text-right">
-              <span className="text-[9px] text-gray-400">جمهوری اسلامی ایران</span>
-              <span className="text-xs font-bold text-white mt-1">نماد اعتماد الکترونیکی</span>
-              <span className="text-[9px] text-sky-breeze font-bold mt-0.5">۵ ستاره فعال</span>
+              <span className="text-[9px] text-gray-400">تضمین کیفیت و برند</span>
+              <span className="text-xs font-bold text-white mt-1">اصالت ۱۰۰٪ کالاها</span>
+              <span className="text-[9px] text-sky-breeze font-bold mt-0.5">تجهیزات اورجینال</span>
             </div>
           </div>
 
-          {/* Badge 2: Samandehi */}
+          {/* Commitment 2: Warranty */}
           <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-2xl flex items-center gap-3 w-64 shadow-inner transition-colors hover:border-slate-700">
             <div className="w-11 h-11 rounded-xl bg-orange-500/10 text-orange-400 flex items-center justify-center shrink-0 border border-orange-500/20">
               <Award size={22} />
             </div>
             <div className="flex flex-col text-right">
-              <span className="text-[9px] text-gray-400">وزارت فرهنگ و ارشاد</span>
-              <span className="text-xs font-bold text-white mt-1">نشان ملی ثبت دیجیتال</span>
-              <span className="text-[9px] text-orange-400 font-bold mt-0.5">ثبت طلایی رسانه</span>
+              <span className="text-[9px] text-gray-400">خدمات پس از فروش</span>
+              <span className="text-xs font-bold text-white mt-1">گارانتی معتبر شرکتی</span>
+              <span className="text-[9px] text-orange-400 font-bold mt-0.5">پشتیبانی قطعات</span>
             </div>
           </div>
 
-          {/* Badge 3: Virtual Businesses */}
+          {/* Commitment 3: Support */}
           <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-2xl flex items-center gap-3 w-64 shadow-inner transition-colors hover:border-slate-700">
             <div className="w-11 h-11 rounded-xl bg-ocean/10 text-sky-breeze flex items-center justify-center shrink-0 border border-ocean/20">
               <CheckCircle2 size={22} />
             </div>
             <div className="flex flex-col text-right">
-              <span className="text-[9px] text-gray-400">کسب‌وکارهای اینترنتی</span>
-              <span className="text-xs font-bold text-white mt-1">عضو اتحادیه کشوری</span>
-              <span className="text-[9px] text-sky-breeze font-bold mt-0.5">رسمی کشوری</span>
+              <span className="text-[9px] text-gray-400">مشاوره تخصصی خرید</span>
+              <span className="text-xs font-bold text-white mt-1">راهنمایی فنی پروژه</span>
+              <span className="text-[9px] text-sky-breeze font-bold mt-0.5">مشاوره رایگان</span>
             </div>
           </div>
         </div>

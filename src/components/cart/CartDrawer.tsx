@@ -85,7 +85,7 @@ export default function CartDrawer() {
                                         >
                                             {/* Image */}
                                             <Link
-                                                href={`/product/${item.product.slug}`}
+                                                href={`/products/${item.product.slug}`}
                                                 onClick={closeCart}
                                                 className="relative w-20 h-20 bg-white rounded-lg overflow-hidden shrink-0"
                                             >
@@ -106,7 +106,7 @@ export default function CartDrawer() {
                                             {/* Details */}
                                             <div className="flex-1 min-w-0">
                                                 <Link
-                                                    href={`/product/${item.product.slug}`}
+                                                    href={`/products/${item.product.slug}`}
                                                     onClick={closeCart}
                                                     className="text-sm font-medium text-gray-800 line-clamp-2 hover:text-ocean transition-colors"
                                                 >

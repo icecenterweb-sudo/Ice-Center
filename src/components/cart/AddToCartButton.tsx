@@ -28,7 +28,7 @@ export default function AddToCartButton({
     variant = 'default',
     className = ''
 }: AddToCartButtonProps) {
-    const { addItem } = useCart()
+    const { addItem, openCart } = useCart()
     const [isAdding, setIsAdding] = useState(false)
     const [added, setAdded] = useState(false)
 
@@ -40,13 +40,13 @@ export default function AddToCartButton({
         setIsAdding(false)
         setAdded(true)
 
+        // Open cart drawer for immediate user feedback
+        openCart()
+
         // Reset after animation
         setTimeout(() => {
             setAdded(false)
         }, 2000)
-
-        // Optional: open cart after adding
-        // openCart()
     }
 
     if (variant === 'icon') {
@@ -54,12 +54,12 @@ export default function AddToCartButton({
             <button
                 onClick={handleClick}
                 disabled={isAdding}
-                className={`p-2 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all ${className}`}
+                className={`p-2 rounded-lg border border-gray-200 hover:border-ocean hover:bg-frost transition-all ${className}`}
             >
                 {isAdding ? (
-                    <div className="w-5 h-5 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+                    <div className="w-5 h-5 border-2 border-ocean/30 border-t-ocean rounded-full animate-spin" />
                 ) : added ? (
-                    <Check className="w-5 h-5 text-green-500" />
+                    <Check className="w-5 h-5 text-emerald-600" />
                 ) : (
                     <ShoppingCart className="w-5 h-5 text-gray-600" />
                 )}
@@ -73,8 +73,8 @@ export default function AddToCartButton({
                 onClick={handleClick}
                 disabled={isAdding}
                 className={`flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-all ${added
-                    ? 'bg-green-500 text-white'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-ocean hover:bg-royal text-white'
                     } ${className}`}
             >
                 {isAdding ? (
@@ -100,8 +100,8 @@ export default function AddToCartButton({
             onClick={handleClick}
             disabled={isAdding}
             className={`flex items-center justify-center gap-2 w-full py-3.5 font-bold rounded-xl transition-all ${added
-                ? 'bg-green-500 text-white'
-                : 'bg-blue-600 hover:bg-blue-700 text-white'
+                ? 'bg-emerald-600 text-white'
+                : 'bg-ocean hover:bg-royal text-white shadow-md hover:shadow-lg'
                 } ${className}`}
         >
             {isAdding ? (

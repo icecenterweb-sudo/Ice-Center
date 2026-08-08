@@ -1,7 +1,9 @@
 'use client';
 
-import { CheckCircle2, Phone, Shield } from 'lucide-react';
+import { useState } from 'react';
+import { CheckCircle2, Phone, Shield, Sparkles } from 'lucide-react';
 import AddToCartButton from '@/components/cart/AddToCartButton';
+import InstallmentModal from '@/components/modals/InstallmentModal';
 
 interface PricingBoxProps {
     product: {
@@ -18,6 +20,8 @@ interface PricingBoxProps {
 }
 
 export default function PricingBox({ product }: PricingBoxProps) {
+    const [isInstallmentOpen, setIsInstallmentOpen] = useState(false);
+
     const formatPrice = (price: number) => {
         return new Intl.NumberFormat('fa-IR').format(price);
     };
@@ -41,71 +45,93 @@ export default function PricingBox({ product }: PricingBoxProps) {
     };
 
     return (
-        <div className="bg-gray-50/50 rounded-lg border border-gray-200 p-4 space-y-4">
+        <>
+            <div className="bg-gray-50/50 rounded-lg border border-gray-200 p-4 space-y-4">
 
-            {/* Seller Info */}
-            <div className="bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
-                <div className="mb-2">
-                    <span className="font-bold text-gray-800 text-sm">فروشنده</span>
-                </div>
-                <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center text-gray-400">
-                        <Phone className="w-4 h-4" />
+                {/* Seller Info */}
+                <div className="bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
+                    <div className="mb-2">
+                        <span className="font-bold text-gray-800 text-sm">فروشنده</span>
                     </div>
-                    <div>
-                        <div className="text-sm font-bold text-gray-900">آیس سنتر ایران</div>
-                        <div className="flex items-center gap-1 text-[11px]">
-                            <span className="text-green-600">۸۵٪ رضایت خریداران</span>
-                            <span className="text-gray-300">|</span>
-                            <span className="text-gray-500">عملکرد عالی</span>
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center text-gray-400">
+                            <Phone className="w-4 h-4" />
+                        </div>
+                        <div>
+                            <div className="text-sm font-bold text-gray-900">آیس سنتر ایران</div>
+                            <div className="flex items-center gap-1 text-[11px]">
+                                <span className="text-emerald-600 font-medium">تامین‌کننده مستقیم</span>
+                                <span className="text-gray-300">|</span>
+                                <span className="text-gray-500">انبار مرکزی</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Guarantee */}
-            <div className="flex items-center gap-2 px-1">
-                <Shield className="w-4 h-4 text-gray-600" />
-                <span className="text-xs font-medium text-gray-700">{product.warranty}</span>
-            </div>
+                {/* Guarantee */}
+                <div className="flex items-center gap-2 px-1">
+                    <Shield className="w-4 h-4 text-gray-600" />
+                    <span className="text-xs font-medium text-gray-700">{product.warranty}</span>
+                </div>
 
-            {/* Shipping */}
-            <div className="flex items-center gap-2 px-1">
-                <CheckCircle2 className={`w-4 h-4 ${isInStock ? 'text-ocean' : 'text-gray-400'}`} />
-                <span className="text-xs font-medium text-gray-700">
-                    {inventoryLabel}
-                    {isInStock && <span className="mr-1 text-gray-400 text-[10px]">(ارسال از ۳ روز کاری آینده)</span>}
-                </span>
-            </div>
+                {/* Shipping */}
+                <div className="flex items-center gap-2 px-1">
+                    <CheckCircle2 className={`w-4 h-4 ${isInStock ? 'text-ocean' : 'text-gray-400'}`} />
+                    <span className="text-xs font-medium text-gray-700">
+                        {inventoryLabel}
+                        {isInStock && <span className="mr-1 text-gray-400 text-[10px]">(ارسال از ۳ روز کاری آینده)</span>}
+                    </span>
+                </div>
 
-
-            {/* Price & Button */}
-            <div className="pt-4 border-t border-gray-200">
-                <div className="flex flex-col items-end mb-4">
-                    {discount > 0 && product.listPrice && (
-                        <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs text-gray-400 line-through tracking-wider tabular-nums">{formatPrice(product.listPrice)}</span>
-                            <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">%{discount}</span>
+                {/* Price & Buttons */}
+                <div className="pt-4 border-t border-gray-200 space-y-2">
+                    <div className="flex flex-col items-end mb-4">
+                        {discount > 0 && product.listPrice && (
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs text-gray-400 line-through tracking-wider tabular-nums">{formatPrice(product.listPrice)}</span>
+                                <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">%{discount}</span>
+                            </div>
+                        )}
+                        <div className="flex items-center gap-1">
+                            <span className="text-2xl font-bold text-gray-900 tracking-tight tabular-nums">{formatPrice(product.price)}</span>
+                            <span className="text-xs text-gray-500 font-medium">تومان</span>
                         </div>
+                    </div>
+
+                    {isInStock ? (
+                        <AddToCartButton product={cartProduct} className="w-full" />
+                    ) : (
+                        <button className="w-full bg-gray-300 text-gray-500 cursor-not-allowed font-bold py-3 rounded-lg text-sm">
+                            ناموجود
+                        </button>
                     )}
-                    <div className="flex items-center gap-1">
-                        <span className="text-2xl font-bold text-gray-900 tracking-tight tabular-nums">{formatPrice(product.price)}</span>
-                        <span className="text-xs text-gray-500 font-medium">تومان</span>
-                    </div>
-                </div>
 
-                {isInStock ? (
-                    <AddToCartButton product={cartProduct} className="mb-2" />
-                ) : (
-                    <button className="w-full bg-gray-300 text-gray-500 cursor-not-allowed font-bold py-3 rounded-lg text-sm mb-2">
-                        ناموجود
+                    {/* Installment Payment Button (Orange Pill with White Ping Dot) */}
+                    <button
+                        onClick={() => setIsInstallmentOpen(true)}
+                        className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl text-sm transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                    >
+                        <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+                        <Sparkles size={16} />
+                        <span>خرید اقساطی</span>
                     </button>
-                )}
-                <button className="w-full bg-white border border-gray-300 hover:border-gray-400 text-gray-700 font-semibold py-2.5 rounded-lg transition-colors text-sm">
-                    مشاوره رایگان خرید
-                </button>
+
+                    <a
+                        href="tel:09122248917"
+                        className="w-full bg-white border border-gray-300 hover:border-ocean text-gray-700 hover:text-ocean font-semibold py-2.5 rounded-lg transition-colors text-sm cursor-pointer flex items-center justify-center gap-2"
+                    >
+                        <Phone className="w-4 h-4 text-ocean" />
+                        <span>مشاوره رایگان خرید</span>
+                    </a>
+                </div>
             </div>
-        </div>
+
+            {/* Installment Modal Popup */}
+            <InstallmentModal
+                isOpen={isInstallmentOpen}
+                onClose={() => setIsInstallmentOpen(false)}
+            />
+        </>
     );
 }
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { recordClientEvent } from '@/lib/client-analytics';
 import ProductImageGallery from '@/components/product/ProductImageGallery';
 import ProductInfo from '@/components/product/ProductInfo';
@@ -98,22 +99,36 @@ export default function ProductClient({ product, similarProducts = [], reviews =
     return (
         <div className="min-h-screen bg-white" dir="rtl">
 
-            {/* Breadcrumb */}
-            <div className="border-b border-gray-200">
-                <div className="max-w-[1400px] mx-auto px-4 py-3 text-xs text-gray-500">
-                    <span>فروشگاه اینترنتی آیس سنتر</span>
-                    <span className="mx-2">/</span>
-                    <span>{product.categoryName}</span>
+            {/* Semantic Linked Breadcrumb */}
+            <nav aria-label="breadcrumb" className="border-b border-gray-200 bg-gray-50/50">
+                <ol className="max-w-[1400px] mx-auto px-4 py-3 text-xs text-gray-500 flex items-center flex-wrap gap-1.5">
+                    <li>
+                        <Link href="/" className="hover:text-ocean transition-colors">
+                            فروشگاه اینترنتی آیس سنتر
+                        </Link>
+                    </li>
+                    <li className="text-gray-300">/</li>
+                    <li>
+                        <Link href="/categories" className="hover:text-ocean transition-colors">
+                            {product.categoryName}
+                        </Link>
+                    </li>
                     {product.subcategoryName && (
                         <>
-                            <span className="mx-2">/</span>
-                            <span>{product.subcategoryName}</span>
+                            <li className="text-gray-300">/</li>
+                            <li>
+                                <span className="text-gray-600">
+                                    {product.subcategoryName}
+                                </span>
+                            </li>
                         </>
                     )}
-                    <span className="mx-2">/</span>
-                    <span className="font-bold text-gray-800">{product.name}</span>
-                </div>
-            </div>
+                    <li className="text-gray-300">/</li>
+                    <li className="font-bold text-gray-800 truncate max-w-[300px]" aria-current="page">
+                        {product.name}
+                    </li>
+                </ol>
+            </nav>
 
             <main className="max-w-[1400px] mx-auto px-4 py-6">
 
