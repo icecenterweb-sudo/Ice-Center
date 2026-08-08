@@ -11,8 +11,11 @@ import {
   Phone,
   User,
   ChevronDown,
-  ChevronLeft
+  ChevronLeft,
+  ShieldCheck,
+  Sparkles
 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Subcategory {
   id: number;
@@ -31,99 +34,102 @@ interface MobileMenuProps {
   isOpen: boolean;
   onClose: () => void;
   categories: Category[];
-  loading: boolean;
+  loading?: boolean;
+  onOpenInstallment?: () => void;
 }
 
-const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, categories, loading }) => {
-  const [expandedCatId, setExpandedCatId] = useState<number | null>(null);
+export default function MobileMenu({ isOpen, onClose, categories, onOpenInstallment }: MobileMenuProps) {
+  const { user } = useAuth();
+  const [expandedCategory, setExpandedCategory] = useState<number | null>(null);
 
   if (!isOpen) return null;
 
-  const toggleCategory = (id: number) => {
-    setExpandedCatId(expandedCatId === id ? null : id);
+  const toggleCategory = (categoryId: number) => {
+    setExpandedCategory(expandedCategory === categoryId ? null : categoryId);
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-      className="lg:hidden fixed inset-0 bg-black/50 z-[60]"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-50 lg:hidden">
+      {/* Backdrop */}
       <motion.div
-        initial={{ x: "100%" }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/60 backdrop-blur-xs"
+        onClick={onClose}
+      />
+
+      {/* Drawer */}
+      <motion.div
+        initial={{ x: '100%' }}
         animate={{ x: 0 }}
-        exit={{ x: "100%" }}
-        transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="bg-white w-4/5 max-w-sm h-full flex flex-col absolute right-0"
-        onClick={(e) => e.stopPropagation()}
+        exit={{ x: '100%' }}
+        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        className="fixed top-0 right-0 bottom-0 w-[300px] max-w-[85vw] bg-white shadow-2xl z-50 flex flex-col overflow-hidden"
+        dir="rtl"
       >
         {/* Header */}
-        <div className="flex justify-between items-center p-5 border-b border-gray-100 shrink-0">
-          <h3 className="text-base font-bold text-midnight">منوی ناوبری</h3>
+        <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-midnight text-white">
+          <div className="flex items-center gap-2">
+            <User size={18} className="text-sky-breeze" />
+            <span className="text-sm font-bold">منوی دسترسی</span>
+          </div>
           <button
             onClick={onClose}
-            className="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-midnight cursor-pointer rounded-full hover:bg-gray-50 transition"
+            className="p-1 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
             aria-label="بستن منو"
           >
             <X size={20} />
           </button>
         </div>
 
-        {/* Menu Items Content */}
-        <div className="flex-grow overflow-y-auto p-4 space-y-6">
-          
-          {/* Section: Categories Accordion */}
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+          {/* Section: Categories */}
           <div>
             <h4 className="text-xs font-bold text-gray-400 mb-2 px-2 text-right">دسته‌بندی محصولات</h4>
-            
-            {loading ? (
-              <div className="py-4 text-center text-xs text-gray-400">در حال بارگذاری دسته‌بندی‌ها...</div>
+            {!categories || categories.length === 0 ? (
+              <p className="text-xs text-gray-400 px-2">در حال بارگذاری...</p>
             ) : (
               <ul className="divide-y divide-gray-100 border border-gray-100 rounded-2xl overflow-hidden bg-white shadow-sm">
                 {categories.map((cat) => {
-                  const isExpanded = expandedCatId === cat.id;
                   const hasSubs = cat.subcategories && cat.subcategories.length > 0;
-                  
+                  const isExpanded = expandedCategory === cat.id;
+
                   return (
-                    <li key={cat.id} className="flex flex-col">
-                      {/* Touch target 48px */}
-                      <div 
-                        onClick={() => hasSubs ? toggleCategory(cat.id) : onClose()}
-                        className="w-full min-h-[48px] px-4 py-3 flex items-center justify-between text-right cursor-pointer select-none text-xs font-bold text-gray-800 hover:bg-gray-50 transition-colors"
-                      >
-                        <span className="flex-grow text-right">{cat.name}</span>
-                        {hasSubs ? (
-                          <ChevronDown 
-                            size={16} 
-                            className={`text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180 text-midnight' : ''}`} 
-                          />
-                        ) : (
-                          <Link href={`/categories/${cat.slug}`} onClick={onClose}>
-                            <ChevronLeft size={16} className="text-gray-400" />
-                          </Link>
+                    <li key={cat.id} className="bg-white">
+                      <div className="flex items-center justify-between px-4 py-3 min-h-[48px]">
+                        <Link
+                          href={`/categories/${cat.slug}`}
+                          onClick={onClose}
+                          className="text-xs font-bold text-gray-800 hover:text-ocean flex-1 text-right"
+                        >
+                          {cat.name}
+                        </Link>
+                        {hasSubs && (
+                          <button
+                            onClick={() => toggleCategory(cat.id)}
+                            className="p-1 text-gray-400 hover:text-midnight transition-colors cursor-pointer"
+                            aria-label="نمایش زیردسته‌ها"
+                          >
+                            <ChevronDown
+                              size={16}
+                              className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                            />
+                          </button>
                         )}
                       </div>
 
-                      {/* Expandable subcategories accordion */}
+                      {/* Accordion Subcategories */}
                       {hasSubs && isExpanded && (
-                        <div className="bg-gray-50/50 border-t border-gray-50 px-4 py-2 flex flex-col text-right">
-                          <Link 
-                            href={`/categories/${cat.slug}`}
-                            onClick={onClose}
-                            className="min-h-[44px] flex items-center text-[11px] font-bold text-sky-breeze hover:text-ocean py-2 border-b border-dashed border-gray-100"
-                          >
-                            <span>مشاهده همه محصولات {cat.name}</span>
-                          </Link>
+                        <div className="bg-gray-50/70 px-4 py-2 border-t border-gray-100">
                           <ul className="divide-y divide-gray-50">
                             {cat.subcategories!.map((sub) => (
                               <li key={sub.id}>
                                 <Link
                                   href={`/categories/${cat.slug}?subcategory=${sub.id}`}
                                   onClick={onClose}
-                                  className="min-h-[48px] flex items-center text-[11px] text-gray-500 hover:text-midnight py-2.5 pr-2"
+                                  className="block py-2 text-[11px] text-gray-600 hover:text-midnight"
                                 >
                                   {sub.name}
                                 </Link>
@@ -143,6 +149,33 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, categories, lo
           <div className="pt-2 border-t border-gray-100">
             <h4 className="text-xs font-bold text-gray-400 mb-2 px-2 text-right">لینک‌های عمومی</h4>
             <ul className="divide-y divide-gray-100 border border-gray-100 rounded-2xl overflow-hidden bg-white shadow-sm">
+              {user?.isAdmin && (
+                <li>
+                  <Link
+                    href="/admin/dashboard"
+                    className="flex items-center justify-between min-h-[48px] px-4 py-3 text-xs bg-amber-50 text-amber-800 hover:bg-amber-100 transition-colors"
+                    onClick={onClose}
+                  >
+                    <span className="font-bold">پنل مدیریت</span>
+                    <ShieldCheck size={16} className="text-amber-600" />
+                  </Link>
+                </li>
+              )}
+              <li>
+                <button
+                  onClick={() => {
+                    onClose();
+                    onOpenInstallment?.();
+                  }}
+                  className="w-full flex items-center justify-between min-h-[48px] px-4 py-3 text-xs bg-amber-500 text-white font-bold hover:bg-amber-600 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
+                    <span>خرید اقساطی</span>
+                  </div>
+                  <Sparkles size={16} />
+                </button>
+              </li>
               <li>
                 <Link
                   href="/"
@@ -199,8 +232,6 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, categories, lo
           </Link>
         </div>
       </motion.div>
-    </motion.div>
+    </div>
   );
-};
-
-export default MobileMenu;
+}

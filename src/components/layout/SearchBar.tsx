@@ -164,7 +164,7 @@ export default function SearchBar({
     return (
         <div className={`relative ${className}`}>
             {/* Search Input */}
-            <div className="relative shadow-[0_4px_20px_rgba(8,31,55,0.06)] rounded-full">
+            <div className="relative rounded-full">
                 <input
                     ref={inputRef}
                     type="text"
@@ -173,7 +173,7 @@ export default function SearchBar({
                     onKeyDown={handleKeyDown}
                     onFocus={() => query.length >= 2 && hasResults && setIsOpen(true)}
                     placeholder={placeholder}
-                    className="w-full h-12 pl-10 pr-14 bg-white border border-gray-100 rounded-full text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-ocean/30 focus:border-transparent transition-[box-shadow,border-color,background-color] duration-[150ms] ease-out"
+                    className="w-full h-12 pl-10 pr-14 bg-white border border-gray-300 hover:border-gray-400 focus:border-royal focus:ring-2 focus:ring-royal/20 rounded-full text-sm text-gray-900 placeholder-gray-400 outline-none transition-all duration-150"
                 />
 
                 {/* Circular Search Button on leading edge (Right in RTL) */}
@@ -185,23 +185,24 @@ export default function SearchBar({
                             closeDropdown();
                         }
                     }}
-                    className="absolute right-1 top-1/2 -translate-y-1/2 w-10 h-10 bg-midnight hover:bg-ocean text-white rounded-full flex items-center justify-center cursor-pointer transition-[background-color,transform,box-shadow] duration-[150ms] ease-out shadow-sm active:scale-95"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 w-10 h-10 bg-royal hover:bg-ocean text-white rounded-full flex items-center justify-center cursor-pointer transition-all duration-150 shadow-sm active:scale-95"
                     aria-label="جستجو"
                 >
                     <Search className="w-5 h-5" />
                 </button>
 
                 {/* Loading/Clear Button */}
-                <div className="absolute left-3 top-1/2 -translate-y-1/2">
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center justify-center">
                     {isLoading ? (
                         <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
                     ) : query && (
                         <button
                             type="button"
                             onClick={closeDropdown}
-                            className="text-gray-400 hover:text-gray-600 transition-[color,transform] duration-[150ms] ease-out active:scale-90"
+                            className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-150 active:scale-95"
+                            aria-label="پاک کردن جستجو"
                         >
-                            <X className="w-5 h-5" />
+                            <X className="w-4 h-4" />
                         </button>
                     )}
                 </div>
