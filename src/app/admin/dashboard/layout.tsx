@@ -40,6 +40,22 @@ async function DynamicHeader() {
     return <Header adminName={adminName} adminRoles={adminRoles} />;
 }
 
+async function DynamicSidebar() {
+    await connection();
+    const cookieStore = await cookies();
+    const token = cookieStore.get('admin_token')?.value;
+
+    let adminRoles: string[] = [];
+    if (token) {
+        const payload = await verifyAdminToken(token);
+        if (payload) {
+            adminRoles = payload.roles || [];
+        }
+    }
+
+    return <Sidebar adminRoles={adminRoles} />;
+}
+
 async function AuthGuard({ children }: { children: React.ReactNode }) {
     await connection();
     const cookieStore = await cookies();
@@ -68,7 +84,7 @@ export default function AdminDashboardLayout({
                 <div className="flex min-h-screen bg-gray-50">
                     {/* Sidebar */}
                     <Suspense fallback={<div className="w-20 lg:w-72 bg-gray-700 h-screen fixed right-0 top-0 transition-all duration-300" />}>
-                        <Sidebar />
+                        <DynamicSidebar />
                     </Suspense>
 
                     {/* Main Content */}

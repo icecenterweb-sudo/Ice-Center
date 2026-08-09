@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireRole } from '@/lib/admin-auth';
 import { z } from 'zod';
@@ -21,6 +21,7 @@ const createBannerSchema = z.object({
 
 // GET - List all banners (for admin)
 export async function GET(request: NextRequest) {
+    await connection(); // Required for request.headers with cacheComponents
     try {
         const auth = await requireRole(request, 'BANNERS');
         if (!auth.ok) return auth.response;

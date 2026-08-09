@@ -22,7 +22,6 @@ import {
     Shield,
     Settings
 } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
 import { canAccessSection, AdminSection } from '@/lib/admin-roles';
 
 const menuItems: { icon: any; label: string; href: string; section: AdminSection }[] = [
@@ -41,12 +40,11 @@ const menuItems: { icon: any; label: string; href: string; section: AdminSection
     { icon: Shield, label: 'مدیریت دسترسی‌ها', href: '/admin/dashboard/admins', section: 'ADMIN_MANAGEMENT' },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ adminRoles = [] }: { adminRoles?: string[] }) {
     const pathname = usePathname();
     const { isCollapsed, isMobileOpen, setIsMobileOpen } = useAdminSidebar();
-    const { user } = useAuth();
 
-    const visibleMenuItems = menuItems.filter(item => canAccessSection(user?.adminRoles, item.section));
+    const visibleMenuItems = menuItems.filter(item => canAccessSection(adminRoles, item.section));
 
     const handleLogout = async () => {
         await fetch('/api/admin/auth/logout', { method: 'POST' });

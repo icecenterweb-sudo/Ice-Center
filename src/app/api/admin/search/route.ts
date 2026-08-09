@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, connection } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireAdmin } from '@/lib/admin-auth'
 
 export async function GET(request: NextRequest) {
+    await connection() // Required for request.headers with cacheComponents
     const auth = await requireAdmin(request)
     if (!auth.ok) {
         return auth.response

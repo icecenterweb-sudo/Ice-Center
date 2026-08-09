@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireRole } from '@/lib/admin-auth';
 import { z } from 'zod';
@@ -20,6 +20,7 @@ const couponSchema = z.object({
  * GET /api/admin/coupons — list all coupons
  */
 export async function GET(request: NextRequest) {
+    await connection(); // Required for request.headers with cacheComponents
     const auth = await requireRole(request, 'COUPONS');
     if (!auth.ok) return auth.response;
 

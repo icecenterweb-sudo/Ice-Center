@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireRole } from '@/lib/admin-auth';
 import { z } from 'zod';
@@ -22,6 +22,7 @@ type Params = { params: Promise<{ id: string }> };
  * GET /api/admin/coupons/[id]
  */
 export async function GET(request: NextRequest, { params }: Params) {
+    await connection(); // Required for request.headers with cacheComponents
     const auth = await requireRole(request, 'COUPONS');
     if (!auth.ok) return auth.response;
 

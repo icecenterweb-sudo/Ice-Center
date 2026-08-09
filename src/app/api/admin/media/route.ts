@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from 'next/server';
 import { readdir, stat } from 'fs/promises';
 import path from 'path';
 import { requireAdmin } from '@/lib/admin-auth';
@@ -43,6 +43,7 @@ async function scanDirectory(dirPath: string, relativeFolder: string): Promise<M
 }
 
 export async function GET(request: NextRequest) {
+    await connection(); // Required for request.headers with cacheComponents
     try {
         const auth = await requireAdmin(request);
         if (!auth.ok) return auth.response;

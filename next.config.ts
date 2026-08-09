@@ -1,6 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Pin the file-tracing root to this project. A stray lockfile in a parent
+  // directory (e.g. /root/package-lock.json on the VPS) makes Next infer the
+  // wrong workspace root, which both prints a warning and traces the wrong
+  // files into the standalone output. The build always runs from the app root.
+  outputFileTracingRoot: process.cwd(),
+
   reactStrictMode: true,
 
   // React Compiler - Auto-memoizes components, reduces re-renders

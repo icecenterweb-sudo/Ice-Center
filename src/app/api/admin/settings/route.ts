@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from 'next/server';
 import { getSiteSettings, updateSiteSettings } from '@/lib/settings';
 import { requireRole } from '@/lib/admin-auth';
 import { SiteSettings } from '@/types/settings';
 
 export async function GET(request: NextRequest) {
+    await connection(); // Required for request.headers with cacheComponents
     const auth = await requireRole(request, 'SETTINGS');
     if (!auth.ok) return auth.response;
 
