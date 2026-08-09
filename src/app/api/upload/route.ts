@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
@@ -73,6 +73,7 @@ async function uploadToLocalStorage(file: File, buffer: Buffer, folder: string) 
 
 export async function POST(request: NextRequest) {
   try {
+    await connection();
     const auth = await requireAdmin(request);
     if (!auth.ok) return auth.response;
 

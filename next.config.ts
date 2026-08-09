@@ -10,6 +10,12 @@ const nextConfig: NextConfig = {
   // Testing with Next.js 16.1.1 (updated from 16.0.10)
   cacheComponents: true,
 
+  // Native module: leave sharp as a runtime require instead of letting webpack
+  // bundle it. Bundling breaks sharp's own path detection (it reads a path that
+  // ends up undefined and calls .endsWith on it), which crashes page-data
+  // collection for /api/upload — the only route that imports sharp.
+  serverExternalPackages: ['sharp'],
+
   // Experimental optimizations
   experimental: {
     // Better tree-shaking for icon libraries and heavy packages

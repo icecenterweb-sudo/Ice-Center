@@ -3,8 +3,6 @@ import { readdir, stat } from 'fs/promises';
 import path from 'path';
 import { requireAdmin } from '@/lib/admin-auth';
 
-export const dynamic = 'force-dynamic';
-
 interface MediaItem {
     url: string;
     filename: string;
