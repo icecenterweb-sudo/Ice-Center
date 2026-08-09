@@ -9,10 +9,18 @@
  * Or:    node scripts/import-backup-fast.js backups/backup_2026-08-08.json
  */
 const { Pool } = require('pg');
-require('dotenv').config();
+const path = require('path');
+
+// Load .env from the project root by absolute path — dotenv otherwise looks in
+// the current working directory, which leaves the connection string undefined
+// ("SASL: client password must be a string") when launched from elsewhere.
+try {
+    require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+} catch {
+    // dotenv not installed (production-only deps) — rely on the shell/PM2 env.
+}
 
 const fs = require('fs');
-const path = require('path');
 const readline = require('readline');
 
 // Tables to skip during import (ephemeral data)

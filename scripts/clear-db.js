@@ -1,10 +1,27 @@
 const { Pool } = require('pg');
-require('dotenv').config();
+const path = require('path');
+
+// Load .env from the project root by absolute path — dotenv defaults to the
+// current working directory, so `node scripts/clear-db.js` launched from
+// anywhere but the root would silently load nothing and leave the connection
+// string undefined (which surfaces as "SASL: client password must be a string").
+try {
+    require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+} catch {
+    // dotenv not installed (production-only deps) — rely on the shell/PM2 env.
+}
 
 const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
+if (!connectionString || typeof connectionString !== 'string') {
+    console.error('❌ POSTGRES_URL or DATABASE_URL is not set (checked both).');
+    console.error('   Add it to the .env at the project root, or export it before running:');
+    console.error('   POSTGRES_URL=postgres://... node scripts/clear-db.js');
+    process.exit(1);
+}
+
 // Match the SSL handling used by backup/import scripts so this works against
 // a managed VPS Postgres that requires SSL (sslmode=require in the URL).
-const ssl = connectionString && connectionString.includes('sslmode=require')
+const ssl = connectionString.includes('sslmode=require')
     ? { rejectUnauthorized: false }
     : undefined;
 
