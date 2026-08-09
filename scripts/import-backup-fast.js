@@ -102,6 +102,8 @@ async function main() {
 
             const BATCH = 50;
             let inserted = 0;
+            let failed = 0;
+            let firstError = null;
 
             for (let i = 0; i < rows.length; i += BATCH) {
                 const batch = rows.slice(i, i + BATCH);
@@ -120,14 +122,22 @@ async function main() {
                         );
                         inserted++;
                     } catch (e) {
-                        // Skip row errors (e.g. FK violation from missing parent)
+                        // A genuine failure (FK violation, type/column mismatch) — NOT a
+                        // conflict, since ON CONFLICT DO NOTHING doesn't throw. Surface it
+                        // instead of silently dropping the row.
+                        failed++;
+                        if (!firstError) firstError = e.message;
                     }
                 }
             }
 
             totalRows += inserted;
             tableCount++;
-            console.log(`      ✅ ${inserted} rows inserted`);
+            if (failed > 0) {
+                console.log(`      ✅ ${inserted} inserted, ⚠️  ${failed} FAILED — first error: ${firstError}`);
+            } else {
+                console.log(`      ✅ ${inserted} rows inserted`);
+            }
         }
 
         // Also import any tables in backup not in IMPORT_ORDER
@@ -138,6 +148,8 @@ async function main() {
             const rows = backup[table];
             console.log(`  📥 Importing: ${table} (${rows.length} rows)...`);
             let inserted = 0;
+            let failed = 0;
+            let firstError = null;
 
             for (const row of rows) {
                 const cols = Object.keys(row);
@@ -151,12 +163,19 @@ async function main() {
                         vals
                     );
                     inserted++;
-                } catch {}
+                } catch (e) {
+                    failed++;
+                    if (!firstError) firstError = e.message;
+                }
             }
 
             totalRows += inserted;
             tableCount++;
-            console.log(`      ✅ ${inserted} rows inserted`);
+            if (failed > 0) {
+                console.log(`      ✅ ${inserted} inserted, ⚠️  ${failed} FAILED — first error: ${firstError}`);
+            } else {
+                console.log(`      ✅ ${inserted} rows inserted`);
+            }
         }
     } else {
         // ========================
