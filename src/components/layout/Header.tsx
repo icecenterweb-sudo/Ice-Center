@@ -183,21 +183,21 @@ const Header: React.FC = () => {
             <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-8">
               {/* Right: Brand Logo & Tagline */}
               <Link href="/" className="flex items-center gap-3 shrink-0 group">
-                <div className="w-10 h-10 rounded-2xl bg-midnight flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform overflow-hidden">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white group-hover:scale-105 transition-transform overflow-hidden">
                   {settings?.siteLogo ? (
                     <Image
                       src={settings.siteLogo}
                       alt={settings.siteTitle || 'logo'}
-                      width={40}
-                      height={40}
-                      className="w-10 h-10 object-contain"
+                      width={50}
+                      height={50}
+                      className="w-12 h-12 object-contain"
                     />
                   ) : (
                     <Snowflake className="text-sky-breeze" size={22} />
                   )}
                 </div>
                 <div className="flex flex-col text-right">
-                  <h1 className="text-xl font-black text-midnight tracking-tight leading-none">{settings?.siteTitle || 'آیس سنتر'}</h1>
+                  <h1 className="text-md font-black text-midnight tracking-tight leading-none">{settings?.siteTitle || 'آیس سنتر'}</h1>
                   <span className="text-[11px] font-bold text-ocean mt-1">{settings?.siteSlogan || 'با آیس سنتر، همیشه تخصصی بخر'}</span>
                 </div>
               </Link>
@@ -322,10 +322,20 @@ const Header: React.FC = () => {
             {/* Center: Brand Logo + Slogan */}
             <Link href="/" className="flex flex-col items-center select-none group/logo">
               <div className="flex items-center gap-1.5">
-                <div className="w-6 h-6 rounded-lg bg-midnight flex items-center justify-center text-white shadow-sm">
-                  <Snowflake className="text-sky-breeze text-cyan-400" size={14} />
+                <div className="w-6 h-6 rounded-lg bg-midnight flex items-center justify-center text-white shadow-sm overflow-hidden">
+                  {settings?.siteLogo ? (
+                    <Image
+                      src={settings.siteLogo}
+                      alt={settings.siteTitle || 'logo'}
+                      width={24}
+                      height={24}
+                      className="w-6 h-6 object-contain"
+                    />
+                  ) : (
+                    <Snowflake className="text-sky-breeze text-cyan-400" size={14} />
+                  )}
                 </div>
-                <h1 className="text-sm font-extrabold text-midnight leading-none">آیس سنتر</h1>
+                <h1 className="text-sm font-extrabold text-midnight leading-none">{settings?.siteTitle || 'آیس سنتر'}</h1>
               </div>
               <span className="text-[9px] font-semibold text-ocean mt-0.5 tracking-tight">با آیس سنتر، همیشه تخصصی بخر</span>
             </Link>

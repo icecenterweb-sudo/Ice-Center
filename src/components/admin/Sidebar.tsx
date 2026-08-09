@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAdminSidebar } from '@/context/AdminSidebarContext';
@@ -90,10 +91,14 @@ export default function Sidebar({ adminRoles = [] }: { adminRoles?: string[] }) 
                         animate={{ opacity: 1, y: 0 }}
                         className={`flex items-center gap-4 ${isCollapsed ? 'justify-center' : ''}`}
                     >
-                        <div className="w-12 h-12 bg-gradient-to-br from-gray-700 to-gray-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
-                            <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                            </svg>
+                        <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg flex-shrink-0 overflow-hidden p-1.5">
+                            <Image
+                                src="/logo/icecenter-logo-300.webp"
+                                alt="آیس سنتر"
+                                width={48}
+                                height={48}
+                                className="w-full h-full object-contain"
+                            />
                         </div>
                         {!isCollapsed && (
                             <div>

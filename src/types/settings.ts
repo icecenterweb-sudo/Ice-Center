@@ -17,8 +17,8 @@ export interface SiteSettings {
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
     siteTitle: 'آیس سنتر',
     siteSlogan: 'با آیس سنتر، همیشه تخصصی بخر',
-    siteLogo: '',
-    faviconUrl: '',
+    siteLogo: '/logo/icecenter-logo-300.webp',
+    faviconUrl: '/logo/icecenter-favicon.svg',
     phone: '09122248917',
     phoneFormatted: '۰۹۱۲-۲۲۴-۸۹۱۷',
     email: 'icecenter.web@gmail.com',

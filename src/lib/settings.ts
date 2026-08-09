@@ -30,8 +30,10 @@ export async function getSiteSettings(): Promise<SiteSettings> {
         const settings: SiteSettings = {
             siteTitle: settingsMap.siteTitle ?? DEFAULT_SITE_SETTINGS.siteTitle,
             siteSlogan: settingsMap.siteSlogan ?? DEFAULT_SITE_SETTINGS.siteSlogan,
-            siteLogo: settingsMap.siteLogo ?? DEFAULT_SITE_SETTINGS.siteLogo,
-            faviconUrl: settingsMap.faviconUrl ?? DEFAULT_SITE_SETTINGS.faviconUrl,
+            // `||` (not `??`) so a saved-but-empty value falls back to the default
+            // brand assets — an empty string in the DB should still show the logo/favicon.
+            siteLogo: settingsMap.siteLogo || DEFAULT_SITE_SETTINGS.siteLogo,
+            faviconUrl: settingsMap.faviconUrl || DEFAULT_SITE_SETTINGS.faviconUrl,
             phone: settingsMap.phone ?? DEFAULT_SITE_SETTINGS.phone,
             phoneFormatted: settingsMap.phoneFormatted ?? DEFAULT_SITE_SETTINGS.phoneFormatted,
             email: settingsMap.email ?? DEFAULT_SITE_SETTINGS.email,

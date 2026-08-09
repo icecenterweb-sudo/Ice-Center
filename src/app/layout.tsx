@@ -31,21 +31,33 @@ import { getSiteSettings } from "@/lib/settings";
 
 export async function generateMetadata(): Promise<Metadata> {
     const settings = await getSiteSettings();
+    // Explicit MIME type so browsers reliably prefer the real favicon over the
+    // auto-emitted /favicon.ico fallback (an untyped icon link loses to .ico in Chrome).
+    const faviconType = settings.faviconUrl.endsWith('.svg')
+        ? 'image/svg+xml'
+        : settings.faviconUrl.endsWith('.png')
+            ? 'image/png'
+            : undefined;
     return {
+        metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://ice-center.ir'),
         title: `${settings.siteTitle} | ${settings.siteSlogan}`,
         description: settings.aboutText,
-        icons: settings.faviconUrl ? { icon: settings.faviconUrl } : undefined,
+        icons: settings.faviconUrl
+            ? { icon: [{ url: settings.faviconUrl, ...(faviconType ? { type: faviconType } : {}) }] }
+            : undefined,
         openGraph: {
             title: `${settings.siteTitle} | ${settings.siteSlogan}`,
             description: settings.aboutText,
             type: "website",
             siteName: settings.siteTitle,
             locale: "fa_IR",
+            images: [{ url: settings.siteLogo, alt: settings.siteTitle }],
         },
         twitter: {
-            card: "summary_large_image",
+            card: "summary",
             title: `${settings.siteTitle} | ${settings.siteSlogan}`,
             description: settings.aboutText,
+            images: [settings.siteLogo],
         },
     };
 }
