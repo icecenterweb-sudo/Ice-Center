@@ -16,6 +16,7 @@
     "db:import": "node scripts/import-backup-fast.js",
     "diagnose": "tsx scripts/diagnose-server.ts",
     "convert:webp": "tsx scripts/convert-to-webp.ts",
+    "fix:images": "tsx scripts/fix-missing-images.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

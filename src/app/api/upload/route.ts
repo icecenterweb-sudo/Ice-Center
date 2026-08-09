@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
+import sharp from 'sharp';
 import { requireAdmin } from '@/lib/admin-auth';
 import { getUploadStorageRoot, sanitizeUploadFolder } from '@/lib/uploads';
 
@@ -40,15 +41,32 @@ async function uploadToLocalStorage(file: File, buffer: Buffer, folder: string) 
   const uploadDir = path.join(getUploadStorageRoot(), folder);
   await mkdir(uploadDir, { recursive: true });
 
-  const ext = MIME_TO_EXTENSION[file.type];
-  if (!ext) {
-    throw new Error('نوع فایل نامعتبر است');
+  // Every upload is re-encoded to WebP in a single atomic step, so the file
+  // written to disk and the URL returned (and stored in the DB) always match.
+  // GIFs are the only exception — sharp's webp pipeline doesn't support animation,
+  // and silently converting an animated GIF to a static frame would be data loss.
+  let outputBuffer: Buffer;
+  let ext: string;
+  if (file.type === 'image/gif') {
+    outputBuffer = buffer;
+    ext = '.gif';
+  } else {
+    try {
+      outputBuffer = await sharp(buffer)
+        .rotate()                       // apply EXIF orientation
+        .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
+        .webp({ quality: 85 })          // same settings as scripts/convert-to-webp.ts
+        .toBuffer();
+    } catch {
+      throw new Error('پردازش تصویر انجام نشد، لطفاً دوباره تلاش کنید');
+    }
+    ext = '.webp';
   }
 
   const filename = `${crypto.randomUUID()}${ext}`;
   const filePath = path.join(uploadDir, filename);
 
-  await writeFile(filePath, buffer);
+  await writeFile(filePath, outputBuffer);
 
   return folder ? `/uploads/${folder}/${filename}` : `/uploads/${filename}`;
 }
