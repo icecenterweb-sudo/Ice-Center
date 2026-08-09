@@ -2,7 +2,6 @@ import { NextRequest, NextResponse, connection } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
-import sharp from 'sharp';
 import { requireAdmin } from '@/lib/admin-auth';
 import { getUploadStorageRoot, sanitizeUploadFolder } from '@/lib/uploads';
 
@@ -41,32 +40,15 @@ async function uploadToLocalStorage(file: File, buffer: Buffer, folder: string) 
   const uploadDir = path.join(getUploadStorageRoot(), folder);
   await mkdir(uploadDir, { recursive: true });
 
-  // Every upload is re-encoded to WebP in a single atomic step, so the file
-  // written to disk and the URL returned (and stored in the DB) always match.
-  // GIFs are the only exception — sharp's webp pipeline doesn't support animation,
-  // and silently converting an animated GIF to a static frame would be data loss.
-  let outputBuffer: Buffer;
-  let ext: string;
-  if (file.type === 'image/gif') {
-    outputBuffer = buffer;
-    ext = '.gif';
-  } else {
-    try {
-      outputBuffer = await sharp(buffer)
-        .rotate()                       // apply EXIF orientation
-        .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
-        .webp({ quality: 85 })          // same settings as scripts/convert-to-webp.ts
-        .toBuffer();
-    } catch {
-      throw new Error('پردازش تصویر انجام نشد، لطفاً دوباره تلاش کنید');
-    }
-    ext = '.webp';
-  }
-
+  // Store the original file as-is. Image optimization (WebP conversion, resizing)
+  // runs offline via `npm run convert:webp`, keeping the request path light and the
+  // app free of the native sharp dependency. file.type is validated against
+  // ALLOWED_IMAGE_TYPES before we get here, so the extension lookup always resolves.
+  const ext = MIME_TO_EXTENSION[file.type];
   const filename = `${crypto.randomUUID()}${ext}`;
   const filePath = path.join(uploadDir, filename);
 
-  await writeFile(filePath, outputBuffer);
+  await writeFile(filePath, buffer);
 
   return folder ? `/uploads/${folder}/${filename}` : `/uploads/${filename}`;
 }

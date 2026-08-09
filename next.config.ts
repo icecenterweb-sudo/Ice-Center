@@ -10,10 +10,10 @@ const nextConfig: NextConfig = {
   // Testing with Next.js 16.1.1 (updated from 16.0.10)
   cacheComponents: true,
 
-  // Native module: leave sharp as a runtime require instead of letting webpack
-  // bundle it. Bundling breaks sharp's own path detection (it reads a path that
-  // ends up undefined and calls .endsWith on it), which crashes page-data
-  // collection for /api/upload — the only route that imports sharp.
+  // sharp is a native module used only by the offline image scripts (run via tsx),
+  // never by app/server code. Kept here as a safeguard: if it's ever imported from a
+  // route again, webpack must leave it as a runtime require rather than bundle it —
+  // bundling breaks sharp's path detection (undefined .endsWith) and crashes the build.
   serverExternalPackages: ['sharp'],
 
   // Experimental optimizations
