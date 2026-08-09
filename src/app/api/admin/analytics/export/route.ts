@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireAdmin } from '@/lib/admin-auth'
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Sanitize a string for CSV to prevent formula injection.
  * Fields starting with =, +, -, @, \t, or \r are prefixed with a single-quote
