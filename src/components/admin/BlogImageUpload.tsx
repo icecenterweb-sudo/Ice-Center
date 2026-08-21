@@ -3,6 +3,7 @@
 import { Upload, X, Loader2, Link as LinkIcon } from 'lucide-react';
 import { useState, useRef } from 'react';
 import Image from 'next/image';
+import toast from 'react-hot-toast';
 
 interface BlogImageUploadProps {
     label: string;
@@ -36,13 +37,13 @@ export default function BlogImageUpload({
 
         // Validate file type
         if (!file.type.startsWith('image/')) {
-            alert('لطفاً فقط فایل تصویری انتخاب کنید');
+            toast.error('لطفاً فقط فایل تصویری انتخاب کنید');
             return;
         }
 
         // Validate file size (max 5MB)
         if (file.size > 5 * 1024 * 1024) {
-            alert('حجم تصویر نباید بیشتر از 5 مگابایت باشد');
+            toast.error('حجم تصویر نباید بیشتر از 5 مگابایت باشد');
             return;
         }
 
@@ -62,10 +63,10 @@ export default function BlogImageUpload({
             if (data.success && data.url) {
                 onChange(data.url);
             } else {
-                alert(data.message || 'خطا در آپلود تصویر');
+                toast.error(data.message || 'خطا در آپلود تصویر');
             }
         } catch {
-            alert('خطا در آپلود تصویر');
+            toast.error('خطا در آپلود تصویر');
         } finally {
             setUploading(false);
             if (fileInputRef.current) {

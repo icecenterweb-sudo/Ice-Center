@@ -11,6 +11,7 @@ import Image from 'next/image';
 import { updateOrderStatus, updateAdminNotes } from '../actions';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import ConfirmDialog from '@/components/admin/ConfirmDialog';
 
 interface OrderDetailClientProps {
     order: Prisma.OrderGetPayload<{
@@ -41,17 +42,24 @@ const statusOptions: { value: OrderStatus; label: string; color: string }[] = [
 export default function OrderDetailClient({ order }: OrderDetailClientProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [notes, setNotes] = useState(order.adminNotes || '');
+    const [pendingStatus, setPendingStatus] = useState<OrderStatus | null>(null);
     const router = useRouter();
 
-    const handleStatusChange = async (newStatus: OrderStatus) => {
-        if (!confirm('آیا از تغییر وضعیت سفارش اطمینان دارید؟')) return;
+    const requestStatusChange = (newStatus: OrderStatus) => {
+        if (newStatus === order.status) return;
+        setPendingStatus(newStatus);
+    };
+
+    const performStatusChange = async () => {
+        if (!pendingStatus) return;
 
         setIsLoading(true);
-        const result = await updateOrderStatus(order.id, newStatus);
+        const result = await updateOrderStatus(order.id, pendingStatus);
         setIsLoading(false);
 
         if (result.success) {
             toast.success('وضعیت سفارش با موفقیت تغییر کرد');
+            setPendingStatus(null);
             router.refresh();
         } else {
             toast.error('خطا در تغییر وضعیت');
@@ -98,7 +106,7 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
                 <div className="flex gap-2">
                     <select
                         value={order.status}
-                        onChange={(e) => handleStatusChange(e.target.value as OrderStatus)}
+                        onChange={(e) => requestStatusChange(e.target.value as OrderStatus)}
                         disabled={isLoading}
                         className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none"
                     >
@@ -284,6 +292,21 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
                 </div>
 
             </div>
+
+            <ConfirmDialog
+                open={pendingStatus !== null}
+                title="تغییر وضعیت سفارش"
+                message={
+                    <>
+                        وضعیت این سفارش به «{statusOptions.find(s => s.value === pendingStatus)?.label}» تغییر خواهد کرد. ادامه می‌دهید؟
+                    </>
+                }
+                confirmText="تغییر وضعیت"
+                variant="primary"
+                isPending={isLoading}
+                onConfirm={performStatusChange}
+                onClose={() => setPendingStatus(null)}
+            />
         </div>
     );
 }

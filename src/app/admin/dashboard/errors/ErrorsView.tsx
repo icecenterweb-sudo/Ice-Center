@@ -19,6 +19,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { toPersianNumber } from '@/lib/persian';
+import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import { deleteErrorLogAction, bulkDeleteErrorLogsAction, clearAllErrorLogsAction } from './actions';
 
 interface ErrorLog {
@@ -50,6 +51,12 @@ export default function ErrorsView({ initialLogs }: ErrorsViewProps) {
     const [selectedSeverity, setSelectedSeverity] = useState<string>('all');
     const [selectedLogForDetail, setSelectedLogForDetail] = useState<ErrorLog | null>(null);
     const [copied, setCopied] = useState(false);
+    const [pendingAction, setPendingAction] = useState<
+        | { type: 'single'; id: number }
+        | { type: 'bulk' }
+        | { type: 'clear' }
+        | null
+    >(null);
 
     // Grouping stats
     const stats = useMemo(() => {
@@ -110,8 +117,6 @@ export default function ErrorsView({ initialLogs }: ErrorsViewProps) {
 
     // Delete single error log
     const handleDeleteSingle = async (id: number) => {
-        if (!confirm('آیا از حذف این لاگ خطا مطمئن هستید؟')) return;
-
         startTransition(async () => {
             const loadingToast = toast.loading('در حال حذف لاگ...');
             try {
@@ -119,6 +124,7 @@ export default function ErrorsView({ initialLogs }: ErrorsViewProps) {
                 if (res.success) {
                     toast.success('لاگ خطا حذف شد.', { id: loadingToast });
                     setSelectedIds(prev => prev.filter(item => item !== id));
+                    setPendingAction(null);
                     router.refresh();
                 }
             } catch (err: unknown) {
@@ -130,7 +136,6 @@ export default function ErrorsView({ initialLogs }: ErrorsViewProps) {
     // Bulk deletion
     const handleBulkDelete = async () => {
         if (selectedIds.length === 0) return;
-        if (!confirm(`آیا از حذف گروهی ${toPersianNumber(selectedIds.length)} لاگ خطا مطمئن هستید؟`)) return;
 
         startTransition(async () => {
             const loadingToast = toast.loading('در حال حذف گروهی لاگ‌ها...');
@@ -139,6 +144,7 @@ export default function ErrorsView({ initialLogs }: ErrorsViewProps) {
                 if (res.success) {
                     toast.success('حذف گروهی با موفقیت انجام شد.', { id: loadingToast });
                     setSelectedIds([]);
+                    setPendingAction(null);
                     router.refresh();
                 }
             } catch (err: unknown) {
@@ -149,8 +155,6 @@ export default function ErrorsView({ initialLogs }: ErrorsViewProps) {
 
     // Clear all error logs
     const handleClearAll = async () => {
-        if (!confirm('آیا از پاک کردن تمامی لاگ‌های خطا مطمئن هستید؟ این عمل کل دیتابیس خطاها را تخلیه می‌کند.')) return;
-
         startTransition(async () => {
             const loadingToast = toast.loading('در حال پاک‌سازی کل لاگ‌ها...');
             try {
@@ -158,6 +162,7 @@ export default function ErrorsView({ initialLogs }: ErrorsViewProps) {
                 if (res.success) {
                     toast.success('تمامی لاگ‌ها با موفقیت پاک شدند.', { id: loadingToast });
                     setSelectedIds([]);
+                    setPendingAction(null);
                     router.refresh();
                 }
             } catch (err: unknown) {
@@ -165,6 +170,21 @@ export default function ErrorsView({ initialLogs }: ErrorsViewProps) {
             }
         });
     };
+
+    // Dispatch the confirmed action from the shared dialog
+    const runPendingAction = () => {
+        if (!pendingAction) return;
+        if (pendingAction.type === 'single') handleDeleteSingle(pendingAction.id);
+        else if (pendingAction.type === 'bulk') handleBulkDelete();
+        else handleClearAll();
+    };
+
+    // Title/message for the shared confirm dialog, per pending action
+    const confirmContent = pendingAction?.type === 'bulk'
+        ? { title: 'حذف گروهی لاگ‌ها', message: `آیا از حذف گروهی ${toPersianNumber(selectedIds.length)} لاگ خطا مطمئن هستید؟`, confirmText: 'حذف گروهی' }
+        : pendingAction?.type === 'clear'
+            ? { title: 'پاک‌سازی کل خطاها', message: 'آیا از پاک کردن تمامی لاگ‌های خطا مطمئن هستید؟ این عمل کل دیتابیس خطاها را تخلیه می‌کند.', confirmText: 'پاک‌سازی کل' }
+            : { title: 'حذف لاگ خطا', message: 'آیا از حذف این لاگ خطا مطمئن هستید؟', confirmText: 'حذف لاگ' };
 
     // Copy stack trace to clipboard
     const copyToClipboard = (text: string) => {
@@ -189,7 +209,7 @@ export default function ErrorsView({ initialLogs }: ErrorsViewProps) {
                 </div>
                 {initialLogs.length > 0 && (
                     <button
-                        onClick={handleClearAll}
+                        onClick={() => setPendingAction({ type: 'clear' })}
                         disabled={isPending}
                         className="flex items-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 px-5 py-3 rounded-2xl font-bold text-xs transition-all border border-red-150"
                     >
@@ -348,7 +368,7 @@ export default function ErrorsView({ initialLogs }: ErrorsViewProps) {
                                                         جزئیات
                                                     </button>
                                                     <button
-                                                        onClick={() => handleDeleteSingle(log.id)}
+                                                        onClick={() => setPendingAction({ type: 'single', id: log.id })}
                                                         className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                                         title="حذف لاگ"
                                                     >
@@ -390,7 +410,7 @@ export default function ErrorsView({ initialLogs }: ErrorsViewProps) {
                             </div>
 
                             <button
-                                onClick={handleBulkDelete}
+                                onClick={() => setPendingAction({ type: 'bulk' })}
                                 disabled={isPending}
                                 className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white px-5 py-2.5 rounded-2xl font-bold text-xs transition-colors"
                             >
@@ -486,7 +506,7 @@ export default function ErrorsView({ initialLogs }: ErrorsViewProps) {
                                     onClick={() => {
                                         const id = selectedLogForDetail.id;
                                         setSelectedLogForDetail(null);
-                                        handleDeleteSingle(id);
+                                        setPendingAction({ type: 'single', id });
                                     }}
                                     className="bg-red-50 hover:bg-red-100 text-red-600 px-5 py-3 rounded-2xl font-bold text-xs transition-colors border border-red-150 flex items-center gap-1.5"
                                 >
@@ -504,6 +524,16 @@ export default function ErrorsView({ initialLogs }: ErrorsViewProps) {
                     </div>
                 )}
             </AnimatePresence>
+
+            <ConfirmDialog
+                open={pendingAction !== null}
+                title={confirmContent.title}
+                message={confirmContent.message}
+                confirmText={confirmContent.confirmText}
+                isPending={isPending}
+                onConfirm={runPendingAction}
+                onClose={() => setPendingAction(null)}
+            />
         </div>
     );
 }

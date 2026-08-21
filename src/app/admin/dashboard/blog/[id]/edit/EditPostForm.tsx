@@ -6,6 +6,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { ArrowRight, Save, Eye, Loader2, Trash2 } from 'lucide-react';
 import BlogImageUpload from '@/components/admin/BlogImageUpload';
+import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -75,6 +76,7 @@ type PostFormData = z.infer<typeof postSchema>;
 export default function EditPostForm({ post, categories, tags }: EditPostFormProps) {
     const router = useRouter();
     const [deleting, setDeleting] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [content, setContent] = useState<object>(
         post.content || { type: 'doc', content: [{ type: 'paragraph' }] }
@@ -143,8 +145,6 @@ export default function EditPostForm({ post, categories, tags }: EditPostFormPro
     };
 
     const handleDelete = async () => {
-        if (!confirm('آیا از حذف این پست مطمئن هستید؟')) return;
-
         setDeleting(true);
         try {
             const response = await fetch(`/api/blog/${post.slug}`, {
@@ -155,6 +155,7 @@ export default function EditPostForm({ post, categories, tags }: EditPostFormPro
                 throw new Error('خطا در حذف پست');
             }
 
+            setShowDeleteConfirm(false);
             router.push('/admin/dashboard/blog');
             router.refresh();
         } catch (err) {
@@ -182,7 +183,7 @@ export default function EditPostForm({ post, categories, tags }: EditPostFormPro
                 <div className="flex items-center gap-2">
                     <button
                         type="button"
-                        onClick={handleDelete}
+                        onClick={() => setShowDeleteConfirm(true)}
                         disabled={deleting}
                         className="flex items-center gap-2 px-4 py-2 border border-red-300 text-red-600 rounded-xl hover:bg-red-50 transition-colors disabled:opacity-50"
                     >
@@ -413,6 +414,16 @@ export default function EditPostForm({ post, categories, tags }: EditPostFormPro
                     </div>
                 </div>
             </div>
+
+            <ConfirmDialog
+                open={showDeleteConfirm}
+                title="حذف پست"
+                message="آیا از حذف این پست مطمئن هستید؟ این عملیات قابل بازگشت نیست."
+                confirmText="حذف پست"
+                isPending={deleting}
+                onConfirm={handleDelete}
+                onClose={() => setShowDeleteConfirm(false)}
+            />
         </form>
     );
 }
