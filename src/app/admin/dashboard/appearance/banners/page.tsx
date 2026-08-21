@@ -1,9 +1,11 @@
 import { connection } from 'next/server';
 import BannersListClient from './BannersListClient';
 import { Suspense } from 'react';
+import { requireRolePage } from '@/lib/admin-auth';
 
 async function BannersContent() {
     await connection();
+    await requireRolePage('BANNERS');
     return <BannersListClient />;
 }
 

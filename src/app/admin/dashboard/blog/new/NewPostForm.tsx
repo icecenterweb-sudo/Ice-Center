@@ -9,6 +9,7 @@ import BlogImageUpload from '@/components/admin/BlogImageUpload';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { slugify } from '@/lib/slugify-client';
 
 // Dynamically import BlogEditor with SSR disabled to prevent hydration issues
 const BlogEditor = dynamic(() => import('@/components/blog/BlogEditor'), {
@@ -88,15 +89,8 @@ export default function NewPostForm({ categories, tags }: NewPostFormProps) {
 
     const formValues = watch();
 
-    // Auto-generate slug from title
-    const generateSlug = (title: string) => {
-        return title
-            .toLowerCase()
-            .replace(/[^\w\s-]/g, '')
-            .replace(/\s+/g, '-')
-            .replace(/-+/g, '-')
-            .trim();
-    };
+    // Auto-generate slug from title (shared Persian-aware slugify keeps فارسی characters)
+    const generateSlug = (title: string) => slugify(title);
 
     const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const title = e.target.value;

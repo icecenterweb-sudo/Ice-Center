@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Plus, Trash2, Edit, Eye, EyeOff, Loader2, ImageIcon } from 'lucide-react';
 import Image from 'next/image';
+import toast from 'react-hot-toast';
+import ConfirmDialog from '@/components/admin/ConfirmDialog';
 
 interface Banner {
     id: number;
@@ -23,6 +25,7 @@ export default function BannersPage() {
     const [banners, setBanners] = useState<Banner[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isDeleting, setIsDeleting] = useState<number | null>(null);
+    const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
 
     // Load banners
     useEffect(() => {
@@ -61,9 +64,10 @@ export default function BannersPage() {
         }
     };
 
-    // Delete banner
-    const deleteBanner = async (bannerId: number) => {
-        if (!confirm('آیا از حذف این بنر اطمینان دارید؟')) return;
+    // Delete banner (runs after confirmation)
+    const performDeleteBanner = async () => {
+        if (pendingDeleteId === null) return;
+        const bannerId = pendingDeleteId;
 
         setIsDeleting(bannerId);
         try {
@@ -72,10 +76,15 @@ export default function BannersPage() {
             });
 
             if (res.ok) {
-                setBanners(banners.filter(b => b.id !== bannerId));
+                setBanners(prev => prev.filter(b => b.id !== bannerId));
+                toast.success('بنر با موفقیت حذف شد');
+                setPendingDeleteId(null);
+            } else {
+                toast.error('خطا در حذف بنر');
             }
         } catch (error) {
             console.error('Failed to delete banner:', error);
+            toast.error('خطا در ارتباط با سرور');
         } finally {
             setIsDeleting(null);
         }
@@ -163,7 +172,7 @@ export default function BannersPage() {
                                             banner={banner}
                                             getLinkText={getLinkText}
                                             toggleActive={toggleActive}
-                                            deleteBanner={deleteBanner}
+                                            deleteBanner={(id) => setPendingDeleteId(id)}
                                             isDeleting={isDeleting}
                                         />
                                     ))}
@@ -184,7 +193,7 @@ export default function BannersPage() {
                                             banner={banner}
                                             getLinkText={getLinkText}
                                             toggleActive={toggleActive}
-                                            deleteBanner={deleteBanner}
+                                            deleteBanner={(id) => setPendingDeleteId(id)}
                                             isDeleting={isDeleting}
                                         />
                                     ))}
@@ -194,6 +203,16 @@ export default function BannersPage() {
                     )}
                 </div>
             )}
+
+            <ConfirmDialog
+                open={pendingDeleteId !== null}
+                title="حذف بنر"
+                message="آیا از حذف این بنر اطمینان دارید؟ این عملیات قابل بازگشت نیست."
+                confirmText="حذف بنر"
+                isPending={isDeleting !== null}
+                onConfirm={performDeleteBanner}
+                onClose={() => setPendingDeleteId(null)}
+            />
         </div>
     );
 }

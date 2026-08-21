@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const { tagIds, ...postData } = result.data;
+        const { tagIds, authorId: _clientAuthorId, ...postData } = result.data;
 
         // Check slug uniqueness
         const existingPost = await prisma.blogPost.findUnique({
@@ -90,10 +90,11 @@ export async function POST(request: NextRequest) {
             publishedAt = new Date();
         }
 
-        // Create post
+        // Create post with verified server-side authorId
         const post = await prisma.blogPost.create({
             data: {
                 ...postData,
+                authorId: auth.payload.adminId,
                 publishedAt,
                 tags: tagIds?.length
                     ? { connect: tagIds.map((id) => ({ id })) }

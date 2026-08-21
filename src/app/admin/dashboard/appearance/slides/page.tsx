@@ -1,9 +1,11 @@
 import { connection } from 'next/server';
 import SlidesListClient from './SlidesListClient';
 import { Suspense } from 'react';
+import { requireRolePage } from '@/lib/admin-auth';
 
 async function SlidesContent() {
     await connection();
+    await requireRolePage('SLIDES');
     return <SlidesListClient />;
 }
 

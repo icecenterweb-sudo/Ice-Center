@@ -1,6 +1,7 @@
 import { connection } from 'next/server';
 import EditSlideClient from './EditSlideClient';
 import { Suspense } from 'react';
+import { requireRolePage } from '@/lib/admin-auth';
 
 interface Props {
     params: Promise<{ id: string }>;
@@ -8,6 +9,7 @@ interface Props {
 
 async function EditSlideContent({ params }: Props) {
     await connection(); // Required for cacheComponents
+    await requireRolePage('SLIDES');
     const { id } = await params;
     return <EditSlideClient id={id} />;
 }

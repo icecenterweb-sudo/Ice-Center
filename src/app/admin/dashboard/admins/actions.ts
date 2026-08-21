@@ -122,10 +122,33 @@ export async function promoteUserToAdminAction(formData: FormData) {
         const name = [user.firstName, user.lastName].filter(Boolean).join(' ') || null;
 
         if (existingAdmin) {
-            // Update existing admin
+            // 1. Only SUPER_ADMIN can edit a target who is currently a SUPER_ADMIN
+            if (existingAdmin.roles.includes('SUPER_ADMIN') && !adminPayload.roles.includes('SUPER_ADMIN')) {
+                throw new Error('فقط سوپر ادمین می‌تواند نقش‌های یک سوپر ادمین دیگر را تغییر دهد.');
+            }
+
+            // 2. Prevent removing the last active SUPER_ADMIN from system
+            if (existingAdmin.roles.includes('SUPER_ADMIN') && !roles.includes('SUPER_ADMIN')) {
+                const superCount = await prisma.admin.count({
+                    where: { roles: { has: 'SUPER_ADMIN' }, status: 'ACTIVE' }
+                });
+                if (superCount <= 1) {
+                    throw new Error('نمی‌توان تنها سوپر ادمین فعال سیستم را سلب نقش نمود.');
+                }
+            }
+
+            // 3. Prevent self-demotion out of SUPER_ADMIN
+            if (existingAdmin.id === adminPayload.adminId && existingAdmin.roles.includes('SUPER_ADMIN') && !roles.includes('SUPER_ADMIN')) {
+                throw new Error('شما نمی‌توانید دسترسی سوپر ادمین خود را کاهش دهید.');
+            }
+
+            // Update existing admin without unintentionally reactivating blocked account
             await prisma.admin.update({
                 where: { phone: normalizedPhone },
-                data: { roles, status: 'ACTIVE' },
+                data: {
+                    roles,
+                    ...(existingAdmin.status === 'BLOCKED' ? {} : { status: 'ACTIVE' })
+                },
             });
             await recordAudit(
                 adminPayload.adminId,

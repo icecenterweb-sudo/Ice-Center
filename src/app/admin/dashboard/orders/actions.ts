@@ -99,7 +99,7 @@ export async function getOrderDetails(id: number) {
 
 export async function updateOrderStatus(orderId: number, status: OrderStatus) {
     try {
-        const admin = await requireAdminAction();
+        const admin = await requireRoleAction('ORDERS');
         // Build timestamp updates based on new status
         const timestampUpdates: Record<string, Date> = {};
         const now = new Date();
@@ -185,7 +185,7 @@ export async function updateOrderStatus(orderId: number, status: OrderStatus) {
 
 export async function updateAdminNotes(orderId: number, notes: string) {
     try {
-        const admin = await requireAdminAction();
+        const admin = await requireRoleAction('ORDERS');
         const order = await prisma.order.update({
             where: { id: orderId },
             data: { adminNotes: notes },
@@ -205,7 +205,7 @@ export async function updateAdminNotes(orderId: number, notes: string) {
 
 export async function bulkUpdateOrdersStatusAction(orderIds: number[], status: OrderStatus) {
     try {
-        const admin = await requireAdminAction();
+        const admin = await requireRoleAction('ORDERS');
         
         if (!orderIds || orderIds.length === 0) {
             throw new Error('هیچ سفارشی انتخاب نشده است.');

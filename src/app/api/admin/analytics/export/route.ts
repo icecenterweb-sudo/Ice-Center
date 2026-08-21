@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse, connection } from 'next/server'
 import { prisma } from '@/lib/db'
-import { requireAdmin } from '@/lib/admin-auth'
+import { requireRole } from '@/lib/admin-auth'
 
 /**
  * Sanitize a string for CSV to prevent formula injection.
@@ -17,9 +17,13 @@ function csvSafe(value: string | null | undefined): string {
     return sanitized
 }
 
+// Upper bound on rows pulled into memory for a single CSV export. Well above the
+// realistic dataset size for this store, but bounds worst-case memory/response size.
+const EXPORT_ROW_LIMIT = 50000
+
 export async function GET(request: NextRequest) {
     await connection() // Required for request.headers with cacheComponents
-    const auth = await requireAdmin(request)
+    const auth = await requireRole(request, 'ANALYTICS')
     if (!auth.ok) {
         return auth.response
     }
@@ -34,6 +38,7 @@ export async function GET(request: NextRequest) {
         if (type === 'orders') {
             const orders = await prisma.order.findMany({
                 orderBy: { createdAt: 'desc' },
+                take: EXPORT_ROW_LIMIT,
                 include: { items: true }
             })
             filename = `orders-${Date.now()}.csv`
@@ -46,6 +51,7 @@ export async function GET(request: NextRequest) {
         } else if (type === 'customers') {
             const users = await prisma.user.findMany({
                 orderBy: { createdAt: 'desc' },
+                take: EXPORT_ROW_LIMIT,
             })
             filename = `customers-${Date.now()}.csv`
             csvContent = '\ufeffشناسه,نام,نام خانوادگی,تلفن,تاریخ عضویت,وضعیت\n'
@@ -56,6 +62,7 @@ export async function GET(request: NextRequest) {
         } else if (type === 'products') {
             const products = await prisma.product.findMany({
                 orderBy: { createdAt: 'desc' },
+                take: EXPORT_ROW_LIMIT,
             })
             filename = `products-${Date.now()}.csv`
             csvContent = '\ufeffشناسه,نام کالا,کد کالا (SKU),برند,قیمت,موجودی,وضعیت نمایش\n'

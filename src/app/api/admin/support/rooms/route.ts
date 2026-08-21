@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
 import { prisma } from '@/lib/db';
-import { requireAdmin } from '@/lib/admin-auth';
+import { requireRole } from '@/lib/admin-auth';
 
 /**
  * GET /api/admin/support/rooms
@@ -8,7 +8,7 @@ import { requireAdmin } from '@/lib/admin-auth';
  */
 export async function GET(request: NextRequest) {
     await connection(); // Required for request.headers with cacheComponents
-    const auth = await requireAdmin(request);
+    const auth = await requireRole(request, 'SUPPORT');
     if (!auth.ok) return auth.response;
 
     try {
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
             },
         });
 
-        return NextResponse.json({ rooms });
+        return NextResponse.json({ success: true, rooms });
     } catch (error) {
         console.error('[Admin Support] Failed to list rooms:', error);
         return NextResponse.json({ error: 'خطا در دریافت لیست گفتگوها' }, { status: 500 });

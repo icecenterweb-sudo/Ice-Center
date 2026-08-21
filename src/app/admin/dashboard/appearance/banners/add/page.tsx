@@ -1,9 +1,11 @@
 import { connection } from 'next/server';
 import AddBannerClient from './AddBannerClient';
 import { Suspense } from 'react';
+import { requireRolePage } from '@/lib/admin-auth';
 
 async function AddBannerContent() {
     await connection(); // Required for cacheComponents
+    await requireRolePage('BANNERS');
     return <AddBannerClient />;
 }
 

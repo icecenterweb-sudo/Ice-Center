@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
 import { prisma } from '@/lib/db';
-import { requireAdmin } from '@/lib/admin-auth';
+import { requireRole } from '@/lib/admin-auth';
 
 /**
  * GET /api/admin/support/rooms/[id]/messages
@@ -11,7 +11,7 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     await connection(); // Required for request.headers with cacheComponents
-    const auth = await requireAdmin(request);
+    const auth = await requireRole(request, 'SUPPORT');
     if (!auth.ok) return auth.response;
 
     const { id } = await params;
@@ -46,7 +46,7 @@ export async function GET(
             },
         });
 
-        return NextResponse.json({ room, messages });
+        return NextResponse.json({ success: true, room, messages });
     } catch (error) {
         console.error('[Admin Support] Failed to fetch room messages:', error);
         return NextResponse.json({ error: 'خطا در دریافت پیام‌ها' }, { status: 500 });

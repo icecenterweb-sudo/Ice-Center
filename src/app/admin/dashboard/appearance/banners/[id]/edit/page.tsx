@@ -1,6 +1,7 @@
 import { connection } from 'next/server';
 import EditBannerClient from './EditBannerClient';
 import { Suspense } from 'react';
+import { requireRolePage } from '@/lib/admin-auth';
 
 interface Props {
     params: Promise<{ id: string }>;
@@ -8,6 +9,7 @@ interface Props {
 
 async function EditBannerContent({ params }: Props) {
     await connection(); // Required for cacheComponents
+    await requireRolePage('BANNERS');
     const { id } = await params;
     return <EditBannerClient id={id} />;
 }

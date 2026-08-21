@@ -72,7 +72,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             );
         }
 
-        const { tagIds, ...postData } = result.data;
+        const { tagIds, authorId: _clientAuthorId, ...postData } = result.data;
 
         // Check new slug uniqueness (if changed)
         if (postData.slug && postData.slug !== slug) {

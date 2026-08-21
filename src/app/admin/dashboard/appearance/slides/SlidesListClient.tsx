@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Plus, Trash2, Edit, Eye, EyeOff, GripVertical, Loader2 } from 'lucide-react';
 import Image from 'next/image';
+import toast from 'react-hot-toast';
+import ConfirmDialog from '@/components/admin/ConfirmDialog';
 
 interface Slide {
     id: number;
@@ -22,6 +24,7 @@ export default function SlidesPage() {
     const [slides, setSlides] = useState<Slide[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isDeleting, setIsDeleting] = useState<number | null>(null);
+    const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
 
     // Load slides
     useEffect(() => {
@@ -60,9 +63,10 @@ export default function SlidesPage() {
         }
     };
 
-    // Delete slide
-    const deleteSlide = async (slideId: number) => {
-        if (!confirm('آیا از حذف این اسلاید اطمینان دارید؟')) return;
+    // Delete slide (runs after confirmation)
+    const performDeleteSlide = async () => {
+        if (pendingDeleteId === null) return;
+        const slideId = pendingDeleteId;
 
         setIsDeleting(slideId);
         try {
@@ -71,10 +75,15 @@ export default function SlidesPage() {
             });
 
             if (res.ok) {
-                setSlides(slides.filter(s => s.id !== slideId));
+                setSlides(prev => prev.filter(s => s.id !== slideId));
+                toast.success('اسلاید با موفقیت حذف شد');
+                setPendingDeleteId(null);
+            } else {
+                toast.error('خطا در حذف اسلاید');
             }
         } catch (error) {
             console.error('Failed to delete slide:', error);
+            toast.error('خطا در ارتباط با سرور');
         } finally {
             setIsDeleting(null);
         }
@@ -213,7 +222,7 @@ export default function SlidesPage() {
                                     </Link>
 
                                     <button
-                                        onClick={() => deleteSlide(slide.id)}
+                                        onClick={() => setPendingDeleteId(slide.id)}
                                         disabled={isDeleting === slide.id}
                                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                                         title="حذف"
@@ -230,6 +239,16 @@ export default function SlidesPage() {
                     </div>
                 </div>
             )}
+
+            <ConfirmDialog
+                open={pendingDeleteId !== null}
+                title="حذف اسلاید"
+                message="آیا از حذف این اسلاید اطمینان دارید؟ این عملیات قابل بازگشت نیست."
+                confirmText="حذف اسلاید"
+                isPending={isDeleting !== null}
+                onConfirm={performDeleteSlide}
+                onClose={() => setPendingDeleteId(null)}
+            />
         </div>
     );
 }

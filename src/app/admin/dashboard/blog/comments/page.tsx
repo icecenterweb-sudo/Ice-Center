@@ -4,6 +4,7 @@ import { MessageCircle, CheckCircle, XCircle, Clock, ArrowLeft } from 'lucide-re
 import CommentsTable from './CommentsTable';
 import { connection } from 'next/server';
 import { Suspense } from 'react';
+import { requireRolePage } from '@/lib/admin-auth';
 
 async function getComments() {
     await connection(); // Opt out of caching
@@ -29,6 +30,7 @@ async function getStats() {
 }
 
 async function AdminCommentsContent() {
+    await requireRolePage('BLOG');
     const [comments, stats] = await Promise.all([getComments(), getStats()]);
 
     return (

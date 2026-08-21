@@ -1,10 +1,12 @@
 import { connection } from 'next/server'
 import { prisma } from '@/lib/db'
 import AnalyticsDashboard from './AnalyticsDashboard'
+import { requireRolePage } from '@/lib/admin-auth'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
 export default async function AdminAnalyticsPage() {
+    await requireRolePage('ANALYTICS')
     await connection()
     const now = new Date()
     const start30 = startOfDay(new Date(now.getTime() - 29 * DAY_MS))

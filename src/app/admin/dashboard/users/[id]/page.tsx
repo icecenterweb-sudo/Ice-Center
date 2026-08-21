@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import CustomerProfileView from './CustomerProfileView';
 import { connection } from 'next/server';
 import { Loader2 } from 'lucide-react';
+import { requireRolePage } from '@/lib/admin-auth';
 
 async function getCustomerData(id: number) {
     await connection();
@@ -28,91 +29,109 @@ async function getCustomerData(id: number) {
 
     if (!user) return null;
 
-    const [orders, cartItems, wishlistItems, supportRooms, analyticsEvents, notifications] =
-        await Promise.all([
-            prisma.order.findMany({
-                where: { userId: id },
-                orderBy: { createdAt: 'desc' },
-                take: 20,
-                select: {
-                    id: true,
-                    orderNumber: true,
-                    status: true,
-                    total: true,
-                    createdAt: true,
-                    items: {
-                        select: { productName: true, quantity: true, unitPrice: true },
-                        take: 3,
-                    },
+    const [
+        orders,
+        cartItems,
+        wishlistItems,
+        supportRooms,
+        analyticsEvents,
+        notifications,
+        totalOrdersCount,
+        orderStatsAggregate,
+    ] = await Promise.all([
+        prisma.order.findMany({
+            where: { userId: id },
+            orderBy: { createdAt: 'desc' },
+            take: 20,
+            select: {
+                id: true,
+                orderNumber: true,
+                status: true,
+                total: true,
+                createdAt: true,
+                items: {
+                    select: { productName: true, quantity: true, unitPrice: true },
+                    take: 3,
                 },
-            }),
-            prisma.cartItem.findMany({
-                where: { userId: id },
-                select: {
-                    id: true,
-                    quantity: true,
-                    product: {
-                        select: { id: true, name: true, price: true, thumbnail: true },
-                    },
+            },
+        }),
+        prisma.cartItem.findMany({
+            where: { userId: id },
+            select: {
+                id: true,
+                quantity: true,
+                product: {
+                    select: { id: true, name: true, price: true, thumbnail: true },
                 },
-            }),
-            prisma.wishlistItem.findMany({
-                where: { userId: id },
-                select: {
-                    id: true,
-                    product: {
-                        select: { id: true, name: true, price: true, thumbnail: true, slug: true },
-                    },
+            },
+        }),
+        prisma.wishlistItem.findMany({
+            where: { userId: id },
+            select: {
+                id: true,
+                product: {
+                    select: { id: true, name: true, price: true, thumbnail: true, slug: true },
                 },
-            }),
-            prisma.supportRoom.findMany({
-                where: { userId: id },
-                orderBy: { updatedAt: 'desc' },
-                take: 10,
-                select: {
-                    id: true,
-                    status: true,
-                    createdAt: true,
-                    updatedAt: true,
-                    _count: { select: { messages: true } },
-                    messages: {
-                        orderBy: { createdAt: 'desc' },
-                        take: 1,
-                        select: { text: true, sender: true, createdAt: true },
-                    },
+            },
+        }),
+        prisma.supportRoom.findMany({
+            where: { userId: id },
+            orderBy: { updatedAt: 'desc' },
+            take: 10,
+            select: {
+                id: true,
+                status: true,
+                createdAt: true,
+                updatedAt: true,
+                _count: { select: { messages: true } },
+                messages: {
+                    orderBy: { createdAt: 'desc' },
+                    take: 1,
+                    select: { text: true, sender: true, createdAt: true },
                 },
-            }),
-            prisma.analyticsEvent.findMany({
-                where: { userId: id },
-                orderBy: { createdAt: 'desc' },
-                take: 30,
-                select: {
-                    id: true,
-                    type: true,
-                    path: true,
-                    source: true,
-                    device: true,
-                    createdAt: true,
-                },
-            }),
-            prisma.notification.findMany({
-                where: { userId: id },
-                orderBy: { createdAt: 'desc' },
-                take: 20,
-                select: {
-                    id: true,
-                    type: true,
-                    title: true,
-                    message: true,
-                    readAt: true,
-                    createdAt: true,
-                },
-            }),
-        ]);
+            },
+        }),
+        prisma.analyticsEvent.findMany({
+            where: { userId: id },
+            orderBy: { createdAt: 'desc' },
+            take: 30,
+            select: {
+                id: true,
+                type: true,
+                path: true,
+                source: true,
+                device: true,
+                createdAt: true,
+            },
+        }),
+        prisma.notification.findMany({
+            where: { userId: id },
+            orderBy: { createdAt: 'desc' },
+            take: 20,
+            select: {
+                id: true,
+                type: true,
+                title: true,
+                message: true,
+                readAt: true,
+                createdAt: true,
+            },
+        }),
+        prisma.order.count({
+            where: { userId: id },
+        }),
+        prisma.order.aggregate({
+            where: {
+                userId: id,
+                status: { not: 'CANCELLED' },
+            },
+            _sum: {
+                total: true,
+            },
+        }),
+    ]);
 
-    const totalSpent = orders
-        .filter((o) => o.status !== 'CANCELLED')
-        .reduce((sum, o) => sum + o.total, 0);
+    const totalSpent = orderStatsAggregate._sum.total || 0;
 
     return {
         user,
@@ -123,7 +142,7 @@ async function getCustomerData(id: number) {
         analyticsEvents,
         notifications,
         stats: {
-            totalOrders: orders.length,
+            totalOrders: totalOrdersCount,
             totalSpent,
             wishlistCount: wishlistItems.length,
             cartCount: cartItems.reduce((s, c) => s + c.quantity, 0),
@@ -142,6 +161,8 @@ export default async function CustomerDetailPage({
 }: {
     params: Promise<{ id: string }>;
 }) {
+    await requireRolePage('USERS');
+
     const { id: rawId } = await params;
     const userId = parseInt(rawId);
     if (isNaN(userId)) notFound();

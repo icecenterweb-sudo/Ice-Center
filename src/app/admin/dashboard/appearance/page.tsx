@@ -1,9 +1,11 @@
 import { connection } from 'next/server';
 import AppearanceClient from './AppearanceClient';
 import { Suspense } from 'react';
+import { requireRolePage } from '@/lib/admin-auth';
 
 async function AppearanceContent() {
     await connection();
+    await requireRolePage('APPEARANCE');
     return <AppearanceClient />;
 }
 
