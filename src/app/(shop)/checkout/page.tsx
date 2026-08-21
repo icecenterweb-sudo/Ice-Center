@@ -30,6 +30,7 @@ import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { fieldClass } from '@/lib/form-classes';
 
 // Checkout form validation schema
 const checkoutSchema = z.object({
@@ -205,6 +206,8 @@ export default function CheckoutPage() {
         formState: { errors },
     } = useForm<CheckoutFormData>({
         resolver: zodResolver(checkoutSchema),
+        mode: 'onChange',
+        reValidateMode: 'onChange',
         defaultValues: {
             firstName: '',
             lastName: '',
@@ -446,42 +449,57 @@ export default function CheckoutPage() {
                                         <div className="space-y-4">
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">نام *</label>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">نام <span className="text-red-500">*</span></label>
                                                     <input
                                                         type="text"
                                                         {...register('firstName')}
                                                         placeholder="نام"
-                                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                                                        aria-invalid={!!errors.firstName}
+                                                        aria-describedby={errors.firstName ? 'firstName-error' : undefined}
+                                                        className={fieldClass(
+                                                            "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all",
+                                                            !!errors.firstName
+                                                        )}
                                                     />
                                                     {errors.firstName && (
-                                                        <p className="text-xs text-red-500 mt-1">{errors.firstName.message}</p>
+                                                        <p id="firstName-error" className="text-xs font-medium text-red-600 mt-1">{errors.firstName.message}</p>
                                                     )}
                                                 </div>
                                                 <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">نام خانوادگی *</label>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">نام خانوادگی <span className="text-red-500">*</span></label>
                                                     <input
                                                         type="text"
                                                         {...register('lastName')}
                                                         placeholder="نام خانوادگی"
-                                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                                                        aria-invalid={!!errors.lastName}
+                                                        aria-describedby={errors.lastName ? 'lastName-error' : undefined}
+                                                        className={fieldClass(
+                                                            "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all",
+                                                            !!errors.lastName
+                                                        )}
                                                     />
                                                     {errors.lastName && (
-                                                        <p className="text-xs text-red-500 mt-1">{errors.lastName.message}</p>
+                                                        <p id="lastName-error" className="text-xs font-medium text-red-600 mt-1">{errors.lastName.message}</p>
                                                     )}
                                                 </div>
                                             </div>
 
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">شماره موبایل *</label>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">شماره موبایل <span className="text-red-500">*</span></label>
                                                 <input
                                                     type="tel"
                                                     {...register('phone')}
                                                     placeholder="09xxxxxxxxx"
-                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all dir-ltr text-left"
+                                                    aria-invalid={!!errors.phone}
+                                                    aria-describedby={errors.phone ? 'phone-error' : undefined}
+                                                    className={fieldClass(
+                                                        "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all dir-ltr text-left",
+                                                        !!errors.phone
+                                                    )}
                                                     disabled={isAuthenticated}
                                                 />
                                                 {errors.phone && (
-                                                    <p className="text-xs text-red-500 mt-1">{errors.phone.message}</p>
+                                                    <p id="phone-error" className="text-xs font-medium text-red-600 mt-1">{errors.phone.message}</p>
                                                 )}
                                                 {isAuthenticated && (
                                                     <p className="text-xs text-gray-500 mt-1.5">شماره موبایل از حساب کاربری شما</p>
@@ -525,10 +543,15 @@ export default function CheckoutPage() {
                                         <div className="space-y-4">
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">استان *</label>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">استان <span className="text-red-500">*</span></label>
                                                     <select
                                                         {...register('province')}
-                                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                                                        aria-invalid={!!errors.province}
+                                                        aria-describedby={errors.province ? 'province-error' : undefined}
+                                                        className={fieldClass(
+                                                            "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all",
+                                                            !!errors.province
+                                                        )}
                                                     >
                                                         <option value="">انتخاب استان</option>
                                                         {provinces.map((p) => (
@@ -536,33 +559,43 @@ export default function CheckoutPage() {
                                                         ))}
                                                     </select>
                                                     {errors.province && (
-                                                        <p className="text-xs text-red-500 mt-1">{errors.province.message}</p>
+                                                        <p id="province-error" className="text-xs font-medium text-red-600 mt-1">{errors.province.message}</p>
                                                     )}
                                                 </div>
                                                 <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">شهر *</label>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">شهر <span className="text-red-500">*</span></label>
                                                     <input
                                                         type="text"
                                                         {...register('city')}
                                                         placeholder="نام شهر"
-                                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                                                        aria-invalid={!!errors.city}
+                                                        aria-describedby={errors.city ? 'city-error' : undefined}
+                                                        className={fieldClass(
+                                                            "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all",
+                                                            !!errors.city
+                                                        )}
                                                     />
                                                     {errors.city && (
-                                                        <p className="text-xs text-red-500 mt-1">{errors.city.message}</p>
+                                                        <p id="city-error" className="text-xs font-medium text-red-600 mt-1">{errors.city.message}</p>
                                                     )}
                                                 </div>
                                             </div>
 
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">آدرس کامل *</label>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">آدرس کامل <span className="text-red-500">*</span></label>
                                                 <textarea
                                                     {...register('address')}
                                                     placeholder="خیابان، کوچه، پلاک، واحد"
                                                     rows={3}
-                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all resize-none"
+                                                    aria-invalid={!!errors.address}
+                                                    aria-describedby={errors.address ? 'address-error' : undefined}
+                                                    className={fieldClass(
+                                                        "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all resize-none",
+                                                        !!errors.address
+                                                    )}
                                                 />
                                                 {errors.address && (
-                                                    <p className="text-xs text-red-500 mt-1">{errors.address.message}</p>
+                                                    <p id="address-error" className="text-xs font-medium text-red-600 mt-1">{errors.address.message}</p>
                                                 )}
                                             </div>
 

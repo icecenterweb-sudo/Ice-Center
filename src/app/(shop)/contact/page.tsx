@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Phone, Mail, MapPin, Clock, Send, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { fieldClass } from '@/lib/form-classes';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -13,12 +14,39 @@ export default function ContactPage() {
     subject: 'مشاوره خرید تجهیزات',
     message: '',
   });
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const clearFieldError = (field: string) => {
+    if (fieldErrors[field]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.phone || !formData.message) {
-      toast.error('لطفاً تمامی فیلدهای ضروری را تکمیل نمایید.');
+    setFieldErrors({});
+
+    const newFieldErrors: Record<string, string> = {};
+    if (!formData.name.trim()) {
+      newFieldErrors.name = 'نام و نام خانوادگی الزامی است';
+    }
+    if (!formData.phone.trim()) {
+      newFieldErrors.phone = 'شماره تماس الزامی است';
+    } else if (!/^(\+98|0)?9\d{9}$/.test(formData.phone.trim())) {
+      newFieldErrors.phone = 'شماره موبایل نامعتبر است';
+    }
+    if (!formData.message.trim()) {
+      newFieldErrors.message = 'متن پیام الزامی است';
+    }
+
+    if (Object.keys(newFieldErrors).length > 0) {
+      setFieldErrors(newFieldErrors);
+      toast.error('لطفاً خطاهای فرم را برطرف نمایید.');
       return;
     }
 
@@ -27,6 +55,7 @@ export default function ContactPage() {
       setIsSubmitting(false);
       toast.success('پیام شما با موفقیت ثبت شد. کارشناسان آیس سنتر به زودی با شما تماس خواهند گرفت.');
       setFormData({ name: '', phone: '', subject: 'مشاوره خرید تجهیزات', message: '' });
+      setFieldErrors({});
     }, 1000);
   };
 
@@ -139,27 +168,47 @@ export default function ContactPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-xs font-extrabold text-slate-700 mb-2">نام و نام خانوادگی *</label>
+                <label className="block text-xs font-extrabold text-slate-700 mb-2">نام و نام خانوادگی <span className="text-red-500">*</span></label>
                 <input
                   type="text"
-                  required
                   placeholder="مثال: علی محمدی"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-medium text-slate-800 focus:outline-hidden focus:border-royal focus:bg-white transition-all"
+                  aria-invalid={!!fieldErrors.name}
+                  aria-describedby={fieldErrors.name ? 'name-error' : undefined}
+                  onChange={(e) => {
+                    setFormData({ ...formData, name: e.target.value });
+                    clearFieldError('name');
+                  }}
+                  className={fieldClass(
+                    "w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-medium text-slate-800 focus:outline-hidden focus:border-royal focus:bg-white transition-all",
+                    !!fieldErrors.name
+                  )}
                 />
+                {fieldErrors.name && (
+                  <p id="name-error" className="text-xs font-medium text-red-600 mt-1">{fieldErrors.name}</p>
+                )}
               </div>
 
               <div>
-                <label className="block text-xs font-extrabold text-slate-700 mb-2">شماره تماس (جهت پیگیری) *</label>
+                <label className="block text-xs font-extrabold text-slate-700 mb-2">شماره تماس (جهت پیگیری) <span className="text-red-500">*</span></label>
                 <input
                   type="tel"
-                  required
                   placeholder="مثال: ۰۹۱۲۲۲۴۸۹۱۷"
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-medium text-slate-800 focus:outline-hidden focus:border-royal focus:bg-white transition-all text-right"
+                  aria-invalid={!!fieldErrors.phone}
+                  aria-describedby={fieldErrors.phone ? 'phone-error' : undefined}
+                  onChange={(e) => {
+                    setFormData({ ...formData, phone: e.target.value });
+                    clearFieldError('phone');
+                  }}
+                  className={fieldClass(
+                    "w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-medium text-slate-800 focus:outline-hidden focus:border-royal focus:bg-white transition-all text-right",
+                    !!fieldErrors.phone
+                  )}
                 />
+                {fieldErrors.phone && (
+                  <p id="phone-error" className="text-xs font-medium text-red-600 mt-1">{fieldErrors.phone}</p>
+                )}
               </div>
             </div>
 
@@ -179,15 +228,25 @@ export default function ContactPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-extrabold text-slate-700 mb-2">متن پیام شما *</label>
+              <label className="block text-xs font-extrabold text-slate-700 mb-2">متن پیام شما <span className="text-red-500">*</span></label>
               <textarea
                 rows={4}
-                required
                 placeholder="پیام خود را به طور کامل بنویسید..."
                 value={formData.message}
-                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-medium text-slate-800 focus:outline-hidden focus:border-royal focus:bg-white transition-all resize-none"
+                aria-invalid={!!fieldErrors.message}
+                aria-describedby={fieldErrors.message ? 'message-error' : undefined}
+                onChange={(e) => {
+                  setFormData({ ...formData, message: e.target.value });
+                  clearFieldError('message');
+                }}
+                className={fieldClass(
+                  "w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-medium text-slate-800 focus:outline-hidden focus:border-royal focus:bg-white transition-all resize-none",
+                  !!fieldErrors.message
+                )}
               />
+              {fieldErrors.message && (
+                <p id="message-error" className="text-xs font-medium text-red-600 mt-1">{fieldErrors.message}</p>
+              )}
             </div>
 
             <button

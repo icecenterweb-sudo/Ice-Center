@@ -10,6 +10,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { slugify } from '@/lib/slugify-client';
+import { fieldClass } from '@/lib/form-classes';
 
 // Dynamically import BlogEditor with SSR disabled to prevent hydration issues
 const BlogEditor = dynamic(() => import('@/components/blog/BlogEditor'), {
@@ -72,6 +73,8 @@ export default function NewPostForm({ categories, tags }: NewPostFormProps) {
         formState: { errors, isSubmitting },
     } = useForm<PostFormData>({
         resolver: zodResolver(postSchema),
+        mode: 'onChange',
+        reValidateMode: 'onChange',
         defaultValues: {
             title: '',
             slug: '',
@@ -189,36 +192,46 @@ export default function NewPostForm({ categories, tags }: NewPostFormProps) {
                     {/* Title */}
                     <div className="bg-white rounded-xl border border-gray-200 p-4">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            عنوان پست*
+                            عنوان پست <span className="text-red-500">*</span>
                         </label>
                         <input
                             type="text"
                             {...register('title')}
                             onChange={handleTitleChange}
-                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ocean focus:border-transparent text-gray-900 bg-white"
+                            aria-invalid={!!errors.title}
+                            aria-describedby={errors.title ? 'title-error' : undefined}
+                            className={fieldClass(
+                                "w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ocean focus:border-transparent text-gray-900 bg-white",
+                                !!errors.title
+                            )}
                             placeholder="عنوان پست را وارد کنید..."
                         />
                         {errors.title && (
-                            <p className="text-xs text-red-500 mt-1">{errors.title.message}</p>
+                            <p id="title-error" className="text-xs font-medium text-red-600 mt-1">{errors.title.message}</p>
                         )}
                     </div>
 
                     {/* Slug */}
                     <div className="bg-white rounded-xl border border-gray-200 p-4">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            اسلاگ (URL)*
+                            اسلاگ (URL) <span className="text-red-500">*</span>
                         </label>
                         <div className="flex items-center gap-2">
                             <span className="text-gray-500 text-sm">/blog/</span>
                             <input
                                 type="text"
                                 {...register('slug')}
-                                className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ocean focus:border-transparent text-gray-900 bg-white"
+                                aria-invalid={!!errors.slug}
+                                aria-describedby={errors.slug ? 'slug-error' : undefined}
+                                className={fieldClass(
+                                    "flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ocean focus:border-transparent text-gray-900 bg-white",
+                                    !!errors.slug
+                                )}
                                 placeholder="slug-example"
                             />
                         </div>
                         {errors.slug && (
-                            <p className="text-xs text-red-500 mt-1">{errors.slug.message}</p>
+                            <p id="slug-error" className="text-xs font-medium text-red-600 mt-1">{errors.slug.message}</p>
                         )}
                     </div>
 
@@ -239,9 +252,17 @@ export default function NewPostForm({ categories, tags }: NewPostFormProps) {
                             {...register('summary')}
                             rows={3}
                             maxLength={160}
-                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ocean focus:border-transparent resize-none text-gray-900 bg-white"
+                            aria-invalid={!!errors.summary}
+                            aria-describedby={errors.summary ? 'summary-error' : undefined}
+                            className={fieldClass(
+                                "w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ocean focus:border-transparent resize-none text-gray-900 bg-white",
+                                !!errors.summary
+                            )}
                             placeholder="یک خلاصه کوتاه برای پست..."
                         />
+                        {errors.summary && (
+                            <p id="summary-error" className="text-xs font-medium text-red-600 mt-1">{errors.summary.message}</p>
+                        )}
                         <div className="text-xs text-gray-400 mt-1 text-left">
                             {(formValues.summary?.length || 0)}/160
                         </div>
@@ -345,9 +366,17 @@ export default function NewPostForm({ categories, tags }: NewPostFormProps) {
                                 type="text"
                                 {...register('seoTitle')}
                                 maxLength={60}
-                                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ocean text-gray-900 bg-white"
+                                aria-invalid={!!errors.seoTitle}
+                                aria-describedby={errors.seoTitle ? 'seoTitle-error' : undefined}
+                                className={fieldClass(
+                                    "w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ocean text-gray-900 bg-white",
+                                    !!errors.seoTitle
+                                )}
                                 placeholder="عنوان برای موتورهای جستجو..."
                             />
+                            {errors.seoTitle && (
+                                <p id="seoTitle-error" className="text-xs font-medium text-red-600 mt-1">{errors.seoTitle.message}</p>
+                            )}
                         </div>
 
                         <div>
@@ -358,9 +387,17 @@ export default function NewPostForm({ categories, tags }: NewPostFormProps) {
                                 {...register('seoDescription')}
                                 maxLength={160}
                                 rows={2}
-                                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ocean resize-none text-gray-900 bg-white"
+                                aria-invalid={!!errors.seoDescription}
+                                aria-describedby={errors.seoDescription ? 'seoDescription-error' : undefined}
+                                className={fieldClass(
+                                    "w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ocean resize-none text-gray-900 bg-white",
+                                    !!errors.seoDescription
+                                )}
                                 placeholder="توضیحات برای موتورهای جستجو..."
                             />
+                            {errors.seoDescription && (
+                                <p id="seoDescription-error" className="text-xs font-medium text-red-600 mt-1">{errors.seoDescription.message}</p>
+                            )}
                         </div>
 
                         <div>
@@ -370,9 +407,17 @@ export default function NewPostForm({ categories, tags }: NewPostFormProps) {
                             <input
                                 type="text"
                                 {...register('keywords')}
-                                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ocean text-gray-900 bg-white"
+                                aria-invalid={!!errors.keywords}
+                                aria-describedby={errors.keywords ? 'keywords-error' : undefined}
+                                className={fieldClass(
+                                    "w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ocean text-gray-900 bg-white",
+                                    !!errors.keywords
+                                )}
                                 placeholder="کلمه۱, کلمه۲, کلمه۳"
                             />
+                            {errors.keywords && (
+                                <p id="keywords-error" className="text-xs font-medium text-red-600 mt-1">{errors.keywords.message}</p>
+                            )}
                         </div>
                     </div>
                 </div>

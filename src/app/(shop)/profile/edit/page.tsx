@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { fieldClass } from '@/lib/form-classes';
 
 // Validation schema using Zod
 const profileSchema = z.object({
@@ -32,6 +33,8 @@ export default function ProfileEditPage() {
         formState: { errors, isSubmitting },
     } = useForm<ProfileFormData>({
         resolver: zodResolver(profileSchema),
+        mode: 'onChange',
+        reValidateMode: 'onChange',
         defaultValues: {
             firstName: '',
             lastName: '',
@@ -126,10 +129,15 @@ export default function ProfileEditPage() {
                         id="firstName"
                         {...register('firstName')}
                         placeholder="نام خود را وارد کنید"
-                        className="w-full text-sm text-gray-800 placeholder-gray-400 outline-none"
+                        aria-invalid={!!errors.firstName}
+                        aria-describedby={errors.firstName ? 'firstName-error' : undefined}
+                        className={fieldClass(
+                            "w-full px-3 py-2 text-sm text-gray-800 placeholder-gray-400 border border-transparent rounded-xl focus:border-ocean outline-none transition-all",
+                            !!errors.firstName
+                        )}
                     />
                     {errors.firstName && (
-                        <p className="text-xs text-red-500 mt-1">{errors.firstName.message}</p>
+                        <p id="firstName-error" className="text-xs font-medium text-red-600 mt-1">{errors.firstName.message}</p>
                     )}
                 </div>
 
@@ -143,10 +151,15 @@ export default function ProfileEditPage() {
                         id="lastName"
                         {...register('lastName')}
                         placeholder="نام خانوادگی خود را وارد کنید"
-                        className="w-full text-sm text-gray-800 placeholder-gray-400 outline-none"
+                        aria-invalid={!!errors.lastName}
+                        aria-describedby={errors.lastName ? 'lastName-error' : undefined}
+                        className={fieldClass(
+                            "w-full px-3 py-2 text-sm text-gray-800 placeholder-gray-400 border border-transparent rounded-xl focus:border-ocean outline-none transition-all",
+                            !!errors.lastName
+                        )}
                     />
                     {errors.lastName && (
-                        <p className="text-xs text-red-500 mt-1">{errors.lastName.message}</p>
+                        <p id="lastName-error" className="text-xs font-medium text-red-600 mt-1">{errors.lastName.message}</p>
                     )}
                 </div>
 
