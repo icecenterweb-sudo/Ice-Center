@@ -51,8 +51,11 @@ export function calculateEffectivePrice(product: ProductPricing): EffectivePrici
     let discountAmount: number;
 
     if (offer.discountType === 'PERCENTAGE') {
-        // Calculate percentage discount
-        discountAmount = originalPrice * (offer.discountValue / 100);
+        // Clamp the percentage to [0, 100] defensively. Write-path validation should
+        // already guarantee this, but clamping here keeps effectivePrice >= 0 for any
+        // bad/legacy data reaching the price engine from any source.
+        const percent = Math.min(Math.max(offer.discountValue, 0), 100);
+        discountAmount = originalPrice * (percent / 100);
 
         // Apply cap if exists
         if (offer.maxDiscountCap && discountAmount > offer.maxDiscountCap) {

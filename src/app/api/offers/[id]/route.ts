@@ -17,7 +17,7 @@ import { revalidateHomepageTag } from '@/lib/cache/homepage';
 // Product with optional custom discount
 const productEntrySchema = z.object({
     productId: z.number(),
-    customDiscountValue: z.number().nullable().optional(),
+    customDiscountValue: z.number().min(0, 'مقدار تخفیف سفارشی نمی‌تواند منفی باشد').nullable().optional(),
 });
 
 // Validation schema for updating an offer
@@ -26,8 +26,8 @@ const updateOfferSchema = z.object({
     slug: z.string().optional(),
     description: z.string().optional().nullable(),
     discountType: z.enum(['PERCENTAGE', 'FIXED_AMOUNT']).optional(),
-    discountValue: z.number().positive().optional(),
-    maxDiscountCap: z.number().optional().nullable(),
+    discountValue: z.number().positive('مقدار تخفیف باید مثبت باشد').optional(),
+    maxDiscountCap: z.number().min(0).optional().nullable(),
     startDate: z.string().datetime().optional(),
     endDate: z.string().datetime().optional(),
     isActive: z.boolean().optional(),
@@ -40,6 +40,22 @@ const updateOfferSchema = z.object({
     products: z.array(productEntrySchema).optional(),
     // Legacy format: just product IDs (backwards compatible)
     productIds: z.array(z.number()).optional(),
+}).refine(data => {
+    if (data.discountType === 'PERCENTAGE' && data.discountValue !== undefined && data.discountValue > 100) {
+        return false;
+    }
+    return true;
+}, {
+    message: 'درصد تخفیف نمی‌تواند بیشتر از ۱۰۰ باشد',
+    path: ['discountValue'],
+}).refine(data => {
+    if (data.discountType === 'PERCENTAGE' && data.products) {
+        return data.products.every(p => p.customDiscountValue === null || p.customDiscountValue === undefined || p.customDiscountValue <= 100);
+    }
+    return true;
+}, {
+    message: 'درصد تخفیف سفارشی برای هر محصول نمی‌تواند بیشتر از ۱۰۰ باشد',
+    path: ['products'],
 });
 
 interface RouteParams {
@@ -145,6 +161,26 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
                 { success: false, error: 'پیشنهاد یافت نشد' },
                 { status: 404 }
             );
+        }
+
+        // Enforce percentage bounds against the EFFECTIVE discount type.
+        // The schema-level refines only run when `discountType` is present in the payload;
+        // a partial update that omits it (e.g. { discountValue: 5000 }) on a PERCENTAGE
+        // offer would otherwise bypass validation and drive the price to zero.
+        const effectiveDiscountType = data.discountType ?? currentOffer.discountType;
+        if (effectiveDiscountType === 'PERCENTAGE') {
+            if (data.discountValue !== undefined && data.discountValue > 100) {
+                return NextResponse.json(
+                    { success: false, error: 'درصد تخفیف نمی‌تواند بیشتر از ۱۰۰ باشد' },
+                    { status: 400 }
+                );
+            }
+            if (data.products?.some(p => p.customDiscountValue != null && p.customDiscountValue > 100)) {
+                return NextResponse.json(
+                    { success: false, error: 'درصد تخفیف سفارشی برای هر محصول نمی‌تواند بیشتر از ۱۰۰ باشد' },
+                    { status: 400 }
+                );
+            }
         }
 
         // Build update data

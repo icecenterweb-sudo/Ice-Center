@@ -14,7 +14,15 @@ const couponSchema = z.object({
     endDate: z.string().datetime().optional().nullable(),
     usageLimit: z.number().int().positive().optional().nullable(),
     perUserLimit: z.number().int().positive().default(1),
-}).strict();
+}).strict().refine((data) => {
+    if (data.type === 'PERCENTAGE' && data.value > 100) {
+        return false;
+    }
+    return true;
+}, {
+    message: 'درصد تخفیف نمی‌تواند بیشتر از ۱۰۰ باشد',
+    path: ['value'],
+});
 
 /**
  * GET /api/admin/coupons — list all coupons

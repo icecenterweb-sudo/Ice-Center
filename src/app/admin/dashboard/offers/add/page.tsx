@@ -1,9 +1,11 @@
 import { connection } from 'next/server';
 import AddOfferClient from './AddOfferClient';
 import { Suspense } from 'react';
+import { requireRolePage } from '@/lib/admin-auth';
 
 async function AddOfferContent() {
     await connection();
+    await requireRolePage('OFFERS');
     return <AddOfferClient />;
 }
 

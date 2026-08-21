@@ -1,6 +1,7 @@
 import { connection } from 'next/server';
 import EditOfferClient from './EditOfferClient';
 import { Suspense } from 'react';
+import { requireRolePage } from '@/lib/admin-auth';
 
 interface Props {
     params: Promise<{ id: string }>;
@@ -8,6 +9,7 @@ interface Props {
 
 async function EditOfferContent({ params }: Props) {
     await connection();
+    await requireRolePage('OFFERS');
     const { id } = await params;
     return <EditOfferClient id={id} />;
 }

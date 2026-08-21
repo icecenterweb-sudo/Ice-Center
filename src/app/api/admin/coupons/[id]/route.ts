@@ -6,7 +6,7 @@ import { z } from 'zod';
 const couponUpdateSchema = z.object({
     code: z.string().min(1).max(50).toUpperCase().optional(),
     type: z.enum(['PERCENTAGE', 'FIXED_AMOUNT']).optional(),
-    value: z.number().positive().optional(),
+    value: z.number().positive('مقدار باید مثبت باشد').optional(),
     minOrderAmount: z.number().min(0).optional().nullable(),
     maxDiscount: z.number().min(0).optional().nullable(),
     status: z.enum(['ACTIVE', 'INACTIVE', 'EXPIRED']).optional(),
@@ -14,7 +14,15 @@ const couponUpdateSchema = z.object({
     endDate: z.string().datetime().optional().nullable(),
     usageLimit: z.number().int().positive().optional().nullable(),
     perUserLimit: z.number().int().positive().optional(),
-}).strict();
+}).strict().refine((data) => {
+    if (data.type === 'PERCENTAGE' && data.value !== undefined && data.value > 100) {
+        return false;
+    }
+    return true;
+}, {
+    message: 'درصد تخفیف نمی‌تواند بیشتر از ۱۰۰ باشد',
+    path: ['value'],
+});
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -60,6 +68,26 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         }
 
         const data = validation.data;
+
+        // Enforce the ≤100 cap on the EFFECTIVE (post-update) coupon state.
+        // The schema .refine() only catches a payload carrying BOTH type=PERCENTAGE and value.
+        // A partial PATCH — flipping type→PERCENTAGE without value, or changing value without type —
+        // needs the existing row to compute the effective type/value.
+        if (data.type !== undefined || data.value !== undefined) {
+            const existingCoupon = await prisma.coupon.findUnique({
+                where: { id: couponId },
+                select: { type: true, value: true },
+            });
+            if (!existingCoupon) {
+                return NextResponse.json({ error: 'کد یافت نشد' }, { status: 404 });
+            }
+            const effectiveType = data.type ?? existingCoupon.type;
+            const effectiveValue = data.value ?? existingCoupon.value;
+            if (effectiveType === 'PERCENTAGE' && effectiveValue > 100) {
+                return NextResponse.json({ error: 'درصد تخفیف نمی‌تواند بیشتر از ۱۰۰ باشد' }, { status: 400 });
+            }
+        }
+
         const updateData: Record<string, unknown> = {};
         if (data.code !== undefined) updateData.code = data.code;
         if (data.type !== undefined) updateData.type = data.type;

@@ -6,13 +6,18 @@ import { revalidateHomepageTag } from '@/lib/cache/homepage';
 
 const bannerPositionSchema = z.enum(['SINGLE_FULL', 'DOUBLE']);
 
+const safeLinkSchema = z.string().trim().refine(
+    val => !val || val === '#' || (val.startsWith('/') && !val.startsWith('//') && !val.startsWith('/\\')) || /^https?:\/\//i.test(val),
+    { message: 'لینک باید با / یا http:// یا https:// شروع شود' }
+).optional().nullable();
+
 const createBannerSchema = z.object({
     title: z.string().trim().min(1, 'عنوان بنر الزامی است'),
     position: bannerPositionSchema.default('SINGLE_FULL'),
     desktopImage: z.string().trim().min(1, 'تصویر دسکتاپ الزامی است'),
     mobileImage: z.string().trim().min(1, 'تصویر موبایل الزامی است'),
     alt: z.string().trim().min(1, 'متن جایگزین الزامی است'),
-    link: z.string().trim().optional().nullable(),
+    link: safeLinkSchema,
     productId: z.number().int().positive().optional().nullable(),
     categoryId: z.number().int().positive().optional().nullable(),
     isActive: z.boolean().default(true),

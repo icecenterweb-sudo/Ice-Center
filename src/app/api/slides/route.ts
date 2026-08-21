@@ -11,17 +11,22 @@ import { z } from 'zod';
 import { requireRole } from '@/lib/admin-auth';
 import { revalidateHomepageTag } from '@/lib/cache/homepage';
 
+const safeLinkSchema = z.string().trim().refine(
+    val => !val || val === '#' || (val.startsWith('/') && !val.startsWith('//') && !val.startsWith('/\\')) || /^https?:\/\//i.test(val),
+    { message: 'لینک باید با / یا http:// یا https:// شروع شود' }
+).optional().nullable();
+
 // Validation schema for creating a slide
 const createSlideSchema = z.object({
     title: z.string().nullable().optional(),
     desktopImage: z.string().min(1, 'تصویر دسکتاپ الزامی است'),
     mobileImage: z.string().min(1, 'تصویر موبایل الزامی است'),
     alt: z.string().min(1, 'متن جایگزین الزامی است'),
-    link: z.string().nullable().optional(),
+    link: safeLinkSchema,
     productId: z.number().nullable().optional(),
     categoryId: z.number().nullable().optional(),
     isActive: z.boolean().optional().default(true),
-    order: z.number().optional().default(0),
+    order: z.number().optional(),
 });
 
 /**
@@ -126,7 +131,7 @@ export async function POST(request: NextRequest) {
                 productId: data.productId,
                 categoryId: data.categoryId,
                 isActive: data.isActive,
-                order: data.order || nextOrder,
+                order: data.order ?? nextOrder,
             },
             include: {
                 product: { select: { id: true, name: true, slug: true } },

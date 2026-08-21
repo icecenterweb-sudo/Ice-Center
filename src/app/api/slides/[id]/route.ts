@@ -13,13 +13,18 @@ import { z } from 'zod';
 import { requireRole } from '@/lib/admin-auth';
 import { revalidateHomepageTag } from '@/lib/cache/homepage';
 
+const safeLinkSchema = z.string().trim().refine(
+    val => !val || val === '#' || (val.startsWith('/') && !val.startsWith('//') && !val.startsWith('/\\')) || /^https?:\/\//i.test(val),
+    { message: 'لینک باید با / یا http:// یا https:// شروع شود' }
+).optional().nullable();
+
 // Validation schema for updating a slide
 const updateSlideSchema = z.object({
     title: z.string().nullable().optional(),
     desktopImage: z.string().min(1).optional(),
     mobileImage: z.string().min(1).optional(),
     alt: z.string().min(1).optional(),
-    link: z.string().optional().nullable(),
+    link: safeLinkSchema,
     productId: z.number().optional().nullable(),
     categoryId: z.number().optional().nullable(),
     isActive: z.boolean().optional(),

@@ -53,12 +53,20 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     }
 }
 
+// Allow-list of writable setting keys, derived from the canonical settings shape.
+// Guards updateSiteSettings against mass-assignment: any key not defined on
+// SiteSettings (e.g. injected by a crafted request body) is silently ignored.
+const ALLOWED_SETTING_KEYS = new Set<string>(Object.keys(DEFAULT_SITE_SETTINGS));
+// Generous per-value cap to prevent oversized writes (aboutText is the longest legit field).
+const MAX_SETTING_VALUE_LENGTH = 20000;
+
 export async function updateSiteSettings(newSettings: Partial<SiteSettings>): Promise<SiteSettings> {
     const keys = Object.keys(newSettings) as (keyof SiteSettings)[];
 
     for (const key of keys) {
+        if (!ALLOWED_SETTING_KEYS.has(key)) continue;
         const val = newSettings[key];
-        if (typeof val === 'string') {
+        if (typeof val === 'string' && val.length <= MAX_SETTING_VALUE_LENGTH) {
             await prisma.siteSetting.upsert({
                 where: { key },
                 update: { value: val },

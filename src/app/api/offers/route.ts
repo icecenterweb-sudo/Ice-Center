@@ -15,7 +15,7 @@ import { revalidateHomepageTag } from '@/lib/cache/homepage';
 // Product with optional custom discount
 const productEntrySchema = z.object({
     productId: z.number(),
-    customDiscountValue: z.number().nullable().optional(),
+    customDiscountValue: z.number().min(0, 'مقدار تخفیف سفارشی نمی‌تواند منفی باشد').nullable().optional(),
 });
 
 // Validation schema for creating an offer
@@ -25,7 +25,7 @@ const createOfferSchema = z.object({
     description: z.string().optional(),
     discountType: z.enum(['PERCENTAGE', 'FIXED_AMOUNT']),
     discountValue: z.number().positive('مقدار تخفیف باید مثبت باشد'),
-    maxDiscountCap: z.number().optional(),
+    maxDiscountCap: z.number().min(0).optional(),
     startDate: z.string().datetime().optional(),
     endDate: z.string().datetime(),
     isActive: z.boolean().optional().default(true),
@@ -40,6 +40,22 @@ const createOfferSchema = z.object({
     productIds: z.array(z.number()).optional(),
 }).refine(data => (data.products && data.products.length > 0) || (data.productIds && data.productIds.length > 0), {
     message: 'حداقل یک محصول انتخاب کنید',
+}).refine(data => {
+    if (data.discountType === 'PERCENTAGE' && data.discountValue > 100) {
+        return false;
+    }
+    return true;
+}, {
+    message: 'درصد تخفیف نمی‌تواند بیشتر از ۱۰۰ باشد',
+    path: ['discountValue'],
+}).refine(data => {
+    if (data.discountType === 'PERCENTAGE' && data.products) {
+        return data.products.every(p => p.customDiscountValue === null || p.customDiscountValue === undefined || p.customDiscountValue <= 100);
+    }
+    return true;
+}, {
+    message: 'درصد تخفیف سفارشی برای هر محصول نمی‌تواند بیشتر از ۱۰۰ باشد',
+    path: ['products'],
 });
 
 /**

@@ -35,6 +35,14 @@ interface Offer {
     products: OfferProduct[];
 }
 
+function toLocalDateTimeInput(isoDateString: string | Date): string {
+    const d = new Date(isoDateString);
+    if (isNaN(d.getTime())) return '';
+    const offsetMs = d.getTimezoneOffset() * 60 * 1000;
+    const localDate = new Date(d.getTime() - offsetMs);
+    return localDate.toISOString().slice(0, 16);
+}
+
 export default function EditOfferClient({ id }: { id: string }) {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(true);
@@ -58,7 +66,7 @@ export default function EditOfferClient({ id }: { id: string }) {
     const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
     const [customDiscounts, setCustomDiscounts] = useState<Record<number, string>>({});
     const [searchQuery, setSearchQuery] = useState('');
-    const [, setIsLoadingProducts] = useState(true);
+    const [isLoadingProducts, setIsLoadingProducts] = useState(true);
 
     // Load offer data
     useEffect(() => {
@@ -73,8 +81,8 @@ export default function EditOfferClient({ id }: { id: string }) {
                     setDescription(offer.description || '');
                     setDiscountType(offer.discountType);
                     setDiscountValue(offer.discountValue.toString());
-                    setStartDate(new Date(offer.startDate).toISOString().slice(0, 16));
-                    setEndDate(new Date(offer.endDate).toISOString().slice(0, 16));
+                    setStartDate(toLocalDateTimeInput(offer.startDate));
+                    setEndDate(toLocalDateTimeInput(offer.endDate));
                     setIsActive(offer.isActive);
                     setIsFeatured(offer.isFeatured);
                     setPriority(offer.priority.toString());
