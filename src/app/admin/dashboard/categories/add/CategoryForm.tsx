@@ -3,50 +3,46 @@
 import { createCategory } from '@/app/actions/categories';
 import { ArrowRight, Save } from 'lucide-react';
 import Link from 'next/link';
-import { useFormStatus } from 'react-dom';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 import ImageUpload from '@/components/admin/ImageUpload';
-
-function SubmitButton() {
-    const { pending } = useFormStatus();
-    return (
-        <button
-            type="submit"
-            disabled={pending}
-            className="w-full bg-gradient-to-l from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold py-4 rounded-xl shadow-lg transition-all disabled:opacity-50"
-        >
-            {pending ? 'در حال ذخیره...' : (
-                <>
-                    <Save className="w-5 h-5 inline ml-2" />
-                    ذخیره دسته‌بندی
-                </>
-            )}
-        </button>
-    );
-}
+import { slugify } from '@/lib/slugify-client';
 
 export default function CategoryForm() {
+    const router = useRouter();
     const [name, setName] = useState('');
     const [slug, setSlug] = useState('');
     const [, setImageUrl] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Auto-generate slug from name
+    // Auto-generate slug from name with Persian support
     const handleNameChange = (value: string) => {
         setName(value);
-        const autoSlug = value
-            .toLowerCase()
-            .replace(/\s+/g, '-')
-            .replace(/[^\w\-]+/g, '')
-            .replace(/\-\-+/g, '-');
-        setSlug(autoSlug);
+        setSlug(slugify(value));
     };
 
-    const handleSubmit = async (formData: FormData) => {
-        // Image URL is now stored directly by the ImageUpload component
-        // via hidden input field 'imageUrl'
-        return createCategory(formData);
-    };
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        setIsSubmitting(true);
+        const t = toast.loading('در حال ذخیره دسته‌بندی...');
 
+        try {
+            const res = await createCategory(formData);
+            if (res.success) {
+                toast.success('دسته‌بندی با موفقیت ذخیره شد', { id: t });
+                router.push('/admin/dashboard/categories');
+                router.refresh();
+            } else {
+                toast.error(res.error || 'خطا در ایجاد دسته‌بندی', { id: t });
+            }
+        } catch {
+            toast.error('خطای غیرمنتظره رخ داد', { id: t });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     return (
         <div className="max-w-2xl mx-auto space-y-6">
@@ -65,7 +61,7 @@ export default function CategoryForm() {
             </div>
 
             {/* Form */}
-            <form action={handleSubmit} className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-5">
+            <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-5">
                 <div>
                     <div className="flex items-center justify-between mb-2">
                         <label className="block text-sm font-medium text-gray-700">
@@ -99,9 +95,11 @@ export default function CategoryForm() {
                         name="slug"
                         type="text"
                         value={slug}
+                        pattern="[a-zA-Z0-9\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF\-]+"
                         onChange={(e) => setSlug(e.target.value)}
-                        placeholder="soft-ice-machine"
-                        className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900 font-mono dir-ltr text-right"
+                        placeholder="دستگاه-بستنی-قیفی"
+                        className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900 font-mono"
+                        dir="ltr"
                         required
                     />
                     <p className="text-xs text-gray-500 mt-1.5">
@@ -129,7 +127,20 @@ export default function CategoryForm() {
 
                 <ImageUpload onImageChange={setImageUrl} folder="categories" />
 
-                <SubmitButton />
+                <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full bg-gradient-to-l from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold py-4 rounded-xl shadow-lg transition-all disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                    {isSubmitting ? (
+                        <span>در حال ذخیره...</span>
+                    ) : (
+                        <>
+                            <Save className="w-5 h-5" />
+                            ذخیره دسته‌بندی
+                        </>
+                    )}
+                </button>
             </form>
         </div>
     );

@@ -3,9 +3,10 @@
 import { createSubcategory } from '@/app/actions/categories';
 import { ArrowRight, Save } from 'lucide-react';
 import Link from 'next/link';
-import { useFormStatus } from 'react-dom';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import { slugify } from '@/lib/slugify-client';
 
 interface Category {
     id: number;
@@ -18,52 +19,39 @@ interface SubcategoryFormProps {
     defaultCategoryId: number | null;
 }
 
-function SubmitButton() {
-    const { pending } = useFormStatus();
-    return (
-        <button
-            type="submit"
-            disabled={pending}
-            className="w-full bg-gradient-to-l from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg transition-all disabled:opacity-50"
-        >
-            {pending ? 'در حال ذخیره...' : (
-                <>
-                    <Save className="w-5 h-5 inline ml-2" />
-                    ذخیره زیردسته
-                </>
-            )}
-        </button>
-    );
-}
-
 export default function SubcategoryForm({ categories, defaultCategoryId }: SubcategoryFormProps) {
+    const router = useRouter();
     const [name, setName] = useState('');
     const [slug, setSlug] = useState('');
     const [nameLength, setNameLength] = useState(0);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Auto-generate slug from name
+    // Auto-generate slug from name with Persian support
     const handleNameChange = (value: string) => {
         setName(value);
         setNameLength(value.length);
-        const autoSlug = value
-            .toLowerCase()
-            .replace(/\s+/g, '-')
-            .replace(/[^\w\-]+/g, '')
-            .replace(/\-\-+/g, '-');
-        setSlug(autoSlug);
+        setSlug(slugify(value));
     };
 
-    const handleSubmit = async (formData: FormData) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        setIsSubmitting(true);
+        const t = toast.loading('در حال ذخیره زیردسته...');
+
         try {
-            await createSubcategory(formData);
-            toast.success('زیردسته با موفقیت ایجاد شد');
-            // Note: redirect will happen in the server action
-        } catch (error: unknown) {
-            // Ignore NEXT_REDIRECT errors (these are expected from server action redirects)
-            if (error instanceof Error && error.message.includes('NEXT_REDIRECT')) {
-                return;
+            const res = await createSubcategory(formData);
+            if (res.success) {
+                toast.success('زیردسته با موفقیت ایجاد شد', { id: t });
+                router.push('/admin/dashboard/categories');
+                router.refresh();
+            } else {
+                toast.error(res.error || 'خطا در ایجاد زیردسته', { id: t });
             }
-            toast.error(error instanceof Error ? error.message : 'خطا در ایجاد زیردسته');
+        } catch {
+            toast.error('خطای غیرمنتظره رخ داد', { id: t });
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -84,7 +72,7 @@ export default function SubcategoryForm({ categories, defaultCategoryId }: Subca
             </div>
 
             {/* Form */}
-            <form action={handleSubmit} className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-5">
+            <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-5">
                 {/* Category Selection */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -143,9 +131,11 @@ export default function SubcategoryForm({ categories, defaultCategoryId }: Subca
                         name="slug"
                         type="text"
                         value={slug}
+                        pattern="[a-zA-Z0-9\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF\-]+"
                         onChange={(e) => setSlug(e.target.value)}
-                        placeholder="italian-ice-cream"
-                        className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-green-100 focus:bg-white transition-all outline-none text-gray-900 font-mono dir-ltr text-right"
+                        placeholder="دستگاه-بستنی-ایتالیایی"
+                        className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-green-100 focus:bg-white transition-all outline-none text-gray-900 font-mono"
+                        dir="ltr"
                         required
                     />
                     <p className="text-xs text-gray-500 mt-1.5">
@@ -172,7 +162,20 @@ export default function SubcategoryForm({ categories, defaultCategoryId }: Subca
                     </p>
                 </div>
 
-                <SubmitButton />
+                <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full bg-gradient-to-l from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg transition-all disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                    {isSubmitting ? (
+                        <span>در حال ذخیره...</span>
+                    ) : (
+                        <>
+                            <Save className="w-5 h-5" />
+                            ذخیره زیردسته
+                        </>
+                    )}
+                </button>
             </form>
         </div>
     );

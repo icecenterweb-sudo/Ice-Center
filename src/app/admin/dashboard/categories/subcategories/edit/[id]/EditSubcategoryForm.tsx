@@ -3,8 +3,10 @@
 import { updateSubcategory } from '@/app/actions/categories';
 import { ArrowRight, Save } from 'lucide-react';
 import Link from 'next/link';
-import { useFormStatus } from 'react-dom';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import toast from 'react-hot-toast';
+import { slugify } from '@/lib/slugify-client';
 
 interface Category {
     id: number;
@@ -25,40 +27,39 @@ interface EditSubcategoryFormProps {
     categories: Category[];
 }
 
-function SubmitButton() {
-    const { pending } = useFormStatus();
-    return (
-        <button
-            type="submit"
-            disabled={pending}
-            className="w-full bg-gradient-to-l from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg transition-all disabled:opacity-50"
-        >
-            {pending ? 'در حال بروزرسانی...' : (
-                <>
-                    <Save className="w-5 h-5 inline ml-2" />
-                    بروزرسانی زیردسته
-                </>
-            )}
-        </button>
-    );
-}
-
 export default function EditSubcategoryForm({ subcategory, categories }: EditSubcategoryFormProps) {
+    const router = useRouter();
     const [name, setName] = useState(subcategory.name);
     const [slug, setSlug] = useState(subcategory.slug);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Auto-generate slug from name
+    // Auto-generate slug from name with Persian support
     const handleNameChange = (value: string) => {
         setName(value);
-        const autoSlug = value
-            .toLowerCase()
-            .replace(/\s+/g, '-')
-            .replace(/[^\w\-]+/g, '')
-            .replace(/\-\-+/g, '-');
-        setSlug(autoSlug);
+        setSlug(slugify(value));
     };
 
-    const updateSubcategoryWithId = updateSubcategory.bind(null, subcategory.id);
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        setIsSubmitting(true);
+        const t = toast.loading('در حال بروزرسانی زیردسته...');
+
+        try {
+            const res = await updateSubcategory(subcategory.id, formData);
+            if (res.success) {
+                toast.success('زیردسته با موفقیت بروزرسانی شد', { id: t });
+                router.push('/admin/dashboard/categories');
+                router.refresh();
+            } else {
+                toast.error(res.error || 'خطا در ویرایش زیردسته', { id: t });
+            }
+        } catch {
+            toast.error('خطای غیرمنتظره رخ داد', { id: t });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     return (
         <div className="max-w-2xl mx-auto space-y-6">
@@ -77,7 +78,7 @@ export default function EditSubcategoryForm({ subcategory, categories }: EditSub
             </div>
 
             {/* Form */}
-            <form action={updateSubcategoryWithId} className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-5">
+            <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-5">
                 <div>
                     <div className="flex items-center justify-between mb-2">
                         <label className="block text-sm font-medium text-gray-700">
@@ -111,9 +112,11 @@ export default function EditSubcategoryForm({ subcategory, categories }: EditSub
                         name="slug"
                         type="text"
                         value={slug}
+                        pattern="[a-zA-Z0-9\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF\-]+"
                         onChange={(e) => setSlug(e.target.value)}
-                        placeholder="soft-ice-machine"
-                        className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900 font-mono dir-ltr text-right"
+                        placeholder="دستگاه-بستنی-قیفی"
+                        className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900 font-mono"
+                        dir="ltr"
                         required
                     />
                     <p className="text-xs text-gray-500 mt-1.5">
@@ -159,7 +162,20 @@ export default function EditSubcategoryForm({ subcategory, categories }: EditSub
                     </p>
                 </div>
 
-                <SubmitButton />
+                <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full bg-gradient-to-l from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg transition-all disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                    {isSubmitting ? (
+                        <span>در حال بروزرسانی...</span>
+                    ) : (
+                        <>
+                            <Save className="w-5 h-5" />
+                            بروزرسانی زیردسته
+                        </>
+                    )}
+                </button>
             </form>
         </div>
     );

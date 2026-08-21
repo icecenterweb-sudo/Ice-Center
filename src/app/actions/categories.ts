@@ -2,11 +2,15 @@
 
 import { prisma } from '@/lib/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
-import { redirect } from 'next/navigation';
 import { requireRoleAction } from '@/lib/admin-auth';
 import { z } from 'zod';
+import { ActionResult } from '@/lib/action-result';
+
+export type { ActionResult };
 
 const CACHE_PROFILE = { expire: 600 };
+
+const slugRegex = /^[a-zA-Z0-9\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF\-]+$/;
 
 // ============================================
 // Validation Schemas
@@ -14,14 +18,14 @@ const CACHE_PROFILE = { expire: 600 };
 
 const categorySchema = z.object({
     name: z.string().min(1, 'نام دسته‌بندی الزامی است'),
-    slug: z.string().min(1, 'اسلاگ الزامی است').regex(/^[a-z0-9-]+$/, 'اسلاگ فقط شامل حروف انگلیسی، اعداد و خط تیره باشد'),
+    slug: z.string().min(1, 'اسلاگ الزامی است').regex(slugRegex, 'اسلاگ فقط شامل حروف فارسی، انگلیسی، اعداد و خط تیره باشد'),
     description: z.string().optional(),
     imageUrl: z.string().min(1).optional().nullable(),
 });
 
 const subcategorySchema = z.object({
     name: z.string().min(1, 'نام زیردسته الزامی است'),
-    slug: z.string().min(1, 'اسلاگ الزامی است').regex(/^[a-z0-9-]+$/, 'اسلاگ فقط شامل حروف انگلیسی، اعداد و خط تیره باشد'),
+    slug: z.string().min(1, 'اسلاگ الزامی است').regex(slugRegex, 'اسلاگ فقط شامل حروف فارسی، انگلیسی، اعداد و خط تیره باشد'),
     description: z.string().optional(),
     categoryId: z.number().int().positive('دسته‌بندی اصلی الزامی است'),
 });
@@ -30,27 +34,35 @@ const subcategorySchema = z.object({
 // Category Actions
 // ============================================
 
-export async function createCategory(formData: FormData) {
-    // Auth check
-    await requireRoleAction('CATEGORIES');
-
-    const raw = {
-        name: formData.get('name') as string,
-        slug: formData.get('slug') as string,
-        description: (formData.get('description') as string) || undefined,
-        imageUrl: (formData.get('imageUrl') as string) || null,
-    };
-
-    const result = categorySchema.safeParse(raw);
-    if (!result.success) {
-        throw new Error(result.error.issues.map(i => i.message).join('، '));
-    }
-
-    const data = result.data;
-
+export async function createCategory(formData: FormData): Promise<ActionResult<{ id: number }>> {
     try {
+        // Auth check
+        await requireRoleAction('CATEGORIES');
+
+        const raw = {
+            name: (formData.get('name') as string) || '',
+            slug: (formData.get('slug') as string) || '',
+            description: (formData.get('description') as string) || undefined,
+            imageUrl: (formData.get('imageUrl') as string) || null,
+        };
+
+        const result = categorySchema.safeParse(raw);
+        if (!result.success) {
+            return { success: false, error: result.error.issues.map(i => i.message).join('، ') };
+        }
+
+        const data = result.data;
+
         // Create category with default subcategory in a transaction
-        await prisma.$transaction(async (tx) => {
+        const createdCategory = await prisma.$transaction(async (tx) => {
+            // Check for duplicate category slug
+            const existing = await tx.category.findUnique({
+                where: { slug: data.slug }
+            });
+            if (existing) {
+                throw new Error('این اسلاگ قبلاً استفاده شده است');
+            }
+
             // Create the category
             const category = await tx.category.create({
                 data: {
@@ -62,53 +74,62 @@ export async function createCategory(formData: FormData) {
             });
 
             // Automatically create default subcategory
-            // Slug is scoped to category, so "public" can be reused across categories
             await tx.subcategory.create({
                 data: {
-                    name: `عمومی`,  // "Public/General"
-                    slug: `public`,  // Simple, reusable (unique per category)
+                    name: `عمومی`,
+                    slug: `public`,
                     description: `زیردسته عمومی برای ${data.name}`,
                     categoryId: category.id
                 }
             });
+
+            return category;
         });
 
         revalidatePath('/admin/dashboard/categories');
         revalidateTag('homepage', CACHE_PROFILE);
         revalidateTag('categories', CACHE_PROFILE);
+
+        return { success: true, data: { id: createdCategory.id } };
     } catch (error: unknown) {
         console.error('Failed to create category:', error);
 
-        // Check for unique constraint violation
         if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
-            throw new Error('این اسلاگ قبلاً استفاده شده است');
+            return { success: false, error: 'این اسلاگ قبلاً استفاده شده است' };
         }
 
-        throw new Error('خطا در ایجاد دسته‌بندی');
+        const message = error instanceof Error && error.message ? error.message : 'خطا در ایجاد دسته‌بندی';
+        return { success: false, error: message };
     }
-
-    redirect('/admin/dashboard/categories');
 }
 
-export async function updateCategory(id: number, formData: FormData) {
-    // Auth check
-    await requireRoleAction('CATEGORIES');
-
-    const raw = {
-        name: formData.get('name') as string,
-        slug: formData.get('slug') as string,
-        description: (formData.get('description') as string) || undefined,
-        imageUrl: (formData.get('imageUrl') as string) || null,
-    };
-
-    const result = categorySchema.safeParse(raw);
-    if (!result.success) {
-        throw new Error(result.error.issues.map(i => i.message).join('، '));
-    }
-
-    const data = result.data;
-
+export async function updateCategory(id: number, formData: FormData): Promise<ActionResult> {
     try {
+        // Auth check
+        await requireRoleAction('CATEGORIES');
+
+        const raw = {
+            name: (formData.get('name') as string) || '',
+            slug: (formData.get('slug') as string) || '',
+            description: (formData.get('description') as string) || undefined,
+            imageUrl: (formData.get('imageUrl') as string) || null,
+        };
+
+        const result = categorySchema.safeParse(raw);
+        if (!result.success) {
+            return { success: false, error: result.error.issues.map(i => i.message).join('، ') };
+        }
+
+        const data = result.data;
+
+        // Check if slug is taken by another category
+        const existing = await prisma.category.findFirst({
+            where: { slug: data.slug, id: { not: id } }
+        });
+        if (existing) {
+            return { success: false, error: 'این اسلاگ قبلاً استفاده شده است' };
+        }
+
         await prisma.category.update({
             where: { id },
             data: {
@@ -123,46 +144,57 @@ export async function updateCategory(id: number, formData: FormData) {
         revalidateTag('homepage', CACHE_PROFILE);
         revalidateTag('categories', CACHE_PROFILE);
         revalidateTag(`category:${id}`, CACHE_PROFILE);
-    } catch (error) {
+
+        return { success: true };
+    } catch (error: unknown) {
         console.error('Failed to update category:', error);
 
         if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
-            throw new Error('این اسلاگ قبلاً استفاده شده است');
+            return { success: false, error: 'این اسلاگ قبلاً استفاده شده است' };
         }
 
-        throw new Error('خطا در ویرایش دسته‌بندی');
+        const message = error instanceof Error && error.message ? error.message : 'خطا در ویرایش دسته‌بندی';
+        return { success: false, error: message };
     }
-
-    redirect('/admin/dashboard/categories');
 }
 
-export async function deleteCategory(id: number) {
-    // Auth check
-    await requireRoleAction('CATEGORIES');
-
+export async function deleteCategory(id: number): Promise<ActionResult> {
     try {
-        // Check if category has subcategories
-        const subcategoryCount = await prisma.subcategory.count({
-            where: { categoryId: id }
+        // Auth check
+        await requireRoleAction('CATEGORIES');
+
+        // Check if category has subcategories other than the automatic 'public' or if subcategories have products
+        const subcategories = await prisma.subcategory.findMany({
+            where: { categoryId: id },
+            include: { _count: { select: { products: true } } }
         });
 
-        if (subcategoryCount > 0) {
-            throw new Error('این دسته‌بندی دارای زیردسته است و نمی‌توان آن را حذف کرد');
+        const hasProducts = subcategories.some(s => s._count.products > 0);
+        if (hasProducts) {
+            return { success: false, error: 'محصولاتی به این دسته‌بندی متصل هستند و نمی‌توان آن را حذف کرد' };
         }
 
-        await prisma.category.delete({
-            where: { id }
-        });
+        // Check if there are user-created subcategories
+        if (subcategories.length > 1 || (subcategories.length === 1 && subcategories[0].slug !== 'public')) {
+            return { success: false, error: 'این دسته‌بندی دارای زیردسته است. ابتدا زیردسته‌ها را حذف کنید' };
+        }
+
+        // Delete default subcategory and category in transaction
+        await prisma.$transaction([
+            prisma.subcategory.deleteMany({ where: { categoryId: id } }),
+            prisma.category.delete({ where: { id } })
+        ]);
 
         revalidatePath('/admin/dashboard/categories');
         revalidateTag('homepage', CACHE_PROFILE);
         revalidateTag('categories', CACHE_PROFILE);
         revalidateTag(`category:${id}`, CACHE_PROFILE);
+
         return { success: true };
     } catch (error: unknown) {
         console.error('Failed to delete category:', error);
-        const message = error instanceof Error ? error.message : 'خطا در حذف دسته‌بندی';
-        throw new Error(message);
+        const message = error instanceof Error && error.message ? error.message : 'خطا در حذف دسته‌بندی';
+        return { success: false, error: message };
     }
 }
 
@@ -170,26 +202,34 @@ export async function deleteCategory(id: number) {
 // Subcategory Actions
 // ============================================
 
-export async function createSubcategory(formData: FormData) {
-    // Auth check
-    await requireRoleAction('CATEGORIES');
-
-    const raw = {
-        name: formData.get('name') as string,
-        slug: formData.get('slug') as string,
-        description: (formData.get('description') as string) || undefined,
-        categoryId: formData.get('categoryId') ? parseInt(formData.get('categoryId') as string) : 0,
-    };
-
-    const result = subcategorySchema.safeParse(raw);
-    if (!result.success) {
-        throw new Error(result.error.issues.map(i => i.message).join('، '));
-    }
-
-    const data = result.data;
-
+export async function createSubcategory(formData: FormData): Promise<ActionResult<{ id: number }>> {
     try {
-        await prisma.subcategory.create({
+        // Auth check
+        await requireRoleAction('CATEGORIES');
+
+        const raw = {
+            name: (formData.get('name') as string) || '',
+            slug: (formData.get('slug') as string) || '',
+            description: (formData.get('description') as string) || undefined,
+            categoryId: formData.get('categoryId') ? parseInt(formData.get('categoryId') as string) : 0,
+        };
+
+        const result = subcategorySchema.safeParse(raw);
+        if (!result.success) {
+            return { success: false, error: result.error.issues.map(i => i.message).join('، ') };
+        }
+
+        const data = result.data;
+
+        // Check if subcategory slug exists under this category
+        const existing = await prisma.subcategory.findFirst({
+            where: { categoryId: data.categoryId, slug: data.slug }
+        });
+        if (existing) {
+            return { success: false, error: `این اسلاگ (${raw.slug}) قبلاً در این دسته‌بندی استفاده شده است` };
+        }
+
+        const subcategory = await prisma.subcategory.create({
             data: {
                 name: data.name,
                 slug: data.slug,
@@ -203,38 +243,47 @@ export async function createSubcategory(formData: FormData) {
         revalidateTag('categories', CACHE_PROFILE);
         revalidateTag(`subcategories:${data.categoryId}`, CACHE_PROFILE);
         revalidateTag(`products:category:${data.categoryId}`, CACHE_PROFILE);
+
+        return { success: true, data: { id: subcategory.id } };
     } catch (error: unknown) {
         console.error('Failed to create subcategory:', error);
 
         if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
-            throw new Error(`این اسلاگ (${raw.slug}) قبلاً استفاده شده است. لطفاً اسلاگ دیگری انتخاب کنید`);
+            return { success: false, error: `این اسلاگ قبلاً استفاده شده است` };
         }
 
-        throw new Error('خطا در ایجاد زیردسته');
+        const message = error instanceof Error && error.message ? error.message : 'خطا در ایجاد زیردسته';
+        return { success: false, error: message };
     }
-
-    redirect('/admin/dashboard/categories');
 }
 
-export async function updateSubcategory(id: number, formData: FormData) {
-    // Auth check
-    await requireRoleAction('CATEGORIES');
-
-    const raw = {
-        name: formData.get('name') as string,
-        slug: formData.get('slug') as string,
-        description: (formData.get('description') as string) || undefined,
-        categoryId: formData.get('categoryId') ? parseInt(formData.get('categoryId') as string) : 0,
-    };
-
-    const result = subcategorySchema.safeParse(raw);
-    if (!result.success) {
-        throw new Error(result.error.issues.map(i => i.message).join('، '));
-    }
-
-    const data = result.data;
-
+export async function updateSubcategory(id: number, formData: FormData): Promise<ActionResult> {
     try {
+        // Auth check
+        await requireRoleAction('CATEGORIES');
+
+        const raw = {
+            name: (formData.get('name') as string) || '',
+            slug: (formData.get('slug') as string) || '',
+            description: (formData.get('description') as string) || undefined,
+            categoryId: formData.get('categoryId') ? parseInt(formData.get('categoryId') as string) : 0,
+        };
+
+        const result = subcategorySchema.safeParse(raw);
+        if (!result.success) {
+            return { success: false, error: result.error.issues.map(i => i.message).join('، ') };
+        }
+
+        const data = result.data;
+
+        // Check if subcategory slug exists under this category
+        const existing = await prisma.subcategory.findFirst({
+            where: { categoryId: data.categoryId, slug: data.slug, id: { not: id } }
+        });
+        if (existing) {
+            return { success: false, error: `این اسلاگ (${raw.slug}) قبلاً در این دسته‌بندی استفاده شده است` };
+        }
+
         await prisma.subcategory.update({
             where: { id },
             data: {
@@ -250,31 +299,32 @@ export async function updateSubcategory(id: number, formData: FormData) {
         revalidateTag('categories', CACHE_PROFILE);
         revalidateTag(`subcategories:${data.categoryId}`, CACHE_PROFILE);
         revalidateTag(`products:category:${data.categoryId}`, CACHE_PROFILE);
-    } catch (error) {
+
+        return { success: true };
+    } catch (error: unknown) {
         console.error('Failed to update subcategory:', error);
 
         if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
-            throw new Error(`این اسلاگ (${raw.slug}) قبلاً استفاده شده است. لطفاً اسلاگ دیگری انتخاب کنید`);
+            return { success: false, error: `این اسلاگ قبلاً استفاده شده است` };
         }
 
-        throw new Error('خطا در ویرایش زیردسته');
+        const message = error instanceof Error && error.message ? error.message : 'خطا در ویرایش زیردسته';
+        return { success: false, error: message };
     }
-
-    redirect('/admin/dashboard/categories');
 }
 
-export async function deleteSubcategory(id: number) {
-    // Auth check
-    await requireRoleAction('CATEGORIES');
-
+export async function deleteSubcategory(id: number): Promise<ActionResult> {
     try {
+        // Auth check
+        await requireRoleAction('CATEGORIES');
+
         // Check if subcategory has products
         const productCount = await prisma.product.count({
             where: { subcategoryId: id }
         });
 
         if (productCount > 0) {
-            throw new Error('محصولاتی به این زیردسته متصل هستند و نمی‌توان آن را حذف کرد');
+            return { success: false, error: 'محصولاتی به این زیردسته متصل هستند و نمی‌توان آن را حذف کرد' };
         }
 
         await prisma.subcategory.delete({
@@ -284,10 +334,11 @@ export async function deleteSubcategory(id: number) {
         revalidatePath('/admin/dashboard/categories');
         revalidateTag('homepage', CACHE_PROFILE);
         revalidateTag('categories', CACHE_PROFILE);
+
         return { success: true };
     } catch (error: unknown) {
         console.error('Failed to delete subcategory:', error);
-        const message = error instanceof Error ? error.message : 'خطا در حذف زیردسته';
-        throw new Error(message);
+        const message = error instanceof Error && error.message ? error.message : 'خطا در حذف زیردسته';
+        return { success: false, error: message };
     }
 }
