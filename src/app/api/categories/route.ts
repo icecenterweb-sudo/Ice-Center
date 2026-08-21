@@ -18,18 +18,20 @@ export async function GET(request: NextRequest) {
                 name: true,
                 slug: true,
                 image: true,
+                order: true,
                 ...(withSubs && {
                     subcategories: {
                         select: {
                             id: true,
                             name: true,
                             slug: true,
+                            order: true,
                         },
-                        orderBy: { name: 'asc' as const },
+                        orderBy: [{ order: 'asc' as const }, { name: 'asc' as const }],
                     },
                 }),
             },
-            orderBy: { name: 'asc' },
+            orderBy: [{ order: 'asc' as const }, { name: 'asc' as const }],
         });
 
         return NextResponse.json({

@@ -21,6 +21,7 @@ const categorySchema = z.object({
     slug: z.string().min(1, 'اسلاگ الزامی است').regex(slugRegex, 'اسلاگ فقط شامل حروف فارسی، انگلیسی، اعداد و خط تیره باشد'),
     description: z.string().optional(),
     imageUrl: z.string().min(1).optional().nullable(),
+    order: z.coerce.number().int('ترتیب باید یک عدد صحیح باشد').default(0),
 });
 
 const subcategorySchema = z.object({
@@ -28,6 +29,7 @@ const subcategorySchema = z.object({
     slug: z.string().min(1, 'اسلاگ الزامی است').regex(slugRegex, 'اسلاگ فقط شامل حروف فارسی، انگلیسی، اعداد و خط تیره باشد'),
     description: z.string().optional(),
     categoryId: z.number().int().positive('دسته‌بندی اصلی الزامی است'),
+    order: z.coerce.number().int('ترتیب باید یک عدد صحیح باشد').default(0),
 });
 
 // ============================================
@@ -44,6 +46,7 @@ export async function createCategory(formData: FormData): Promise<ActionResult<{
             slug: (formData.get('slug') as string) || '',
             description: (formData.get('description') as string) || undefined,
             imageUrl: (formData.get('imageUrl') as string) || null,
+            order: formData.get('order') ?? 0,
         };
 
         const result = categorySchema.safeParse(raw);
@@ -75,7 +78,8 @@ export async function createCategory(formData: FormData): Promise<ActionResult<{
                     name: data.name,
                     slug: data.slug,
                     description: data.description || undefined,
-                    image: data.imageUrl || undefined
+                    image: data.imageUrl || undefined,
+                    order: data.order,
                 }
             });
 
@@ -85,7 +89,8 @@ export async function createCategory(formData: FormData): Promise<ActionResult<{
                     name: `عمومی`,
                     slug: `public`,
                     description: `زیردسته عمومی برای ${data.name}`,
-                    categoryId: category.id
+                    categoryId: category.id,
+                    order: 0,
                 }
             });
 
@@ -123,6 +128,7 @@ export async function updateCategory(id: number, formData: FormData): Promise<Ac
             slug: (formData.get('slug') as string) || '',
             description: (formData.get('description') as string) || undefined,
             imageUrl: (formData.get('imageUrl') as string) || null,
+            order: formData.get('order') ?? 0,
         };
 
         const result = categorySchema.safeParse(raw);
@@ -154,6 +160,7 @@ export async function updateCategory(id: number, formData: FormData): Promise<Ac
                 name: data.name,
                 slug: data.slug,
                 description: data.description || undefined,
+                order: data.order,
                 ...(data.imageUrl ? { image: data.imageUrl } : { image: null })
             }
         });
@@ -230,6 +237,7 @@ export async function createSubcategory(formData: FormData): Promise<ActionResul
             slug: (formData.get('slug') as string) || '',
             description: (formData.get('description') as string) || undefined,
             categoryId: formData.get('categoryId') ? parseInt(formData.get('categoryId') as string) : 0,
+            order: formData.get('order') ?? 0,
         };
 
         const result = subcategorySchema.safeParse(raw);
@@ -261,6 +269,7 @@ export async function createSubcategory(formData: FormData): Promise<ActionResul
                 slug: data.slug,
                 description: data.description || undefined,
                 categoryId: data.categoryId,
+                order: data.order,
             }
         });
 
@@ -297,6 +306,7 @@ export async function updateSubcategory(id: number, formData: FormData): Promise
             slug: (formData.get('slug') as string) || '',
             description: (formData.get('description') as string) || undefined,
             categoryId: formData.get('categoryId') ? parseInt(formData.get('categoryId') as string) : 0,
+            order: formData.get('order') ?? 0,
         };
 
         const result = subcategorySchema.safeParse(raw);
@@ -329,6 +339,7 @@ export async function updateSubcategory(id: number, formData: FormData): Promise
                 slug: data.slug,
                 description: data.description || undefined,
                 categoryId: data.categoryId,
+                order: data.order,
             }
         });
 

@@ -180,15 +180,17 @@ export async function getCachedCategories(): Promise<CategoryForDisplay[]> {
             name: true,
             slug: true,
             image: true,
+            order: true,
             subcategories: {
                 select: {
                     id: true,
                     name: true,
                     _count: { select: { products: true } }
-                }
+                },
+                orderBy: [{ order: 'asc' }, { name: 'asc' }],
             }
         },
-        orderBy: { name: 'asc' }
+        orderBy: [{ order: 'asc' }, { name: 'asc' }]
     });
 
     return categories.map(category => ({
@@ -364,7 +366,7 @@ export async function getCachedCategoryProducts(): Promise<{
                     }
                 }
             },
-            orderBy: { name: 'asc' },
+            orderBy: [{ order: 'asc' }, { name: 'asc' }],
             take: 6
         }),
         prisma.product.findMany({

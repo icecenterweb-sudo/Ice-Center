@@ -106,11 +106,14 @@ model Category {
   slug          String        @unique
   description   String?
   image         String?
+  order         Int           @default(0)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   subcategories Subcategory[]
   slides        Slide[]       // Hero slider slides linking to this category
   banners       Banner[]      // Banners linking to this category
+
+  @@index([order])
 }
 
 model Subcategory {
@@ -119,6 +122,7 @@ model Subcategory {
   slug        String
   description String?
   categoryId  Int
+  order       Int       @default(0)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   products    Product[]
@@ -126,6 +130,7 @@ model Subcategory {
 
   @@unique([categoryId, slug])
   @@index([categoryId])
+  @@index([categoryId, order])
 }
 
 model User {
