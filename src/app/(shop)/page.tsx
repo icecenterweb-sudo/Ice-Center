@@ -319,7 +319,37 @@ function TopProductsSection({
             ))}
           </div>
 
-          {/* Block 2: Recently Added Products (sorted strictly by createdAt: desc) */}
+          {/* Block 2: Ice Cream Machines & Batch Freezers */}
+          <div className="flex justify-between items-center mb-4 md:mb-5 mt-6 md:mt-10 px-1">
+            <h2 className="fluid-heading font-extrabold text-midnight text-balance">دستگاه بستنی ساز و بارسفت کن</h2>
+            <Link href="/categories/soft-ice-machines" className="text-xs font-bold text-ocean hover:text-royal transition flex items-center gap-1">
+              <span>مشاهده همه</span>
+              <ArrowLeft size={13} />
+            </Link>
+          </div>
+
+          <div className="flex overflow-x-auto scrollbar-hide snap-x md:grid md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 pb-2 -mx-1 px-1 md:mx-0 md:px-0">
+            {iceCreamRow.map((p) => (
+              <TopProductCard key={p.id} p={p} />
+            ))}
+          </div>
+
+          {/* Block 3: Juicers & Blenders */}
+          <div className="flex justify-between items-center mb-4 md:mb-5 mt-6 md:mt-10 px-1">
+            <h2 className="fluid-heading font-extrabold text-midnight text-balance">آبمیوه گیری و مخلوط کن</h2>
+            <Link href="/categories/juice-and-blender" className="text-xs font-bold text-ocean hover:text-royal transition flex items-center gap-1">
+              <span>مشاهده همه</span>
+              <ArrowLeft size={13} />
+            </Link>
+          </div>
+
+          <div className="flex overflow-x-auto scrollbar-hide snap-x md:grid md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 pb-2 -mx-1 px-1 md:mx-0 md:px-0">
+            {juicerRow.map((p) => (
+              <TopProductCard key={p.id} p={p} />
+            ))}
+          </div>
+
+          {/* Block 4: Recently Added Products (sorted strictly by createdAt: desc) */}
           {newestRow.length > 0 && (
             <>
               <div className="flex justify-between items-center mb-4 md:mb-5 mt-6 md:mt-10 px-1">
@@ -342,36 +372,6 @@ function TopProductsSection({
               </div>
             </>
           )}
-
-          {/* Block 3: Juicers & Blenders */}
-          <div className="flex justify-between items-center mb-4 md:mb-5 mt-6 md:mt-10 px-1">
-            <h2 className="fluid-heading font-extrabold text-midnight text-balance">آبمیوه گیری و مخلوط کن</h2>
-            <Link href="/categories/juice-and-blender" className="text-xs font-bold text-ocean hover:text-royal transition flex items-center gap-1">
-              <span>مشاهده همه</span>
-              <ArrowLeft size={13} />
-            </Link>
-          </div>
-
-          <div className="flex overflow-x-auto scrollbar-hide snap-x md:grid md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 pb-2 -mx-1 px-1 md:mx-0 md:px-0">
-            {juicerRow.map((p) => (
-              <TopProductCard key={p.id} p={p} />
-            ))}
-          </div>
-
-          {/* Block 4: Ice Cream Machines & Batch Freezers */}
-          <div className="flex justify-between items-center mb-4 md:mb-5 mt-6 md:mt-10 px-1">
-            <h2 className="fluid-heading font-extrabold text-midnight text-balance">دستگاه بستنی ساز و بارسفت کن</h2>
-            <Link href="/categories/soft-ice-machines" className="text-xs font-bold text-ocean hover:text-royal transition flex items-center gap-1">
-              <span>مشاهده همه</span>
-              <ArrowLeft size={13} />
-            </Link>
-          </div>
-
-          <div className="flex overflow-x-auto scrollbar-hide snap-x md:grid md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 pb-2 -mx-1 px-1 md:mx-0 md:px-0">
-            {iceCreamRow.map((p) => (
-              <TopProductCard key={p.id} p={p} />
-            ))}
-          </div>
         </div>
 
       </div>
