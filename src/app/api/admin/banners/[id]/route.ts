@@ -91,7 +91,11 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         const result = updateBannerSchema.safeParse(body);
         if (!result.success) {
             return NextResponse.json(
-                { success: false, error: result.error.issues.map(i => i.message).join('، ') },
+                {
+                    success: false,
+                    error: result.error.issues.map(i => i.message).join('، '),
+                    fieldErrors: result.error.flatten().fieldErrors,
+                },
                 { status: 400 }
             );
         }

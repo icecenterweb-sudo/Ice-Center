@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, FileImage, ImageIcon, Link as LinkIcon, Loader2, Upload } from 'lucide-react';
 import MediaGalleryModal from '@/components/admin/MediaGalleryModal';
+import { fieldClass } from '@/lib/form-classes';
 
 interface Product {
     id: number;
@@ -22,8 +23,18 @@ export default function AddSlidePage() {
     const router = useRouter();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [isUploadingDesktop, setIsUploadingDesktop] = useState(false);
     const [isUploadingMobile, setIsUploadingMobile] = useState(false);
+
+    const clearFieldError = (name: string) => {
+        setFieldErrors((prev) => {
+            if (!prev[name]) return prev;
+            const next = { ...prev };
+            delete next[name];
+            return next;
+        });
+    };
 
     // File input refs
     const desktopInputRef = useRef<HTMLInputElement>(null);
@@ -144,19 +155,22 @@ export default function AddSlidePage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setFieldErrors({});
 
+        const newFieldErrors: Record<string, string> = {};
         if (!desktopImage.trim()) {
-            setError('تصویر دسکتاپ الزامی است');
-            return;
+            newFieldErrors.desktopImage = 'تصویر دسکتاپ الزامی است';
         }
-
         if (!mobileImage.trim()) {
-            setError('تصویر موبایل الزامی است');
-            return;
+            newFieldErrors.mobileImage = 'تصویر موبایل الزامی است';
+        }
+        if (!alt.trim()) {
+            newFieldErrors.alt = 'متن جایگزین (alt) الزامی است';
         }
 
-        if (!alt.trim()) {
-            setError('متن جایگزین (alt) الزامی است');
+        if (Object.keys(newFieldErrors).length > 0) {
+            setFieldErrors(newFieldErrors);
+            setError(Object.values(newFieldErrors)[0]);
             return;
         }
 
@@ -185,6 +199,14 @@ export default function AddSlidePage() {
                 router.push('/admin/dashboard/appearance/slides');
                 router.refresh();
             } else {
+                if (data.fieldErrors) {
+                    const flat: Record<string, string> = {};
+                    for (const [k, v] of Object.entries(data.fieldErrors)) {
+                        if (Array.isArray(v) && v[0]) flat[k] = v[0] as string;
+                        else if (typeof v === 'string') flat[k] = v;
+                    }
+                    setFieldErrors(flat);
+                }
                 setError(data.error || 'خطا در ایجاد اسلاید');
             }
         } catch (err) {
@@ -231,10 +253,21 @@ export default function AddSlidePage() {
                         <input
                             type="text"
                             value={title}
-                            onChange={(e) => setTitle(e.target.value)}
+                            aria-invalid={!!fieldErrors.title}
+                            aria-describedby={fieldErrors.title ? 'title-error' : undefined}
+                            onChange={(e) => {
+                                setTitle(e.target.value);
+                                clearFieldError('title');
+                            }}
                             placeholder="مثال: تخفیف ویژه یلدا"
-                            className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900"
+                            className={fieldClass(
+                                "w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900",
+                                !!fieldErrors.title
+                            )}
                         />
+                        {fieldErrors.title && (
+                            <p id="title-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.title}</p>
+                        )}
                     </div>
 
                     {/* Desktop Image */}
@@ -246,12 +279,18 @@ export default function AddSlidePage() {
                             <input
                                 type="text"
                                 value={desktopImage}
+                                aria-invalid={!!fieldErrors.desktopImage}
+                                aria-describedby={fieldErrors.desktopImage ? 'desktopImage-error' : undefined}
                                 onChange={(e) => {
                                     setDesktopImage(e.target.value);
                                     setDesktopPreview(e.target.value);
+                                    clearFieldError('desktopImage');
                                 }}
                                 placeholder="آدرس (URL) تصویر دسکتاپ"
-                                className="flex-1 px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900"
+                                className={fieldClass(
+                                    "flex-1 px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900",
+                                    !!fieldErrors.desktopImage
+                                )}
                             />
                             <input
                                 type="file"
@@ -260,7 +299,10 @@ export default function AddSlidePage() {
                                 className="hidden"
                                 onChange={(e) => {
                                     const file = e.target.files?.[0];
-                                    if (file) handleImageUpload(file, 'desktop');
+                                    if (file) {
+                                        handleImageUpload(file, 'desktop');
+                                        clearFieldError('desktopImage');
+                                    }
                                 }}
                             />
                             <button
@@ -281,6 +323,7 @@ export default function AddSlidePage() {
                                 onClick={() => {
                                     setGalleryTarget('desktop');
                                     setIsGalleryOpen(true);
+                                    clearFieldError('desktopImage');
                                 }}
                                 className="px-4 py-3 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl transition-colors flex items-center gap-2 font-medium text-xs md:text-sm shrink-0"
                             >
@@ -288,6 +331,9 @@ export default function AddSlidePage() {
                                 انتخاب از گالری
                             </button>
                         </div>
+                        {fieldErrors.desktopImage && (
+                            <p id="desktopImage-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.desktopImage}</p>
+                        )}
                         <p className="text-xs text-gray-500 mt-1">اندازه پیشنهادی دسکتاپ: 1600×680 پیکسل (بنر اصلی) یا 800×680 پیکسل (بنرهای جانبی)</p>
                     </div>
 
@@ -300,12 +346,18 @@ export default function AddSlidePage() {
                             <input
                                 type="text"
                                 value={mobileImage}
+                                aria-invalid={!!fieldErrors.mobileImage}
+                                aria-describedby={fieldErrors.mobileImage ? 'mobileImage-error' : undefined}
                                 onChange={(e) => {
                                     setMobileImage(e.target.value);
                                     setMobilePreview(e.target.value);
+                                    clearFieldError('mobileImage');
                                 }}
                                 placeholder="آدرس (URL) تصویر موبایل"
-                                className="flex-1 px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900"
+                                className={fieldClass(
+                                    "flex-1 px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900",
+                                    !!fieldErrors.mobileImage
+                                )}
                             />
                             <input
                                 type="file"
@@ -314,7 +366,10 @@ export default function AddSlidePage() {
                                 className="hidden"
                                 onChange={(e) => {
                                     const file = e.target.files?.[0];
-                                    if (file) handleImageUpload(file, 'mobile');
+                                    if (file) {
+                                        handleImageUpload(file, 'mobile');
+                                        clearFieldError('mobileImage');
+                                    }
                                 }}
                             />
                             <button
@@ -335,6 +390,7 @@ export default function AddSlidePage() {
                                 onClick={() => {
                                     setGalleryTarget('mobile');
                                     setIsGalleryOpen(true);
+                                    clearFieldError('mobileImage');
                                 }}
                                 className="px-4 py-3 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl transition-colors flex items-center gap-2 font-medium text-xs md:text-sm shrink-0"
                             >
@@ -342,12 +398,16 @@ export default function AddSlidePage() {
                                 انتخاب از گالری
                             </button>
                         </div>
+                        {fieldErrors.mobileImage && (
+                            <p id="mobileImage-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.mobileImage}</p>
+                        )}
                         <p className="text-xs text-gray-500 mt-1">اندازه پیشنهادی موبایل: 800×860 پیکسل (بنر اصلی) یا 500×600 پیکسل (بنرهای دوتایی)</p>
                         <button
                             type="button"
                             onClick={() => {
                                 setMobileImage(desktopImage);
                                 setMobilePreview(desktopImage);
+                                clearFieldError('mobileImage');
                             }}
                             className="text-xs text-ocean hover:underline mt-1"
                         >
@@ -363,10 +423,21 @@ export default function AddSlidePage() {
                         <input
                             type="text"
                             value={alt}
-                            onChange={(e) => setAlt(e.target.value)}
+                            aria-invalid={!!fieldErrors.alt}
+                            aria-describedby={fieldErrors.alt ? 'alt-error' : undefined}
+                            onChange={(e) => {
+                                setAlt(e.target.value);
+                                clearFieldError('alt');
+                            }}
                             placeholder="توضیح تصویر برای موتورهای جستجو"
-                            className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900"
+                            className={fieldClass(
+                                "w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900",
+                                !!fieldErrors.alt
+                            )}
                         />
+                        {fieldErrors.alt && (
+                            <p id="alt-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.alt}</p>
+                        )}
                     </div>
 
                     {/* Preview */}
@@ -445,7 +516,10 @@ export default function AddSlidePage() {
                                     name="linkType"
                                     value={option.value}
                                     checked={linkType === option.value}
-                                    onChange={(e) => setLinkType(e.target.value as LinkType)}
+                                    onChange={(e) => {
+                                        setLinkType(e.target.value as LinkType);
+                                        clearFieldError('link');
+                                    }}
                                     className="w-4 h-4 text-ocean"
                                 />
                                 <span className="text-sm text-gray-900">{option.label}</span>
@@ -454,39 +528,78 @@ export default function AddSlidePage() {
                     </div>
 
                     {linkType === 'url' && (
-                        <input
-                            type="text"
-                            value={customLink}
-                            onChange={(e) => setCustomLink(e.target.value)}
-                            placeholder="https://example.com/page"
-                            className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900"
-                        />
+                        <div>
+                            <input
+                                type="text"
+                                value={customLink}
+                                aria-invalid={!!fieldErrors.link}
+                                aria-describedby={fieldErrors.link ? 'link-error' : undefined}
+                                onChange={(e) => {
+                                    setCustomLink(e.target.value);
+                                    clearFieldError('link');
+                                }}
+                                placeholder="https://example.com/page"
+                                className={fieldClass(
+                                    "w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900",
+                                    !!fieldErrors.link
+                                )}
+                            />
+                            {fieldErrors.link && (
+                                <p id="link-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.link}</p>
+                            )}
+                        </div>
                     )}
 
                     {linkType === 'product' && (
-                        <select
-                            value={productId || ''}
-                            onChange={(e) => setProductId(e.target.value ? parseInt(e.target.value) : null)}
-                            className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900"
-                        >
-                            <option value="">انتخاب محصول...</option>
-                            {products.map((p) => (
-                                <option key={p.id} value={p.id}>{p.name}</option>
-                            ))}
-                        </select>
+                        <div>
+                            <select
+                                value={productId || ''}
+                                aria-invalid={!!fieldErrors.productId}
+                                aria-describedby={fieldErrors.productId ? 'productId-error' : undefined}
+                                onChange={(e) => {
+                                    setProductId(e.target.value ? parseInt(e.target.value) : null);
+                                    clearFieldError('productId');
+                                }}
+                                className={fieldClass(
+                                    "w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900",
+                                    !!fieldErrors.productId
+                                )}
+                            >
+                                <option value="">انتخاب محصول...</option>
+                                {products.map((p) => (
+                                    <option key={p.id} value={p.id}>{p.name}</option>
+                                ))}
+                            </select>
+                            {fieldErrors.productId && (
+                                <p id="productId-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.productId}</p>
+                            )}
+                        </div>
                     )}
 
                     {linkType === 'category' && (
-                        <select
-                            value={categoryId || ''}
-                            onChange={(e) => setCategoryId(e.target.value ? parseInt(e.target.value) : null)}
-                            className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900"
-                        >
-                            <option value="">انتخاب دسته‌بندی...</option>
-                            {categories.map((c) => (
-                                <option key={c.id} value={c.id}>{c.name}</option>
-                            ))}
-                        </select>
+                        <div>
+                            <select
+                                value={categoryId || ''}
+                                aria-invalid={!!fieldErrors.categoryId}
+                                aria-describedby={fieldErrors.categoryId ? 'categoryId-error' : undefined}
+                                onChange={(e) => {
+                                    setCategoryId(e.target.value ? parseInt(e.target.value) : null);
+                                    clearFieldError('categoryId');
+                                }}
+                                className={fieldClass(
+                                    "w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900",
+                                    !!fieldErrors.categoryId
+                                )}
+                            >
+                                <option value="">انتخاب دسته‌بندی...</option>
+                                {categories.map((c) => (
+                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                ))}
+                            </select>
+                            {fieldErrors.categoryId && (
+                                <p id="categoryId-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.categoryId}</p>
+                            )}
+                        </div>
                     )}
                 </div>
 
@@ -500,11 +613,22 @@ export default function AddSlidePage() {
                             <input
                                 type="number"
                                 value={order}
-                                onChange={(e) => setOrder(e.target.value)}
+                                aria-invalid={!!fieldErrors.order}
+                                aria-describedby={fieldErrors.order ? 'order-error' : undefined}
+                                onChange={(e) => {
+                                    setOrder(e.target.value);
+                                    clearFieldError('order');
+                                }}
                                 placeholder="خودکار"
                                 min="0"
-                                className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900"
+                                className={fieldClass(
+                                    "w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900",
+                                    !!fieldErrors.order
+                                )}
                             />
+                            {fieldErrors.order && (
+                                <p id="order-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.order}</p>
+                            )}
                         </div>
                     </div>
 

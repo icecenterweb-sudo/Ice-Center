@@ -63,7 +63,11 @@ export async function POST(request: NextRequest) {
         const result = createBannerSchema.safeParse(body);
         if (!result.success) {
             return NextResponse.json(
-                { success: false, error: result.error.issues.map(i => i.message).join('، ') },
+                {
+                    success: false,
+                    error: result.error.issues.map(i => i.message).join('، '),
+                    fieldErrors: result.error.flatten().fieldErrors,
+                },
                 { status: 400 }
             );
         }

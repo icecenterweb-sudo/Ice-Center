@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, Tag, Calendar, Search, X, Plus, Percent, Banknote } from 'lucide-react';
 import Image from 'next/image';
+import { fieldClass } from '@/lib/form-classes';
 
 interface Product {
     id: number;
@@ -19,6 +20,16 @@ export default function AddOfferPage() {
     const router = useRouter();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+    const clearFieldError = (fieldName: string) => {
+        setFieldErrors((prev) => {
+            if (!prev[fieldName]) return prev;
+            const next = { ...prev };
+            delete next[fieldName];
+            return next;
+        });
+    };
 
     // Form state
     const [name, setName] = useState('');
@@ -102,19 +113,22 @@ export default function AddOfferPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setFieldErrors({});
 
+        const newFieldErrors: Record<string, string> = {};
         if (selectedProducts.length === 0) {
-            setError('لطفاً حداقل یک محصول انتخاب کنید');
-            return;
+            newFieldErrors.products = 'لطفاً حداقل یک محصول انتخاب کنید';
         }
-
         if (!discountValue || parseFloat(discountValue) <= 0) {
-            setError('مقدار تخفیف باید بیشتر از صفر باشد');
-            return;
+            newFieldErrors.discountValue = 'مقدار تخفیف باید بیشتر از صفر باشد';
+        }
+        if (!endDate) {
+            newFieldErrors.endDate = 'تاریخ پایان الزامی است';
         }
 
-        if (!endDate) {
-            setError('تاریخ پایان الزامی است');
+        if (Object.keys(newFieldErrors).length > 0) {
+            setFieldErrors(newFieldErrors);
+            setError(Object.values(newFieldErrors)[0]);
             return;
         }
 
@@ -150,6 +164,14 @@ export default function AddOfferPage() {
                 router.push('/admin/dashboard/offers');
                 router.refresh();
             } else {
+                if (data.fieldErrors) {
+                    const flat: Record<string, string> = {};
+                    for (const [k, v] of Object.entries(data.fieldErrors)) {
+                        if (Array.isArray(v) && v[0]) flat[k] = v[0] as string;
+                        else if (typeof v === 'string') flat[k] = v;
+                    }
+                    setFieldErrors(flat);
+                }
                 setError(data.error || 'خطا در ایجاد پیشنهاد');
             }
         } catch (err) {
@@ -201,10 +223,21 @@ export default function AddOfferPage() {
                                 <input
                                     type="text"
                                     value={name}
-                                    onChange={(e) => setName(e.target.value)}
+                                    aria-invalid={!!fieldErrors.name}
+                                    aria-describedby={fieldErrors.name ? 'name-error' : undefined}
+                                    onChange={(e) => {
+                                        setName(e.target.value);
+                                        clearFieldError('name');
+                                    }}
                                     placeholder="مثلاً: تخفیف یلدا"
-                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900"
+                                    className={fieldClass(
+                                        "w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900",
+                                        !!fieldErrors.name
+                                    )}
                                 />
+                                {fieldErrors.name && (
+                                    <p id="name-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.name}</p>
+                                )}
                             </div>
 
                             <div>
@@ -213,11 +246,22 @@ export default function AddOfferPage() {
                                 </label>
                                 <textarea
                                     value={description}
-                                    onChange={(e) => setDescription(e.target.value)}
+                                    aria-invalid={!!fieldErrors.description}
+                                    aria-describedby={fieldErrors.description ? 'description-error' : undefined}
+                                    onChange={(e) => {
+                                        setDescription(e.target.value);
+                                        clearFieldError('description');
+                                    }}
                                     placeholder="توضیحات داخلی برای ادمین..."
                                     rows={2}
-                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none resize-none text-gray-900"
+                                    className={fieldClass(
+                                        "w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none resize-none text-gray-900",
+                                        !!fieldErrors.description
+                                    )}
                                 />
+                                {fieldErrors.description && (
+                                    <p id="description-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.description}</p>
+                                )}
                             </div>
                         </div>
 
@@ -260,17 +304,28 @@ export default function AddOfferPage() {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    مقدار تخفیف {discountType === 'PERCENTAGE' ? '(درصد)' : '(تومان)'}
+                                    مقدار تخفیف {discountType === 'PERCENTAGE' ? '(درصد)' : '(تومان)'} <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="number"
                                     value={discountValue}
-                                    onChange={(e) => setDiscountValue(e.target.value)}
+                                    aria-invalid={!!fieldErrors.discountValue}
+                                    aria-describedby={fieldErrors.discountValue ? 'discountValue-error' : undefined}
+                                    onChange={(e) => {
+                                        setDiscountValue(e.target.value);
+                                        clearFieldError('discountValue');
+                                    }}
                                     placeholder={discountType === 'PERCENTAGE' ? 'مثلاً: 20' : 'مثلاً: 500000'}
                                     min="0"
                                     max={discountType === 'PERCENTAGE' ? '100' : undefined}
-                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900"
+                                    className={fieldClass(
+                                        "w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900",
+                                        !!fieldErrors.discountValue
+                                    )}
                                 />
+                                {fieldErrors.discountValue && (
+                                    <p id="discountValue-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.discountValue}</p>
+                                )}
                             </div>
 
                             <div>
@@ -280,10 +335,21 @@ export default function AddOfferPage() {
                                 <input
                                     type="text"
                                     value={badgeText}
-                                    onChange={(e) => setBadgeText(e.target.value)}
+                                    aria-invalid={!!fieldErrors.badgeText}
+                                    aria-describedby={fieldErrors.badgeText ? 'badgeText-error' : undefined}
+                                    onChange={(e) => {
+                                        setBadgeText(e.target.value);
+                                        clearFieldError('badgeText');
+                                    }}
                                     placeholder="مثلاً: ۲۰٪ تخفیف"
-                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900"
+                                    className={fieldClass(
+                                        "w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900",
+                                        !!fieldErrors.badgeText
+                                    )}
                                 />
+                                {fieldErrors.badgeText && (
+                                    <p id="badgeText-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.badgeText}</p>
+                                )}
                             </div>
                         </div>
 
@@ -302,30 +368,58 @@ export default function AddOfferPage() {
                                     <input
                                         type="datetime-local"
                                         value={startDate}
-                                        onChange={(e) => setStartDate(e.target.value)}
-                                        className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900"
+                                        aria-invalid={!!fieldErrors.startDate}
+                                        aria-describedby={fieldErrors.startDate ? 'startDate-error' : undefined}
+                                        onChange={(e) => {
+                                            setStartDate(e.target.value);
+                                            clearFieldError('startDate');
+                                        }}
+                                        className={fieldClass(
+                                            "w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900",
+                                            !!fieldErrors.startDate
+                                        )}
                                     />
+                                    {fieldErrors.startDate && (
+                                        <p id="startDate-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.startDate}</p>
+                                    )}
                                     <p className="text-xs text-gray-500 mt-1">خالی = همین الان</p>
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        تاریخ پایان *
+                                        تاریخ پایان <span className="text-red-500">*</span>
                                     </label>
                                     <input
                                         type="datetime-local"
                                         value={endDate}
-                                        onChange={(e) => setEndDate(e.target.value)}
-                                        required
-                                        className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900"
+                                        aria-invalid={!!fieldErrors.endDate}
+                                        aria-describedby={fieldErrors.endDate ? 'endDate-error' : undefined}
+                                        onChange={(e) => {
+                                            setEndDate(e.target.value);
+                                            clearFieldError('endDate');
+                                        }}
+                                        className={fieldClass(
+                                            "w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900",
+                                            !!fieldErrors.endDate
+                                        )}
                                     />
+                                    {fieldErrors.endDate && (
+                                        <p id="endDate-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.endDate}</p>
+                                    )}
                                 </div>
                             </div>
                         </div>
 
                         {/* Products Selection */}
                         <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
-                            <h2 className="font-bold text-gray-800">انتخاب محصولات</h2>
+                            <div className="flex items-center justify-between">
+                                <h2 className="font-bold text-gray-800">
+                                    انتخاب محصولات <span className="text-red-500">*</span>
+                                </h2>
+                                {fieldErrors.products && (
+                                    <p id="products-error" className="text-xs font-medium text-red-600">{fieldErrors.products}</p>
+                                )}
+                            </div>
 
                             {/* Search */}
                             <div className="relative">
@@ -335,7 +429,7 @@ export default function AddOfferPage() {
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     placeholder="جستجوی محصول..."
-                                    className="w-full pl-4 pr-12 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900"
+                                    className="w-full pl-4 pr-12 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900"
                                 />
                             </div>
 
@@ -351,7 +445,12 @@ export default function AddOfferPage() {
                                             <button
                                                 key={product.id}
                                                 type="button"
-                                                onClick={() => !product.hasActiveOffer && addProduct(product)}
+                                                onClick={() => {
+                                                    if (!product.hasActiveOffer) {
+                                                        addProduct(product);
+                                                        clearFieldError('products');
+                                                    }
+                                                }}
                                                 disabled={product.hasActiveOffer}
                                                 className={`w-full flex items-center gap-3 p-3 text-right transition-colors ${product.hasActiveOffer
                                                     ? 'bg-gray-100 opacity-60 cursor-not-allowed'
@@ -473,10 +572,21 @@ export default function AddOfferPage() {
                                 <input
                                     type="number"
                                     value={priority}
-                                    onChange={(e) => setPriority(e.target.value)}
+                                    aria-invalid={!!fieldErrors.priority}
+                                    aria-describedby={fieldErrors.priority ? 'priority-error' : undefined}
+                                    onChange={(e) => {
+                                        setPriority(e.target.value);
+                                        clearFieldError('priority');
+                                    }}
                                     min="0"
-                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900"
+                                    className={fieldClass(
+                                        "w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-ocean/20 focus:bg-white transition-all outline-none text-gray-900",
+                                        !!fieldErrors.priority
+                                    )}
                                 />
+                                {fieldErrors.priority && (
+                                    <p id="priority-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.priority}</p>
+                                )}
                             </div>
                         </div>
 

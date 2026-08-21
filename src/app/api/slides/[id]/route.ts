@@ -101,7 +101,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
         if (!validation.success) {
             return NextResponse.json(
-                { success: false, error: validation.error.issues[0].message },
+                {
+                    success: false,
+                    error: validation.error.issues[0].message,
+                    fieldErrors: validation.error.flatten().fieldErrors,
+                },
                 { status: 400 }
             );
         }
