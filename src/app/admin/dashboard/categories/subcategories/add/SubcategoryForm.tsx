@@ -220,6 +220,34 @@ export default function SubcategoryForm({ categories, defaultCategoryId }: Subca
                     </p>
                 </div>
 
+                {/* Order */}
+                <div>
+                    <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-medium text-gray-700">ترتیب نمایش</label>
+                        <span className="text-xs font-mono text-gray-400">پیش‌فرض: ۰</span>
+                    </div>
+                    <input
+                        name="order"
+                        type="number"
+                        defaultValue={0}
+                        aria-invalid={!!fieldErrors.order}
+                        aria-describedby={fieldErrors.order ? 'order-error' : undefined}
+                        onChange={() => clearFieldError('order')}
+                        placeholder="0"
+                        className={fieldClass(
+                            "w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-green-100 focus:bg-white transition-all outline-none text-gray-900",
+                            !!fieldErrors.order
+                        )}
+                    />
+                    {fieldErrors.order && (
+                        <p id="order-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.order}</p>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1.5 flex items-start gap-1.5">
+                        <span className="text-green-500 mt-0.5">💡</span>
+                        <span>اعداد کمتر در اولویت بالاتر نمایش داده می‌شوند (مثلاً ۱ قبل از ۲ نمایش داده می‌شود)</span>
+                    </p>
+                </div>
+
                 <button
                     type="submit"
                     disabled={isSubmitting}

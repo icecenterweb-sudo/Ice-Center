@@ -14,7 +14,7 @@ async function AddSubcategoryContent({
 
     // Fetch all categories for the dropdown
     const categories = await prisma.category.findMany({
-        orderBy: { name: 'asc' }
+        orderBy: [{ order: 'asc' }, { name: 'asc' }]
     });
 
     if (categories.length === 0) {

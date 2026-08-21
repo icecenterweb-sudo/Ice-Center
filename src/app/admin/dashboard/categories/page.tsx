@@ -16,10 +16,10 @@ async function CategoriesContent() {
     const categories = await prisma.category.findMany({
         include: {
             subcategories: {
-                orderBy: { name: 'asc' }
+                orderBy: [{ order: 'asc' }, { name: 'asc' }]
             }
         },
-        orderBy: { name: 'asc' }
+        orderBy: [{ order: 'asc' }, { name: 'asc' }]
     });
 
     return (
@@ -79,7 +79,12 @@ async function CategoriesContent() {
                                     )}
 
                                     <div className="flex-1 min-w-0">
-                                        <h2 className="text-lg font-bold text-gray-900 mb-1 truncate">{category.name}</h2>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <h2 className="text-lg font-bold text-gray-900 truncate">{category.name}</h2>
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-blue-100 text-blue-800 shrink-0">
+                                                ترتیب: {category.order}
+                                            </span>
+                                        </div>
                                         {category.description && (
                                             <p className="text-sm text-gray-600 line-clamp-2">{category.description}</p>
                                         )}
@@ -124,9 +129,14 @@ async function CategoriesContent() {
                                     <div className="space-y-2">
                                         {category.subcategories.map((sub) => (
                                             <div key={sub.id} className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors group">
-                                                <div className="flex-1">
-                                                    <p className="text-sm font-medium text-gray-900">{sub.name}</p>
-                                                    <p className="text-xs text-gray-500 font-mono">/{sub.slug}</p>
+                                                <div className="flex-1 flex items-center justify-between pl-2">
+                                                    <div>
+                                                        <p className="text-sm font-medium text-gray-900">{sub.name}</p>
+                                                        <p className="text-xs text-gray-500 font-mono">/{sub.slug}</p>
+                                                    </div>
+                                                    <span className="text-[10px] font-bold text-gray-500 bg-white px-2 py-0.5 rounded border border-gray-200">
+                                                        ترتیب: {sub.order}
+                                                    </span>
                                                 </div>
                                                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <Link

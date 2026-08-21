@@ -26,7 +26,7 @@ async function EditSubcategoryContent({ params }: EditSubcategoryPageProps) {
 
     // Get all categories for the dropdown
     const categories = await prisma.category.findMany({
-        orderBy: { name: 'asc' }
+        orderBy: [{ order: 'asc' }, { name: 'asc' }]
     });
 
     return <EditSubcategoryForm subcategory={subcategory} categories={categories} />;
