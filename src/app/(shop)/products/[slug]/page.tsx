@@ -4,6 +4,7 @@ import ProductClient from './ProductClient';
 import { getProductWithCaching } from '@/lib/cache/product';
 import { getSimilarProducts, getProductReviews } from '@/lib/prisma/queries-product';
 import { generateProductPageJsonLd } from '@/lib/seo/product-jsonld';
+import { serializeJsonLd } from '@/lib/json-ld';
 
 type PageProps = {
     params: Promise<{ slug: string }>;
@@ -168,7 +169,7 @@ export default async function ProductPage({ params }: PageProps) {
         <>
             <script
                 type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+                dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
             />
             <ProductClient product={productData} similarProducts={similarProducts} reviews={reviews} />
         </>

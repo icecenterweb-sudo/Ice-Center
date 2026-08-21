@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import CategoryClient from './CategoryClient';
+import { serializeJsonLd } from '@/lib/json-ld';
 import {
     getCachedCategoryBySlug,
     getCachedSubcategories,
@@ -197,7 +198,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
         <>
             <script
                 type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+                dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
             />
             <CategoryClient
                 category={{

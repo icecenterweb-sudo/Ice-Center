@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import CategoriesClient from './CategoriesClient';
 import { getAllCategories, getProducts, getAvailableBrands } from '@/lib/prisma/queries-category';
 import { InventoryStatus } from '@prisma/client';
+import { serializeJsonLd } from '@/lib/json-ld';
 
 type Props = {
     searchParams: Promise<{
@@ -106,7 +107,7 @@ export default async function CategoriesPage({ searchParams }: Props) {
         <>
             <script
                 type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+                dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
             />
             <CategoriesClient
                 categories={categories}
