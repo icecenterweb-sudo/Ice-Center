@@ -1,6 +1,6 @@
 export type ActionResult<T = undefined> =
     | { success: true; data?: T }
-    | { success: false; error: string };
+    | { success: false; error: string; fieldErrors?: Record<string, string[]> };
 
 /**
  * True for the control-flow "errors" that Next.js throws internally from
