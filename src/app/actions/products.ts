@@ -10,9 +10,7 @@ import {
     notifyWishlistUsersOnPriceDrop,
     notifyWishlistUsersOnRestock,
 } from '@/lib/notifications';
-import { ActionResult } from '@/lib/action-result';
-
-export type { ActionResult };
+import type { ActionResult } from '@/lib/action-result';
 
 const CACHE_PROFILE = { expire: 600 };
 

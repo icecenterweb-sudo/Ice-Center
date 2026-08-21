@@ -4,9 +4,7 @@ import { prisma } from '@/lib/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { requireRoleAction } from '@/lib/admin-auth';
 import { z } from 'zod';
-import { ActionResult } from '@/lib/action-result';
-
-export type { ActionResult };
+import type { ActionResult } from '@/lib/action-result';
 
 const CACHE_PROFILE = { expire: 600 };
 
