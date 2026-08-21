@@ -2,7 +2,6 @@
 
 import { prisma } from '@/lib/db';
 import { revalidatePath, revalidateTag } from 'next/cache';
-import { redirect } from 'next/navigation';
 import { requireRoleAction } from '@/lib/admin-auth';
 import { recordAudit } from '@/lib/audit';
 import { z } from 'zod';
@@ -11,8 +10,19 @@ import {
     notifyWishlistUsersOnPriceDrop,
     notifyWishlistUsersOnRestock,
 } from '@/lib/notifications';
+import { ActionResult } from '@/lib/action-result';
+
+export type { ActionResult };
 
 const CACHE_PROFILE = { expire: 600 };
+
+const productSlugRegex = /^[a-zA-Z0-9\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF\-]+$/;
+
+/** Prisma unique-constraint violation (e.g. duplicate slug/SKU under a race). */
+function isUniqueConstraintError(error: unknown): boolean {
+    return typeof error === 'object' && error !== null && 'code' in error
+        && (error as { code?: unknown }).code === 'P2002';
+}
 
 // ============================================
 // Validation Schemas
@@ -22,10 +32,14 @@ const createProductSchema = z.object({
     name: z.string().min(1, 'نام محصول الزامی است'),
     description: z.string().optional(),
     price: z.number().positive('قیمت باید عدد مثبت باشد'),
-    listPrice: z.number().positive().optional().nullable(),
-    stock: z.number().int().min(0).default(0),
+    listPrice: z.number().positive('قیمت خط‌خورده باید عدد مثبت باشد').optional().nullable(),
+    stock: z.number().int().min(0, 'موجودی نمی‌تواند منفی باشد').default(0),
     brand: z.string().optional(),
     sku: z.string().optional(),
+    slug: z.string()
+        .min(1, 'اسلاگ الزامی است')
+        .regex(productSlugRegex, 'اسلاگ فقط می‌تواند شامل حروف فارسی، انگلیسی، اعداد و خط تیره باشد')
+        .optional(),
     subcategoryId: z.number().int().positive().optional().nullable(),
     images: z.array(z.string()).default([]),
     features: z.array(z.string()).default([]),
@@ -52,6 +66,7 @@ function parseProductFormData(formData: FormData) {
     const imagesData = formData.get('imagesData') as string | null;
     const featuresData = formData.get('features') as string | null;
     const specificationsData = formData.get('specifications') as string | null;
+    const slugRaw = (formData.get('slug') as string) || '';
 
     return {
         name: formData.get('name') as string,
@@ -61,6 +76,7 @@ function parseProductFormData(formData: FormData) {
         stock: parseInt(formData.get('stock') as string) || 0,
         brand: (formData.get('brand') as string) || undefined,
         sku: (formData.get('sku') as string) || undefined,
+        slug: slugRaw.trim() || undefined,
         subcategoryId: formData.get('subcategoryId') ? parseInt(formData.get('subcategoryId') as string) : null,
         images: parseJsonField(imagesData, []),
         features: parseJsonField(featuresData, []),
@@ -77,23 +93,35 @@ function computeInventoryStatus(stock: number): 'IN_STOCK' | 'OUT_OF_STOCK' {
 // Product Actions
 // ============================================
 
-export async function createProduct(formData: FormData) {
-    // Auth check
-    const admin = await requireRoleAction('PRODUCTS');
-
-    // Parse and validate
-    const raw = parseProductFormData(formData);
-    const result = createProductSchema.safeParse(raw);
-
-    if (!result.success) {
-        throw new Error(result.error.issues.map(i => i.message).join('، '));
-    }
-
-    const data = result.data;
-
+export async function createProduct(formData: FormData): Promise<ActionResult<{ id: number; slug: string }>> {
     try {
-        // Generate a clean, unique slug
-        const slug = await generateUniqueSlug(data.name, 'product');
+        // Auth check
+        const admin = await requireRoleAction('PRODUCTS');
+
+        // Parse and validate
+        const raw = parseProductFormData(formData);
+        const result = createProductSchema.safeParse(raw);
+
+        if (!result.success) {
+            return {
+                success: false,
+                error: result.error.issues.map(i => i.message).join('، ')
+            };
+        }
+
+        const data = result.data;
+
+        // Generate or use provided slug
+        let slug = data.slug;
+        if (!slug) {
+            slug = await generateUniqueSlug(data.name, 'product');
+        } else {
+            const existing = await prisma.product.findUnique({ where: { slug } });
+            if (existing) {
+                return { success: false, error: 'این اسلاگ قبلاً استفاده شده است' };
+            }
+        }
+
         const thumbnail = data.images.length > 0 ? data.images[0] : null;
 
         const product = await prisma.product.create({
@@ -122,34 +150,55 @@ export async function createProduct(formData: FormData) {
         revalidatePath('/admin/dashboard/products');
         revalidateTag('homepage', CACHE_PROFILE);
         revalidateTag('products', CACHE_PROFILE);
-    } catch (error) {
-        console.error('Failed to create product:', error);
-        throw new Error('خطا در ثبت محصول');
-    }
 
-    redirect('/admin/dashboard/products');
+        return { success: true, data: { id: product.id, slug: product.slug } };
+    } catch (error: unknown) {
+        console.error('Failed to create product:', error);
+        if (isUniqueConstraintError(error)) {
+            return { success: false, error: 'این اسلاگ یا کد محصول (SKU) قبلاً استفاده شده است' };
+        }
+        const errorMsg = error instanceof Error && error.message ? error.message : 'خطا در ثبت محصول. لطفاً دوباره تلاش کنید';
+        return { success: false, error: errorMsg };
+    }
 }
 
-export async function updateProduct(id: number, formData: FormData) {
-    // Auth check
-    const admin = await requireRoleAction('PRODUCTS');
-
-    // Parse and validate
-    const raw = parseProductFormData(formData);
-    const result = updateProductSchema.safeParse(raw);
-
-    if (!result.success) {
-        throw new Error(result.error.issues.map(i => i.message).join('، '));
-    }
-
-    const data = result.data;
-
+export async function updateProduct(id: number, formData: FormData): Promise<ActionResult> {
     try {
-        // Fetch current values to detect price/stock changes
+        // Auth check
+        const admin = await requireRoleAction('PRODUCTS');
+
+        // Parse and validate
+        const raw = parseProductFormData(formData);
+        const result = updateProductSchema.safeParse(raw);
+
+        if (!result.success) {
+            return {
+                success: false,
+                error: result.error.issues.map(i => i.message).join('، ')
+            };
+        }
+
+        const data = result.data;
+
+        // Fetch current values to detect changes
         const currentProduct = await prisma.product.findUnique({
             where: { id },
             select: { price: true, stock: true, name: true, slug: true, inventoryStatus: true },
         });
+
+        if (!currentProduct) {
+            return { success: false, error: 'محصول مورد نظر یافت نشد' };
+        }
+
+        // Validate slug uniqueness if changed
+        if (data.slug && data.slug !== currentProduct.slug) {
+            const existingWithSlug = await prisma.product.findFirst({
+                where: { slug: data.slug, id: { not: id } }
+            });
+            if (existingWithSlug) {
+                return { success: false, error: 'این اسلاگ قبلاً برای محصول دیگری استفاده شده است' };
+            }
+        }
 
         const updateData: Record<string, unknown> = {
             name: data.name,
@@ -163,6 +212,10 @@ export async function updateProduct(id: number, formData: FormData) {
             isActive: data.isActive,
             subcategoryId: data.subcategoryId || null,
         };
+
+        if (data.slug) {
+            updateData.slug = data.slug;
+        }
 
         // Always include images/features/specs so they can be cleared
         updateData.images = data.images;
@@ -179,48 +232,53 @@ export async function updateProduct(id: number, formData: FormData) {
         await recordAudit(admin.adminId, "PRODUCT_UPDATE", "Product", product.id, `بروزرسانی مشخصات محصول "${product.name}" (موجودی: ${product.stock}، قیمت: ${product.price})`);
 
         // Non-blocking wishlist notifications
-        if (currentProduct) {
-            const wasOutOfStock = currentProduct.stock === 0 || currentProduct.inventoryStatus === 'OUT_OF_STOCK';
-            const nowInStock = data.stock > 0;
-            const priceDropped = data.price < currentProduct.price;
+        const wasOutOfStock = currentProduct.stock === 0 || currentProduct.inventoryStatus === 'OUT_OF_STOCK';
+        const nowInStock = data.stock > 0;
+        const priceDropped = data.price < currentProduct.price;
 
-            if (wasOutOfStock && nowInStock) {
-                notifyWishlistUsersOnRestock(id, currentProduct.name, currentProduct.slug).catch(console.error);
-            } else if (priceDropped) {
-                notifyWishlistUsersOnPriceDrop(
-                    id,
-                    currentProduct.name,
-                    currentProduct.slug,
-                    currentProduct.price,
-                    data.price
-                ).catch(console.error);
-            }
+        if (wasOutOfStock && nowInStock) {
+            notifyWishlistUsersOnRestock(id, currentProduct.name, currentProduct.slug).catch(console.error);
+        } else if (priceDropped) {
+            notifyWishlistUsersOnPriceDrop(
+                id,
+                currentProduct.name,
+                currentProduct.slug,
+                currentProduct.price,
+                data.price
+            ).catch(console.error);
         }
 
         revalidatePath('/admin/dashboard/products');
         revalidateTag('homepage', CACHE_PROFILE);
         revalidateTag('products', CACHE_PROFILE);
-        revalidateTag(`product:${currentProduct?.slug || ''}`, CACHE_PROFILE);
+        revalidateTag(`product:${currentProduct.slug}`, CACHE_PROFILE);
+        if (data.slug && data.slug !== currentProduct.slug) {
+            revalidateTag(`product:${data.slug}`, CACHE_PROFILE);
+        }
+
+        return { success: true };
     } catch (error: unknown) {
         console.error('Failed to update product:', error);
-        throw new Error('خطا در ویرایش محصول');
+        if (isUniqueConstraintError(error)) {
+            return { success: false, error: 'این اسلاگ یا کد محصول (SKU) قبلاً استفاده شده است' };
+        }
+        const errorMsg = error instanceof Error && error.message ? error.message : 'خطا در ویرایش محصول. لطفاً دوباره تلاش کنید';
+        return { success: false, error: errorMsg };
     }
-
-    redirect('/admin/dashboard/products');
 }
 
-export async function deleteProduct(id: number) {
-    // Auth check
-    const admin = await requireRoleAction('PRODUCTS');
-
+export async function deleteProduct(id: number): Promise<ActionResult> {
     try {
+        // Auth check
+        const admin = await requireRoleAction('PRODUCTS');
+
         // Check if product has variants
         const variantCount = await prisma.productVariant.count({
             where: { productId: id }
         });
 
         if (variantCount > 0) {
-            throw new Error('این محصول دارای واریانت است. ابتدا واریانت‌ها را حذف کنید');
+            return { success: false, error: 'این محصول دارای واریانت است. ابتدا واریانت‌ها را حذف کنید' };
         }
 
         const product = await prisma.product.delete({
@@ -234,27 +292,28 @@ export async function deleteProduct(id: number) {
         revalidateTag('homepage', CACHE_PROFILE);
         revalidateTag('products', CACHE_PROFILE);
         revalidateTag(`product:${product.slug}`, CACHE_PROFILE);
+
         return { success: true };
     } catch (error: unknown) {
         console.error('Failed to delete product:', error);
-        throw new Error('خطا در حذف محصول');
+        const errorMsg = error instanceof Error && error.message ? error.message : 'خطا در حذف محصول. لطفاً دوباره تلاش کنید';
+        return { success: false, error: errorMsg };
     }
 }
 
-export async function toggleProductStatus(id: number) {
-    // Auth check
-    const admin = await requireRoleAction('PRODUCTS');
-
+export async function toggleProductStatus(id: number): Promise<ActionResult<{ isActive: boolean }>> {
     try {
-        // Atomic toggle via raw SQL — prevents lost-update race where two
-        // concurrent toggles both read the same value and write the same result.
+        // Auth check
+        const admin = await requireRoleAction('PRODUCTS');
+
+        // Atomic toggle via raw SQL
         const rows = await prisma.$queryRaw<{ isActive: boolean; name: string }[]>`
             UPDATE "Product" SET "isActive" = NOT "isActive" WHERE "id" = ${id} RETURNING "isActive", "name"
         `;
         const updated = rows[0];
 
         if (!updated) {
-            throw new Error('محصول یافت نشد');
+            return { success: false, error: 'محصول مورد نظر یافت نشد' };
         }
 
         // Record Audit log
@@ -263,10 +322,12 @@ export async function toggleProductStatus(id: number) {
         revalidatePath('/admin/dashboard/products');
         revalidateTag('homepage', CACHE_PROFILE);
         revalidateTag('products', CACHE_PROFILE);
-        return { success: true };
+
+        return { success: true, data: { isActive: updated.isActive } };
     } catch (error: unknown) {
         console.error('Failed to toggle product status:', error);
-        throw new Error('خطا در تغییر وضعیت محصول');
+        const errorMsg = error instanceof Error && error.message ? error.message : 'خطا در تغییر وضعیت محصول';
+        return { success: false, error: errorMsg };
     }
 }
 
@@ -281,7 +342,7 @@ const variantSchema = z.object({
     phase: z.number().int().optional().nullable(),
     voltage: z.string().optional(),
     price: z.number().positive('قیمت باید عدد مثبت باشد'),
-    stock: z.number().int().min(0).default(0),
+    stock: z.number().int().min(0, 'موجودی نمی‌تواند منفی باشد').default(0),
     isDefault: z.boolean().default(false),
     isActive: z.boolean().default(true),
 });
@@ -300,20 +361,20 @@ function parseVariantFormData(formData: FormData) {
     };
 }
 
-export async function createProductVariant(productId: number, formData: FormData) {
-    // Auth check
-    await requireRoleAction('PRODUCTS');
-
-    const raw = parseVariantFormData(formData);
-    const result = variantSchema.safeParse(raw);
-
-    if (!result.success) {
-        throw new Error(result.error.issues.map(i => i.message).join('، '));
-    }
-
-    const data = result.data;
-
+export async function createProductVariant(productId: number, formData: FormData): Promise<ActionResult> {
     try {
+        // Auth check
+        await requireRoleAction('PRODUCTS');
+
+        const raw = parseVariantFormData(formData);
+        const result = variantSchema.safeParse(raw);
+
+        if (!result.success) {
+            return { success: false, error: result.error.issues.map(i => i.message).join('، ') };
+        }
+
+        const data = result.data;
+
         await prisma.productVariant.create({
             data: {
                 productId,
@@ -335,24 +396,28 @@ export async function createProductVariant(productId: number, formData: FormData
         return { success: true };
     } catch (error: unknown) {
         console.error('Failed to create variant:', error);
-        throw new Error('خطا در ایجاد واریانت');
+        if (isUniqueConstraintError(error)) {
+            return { success: false, error: 'این کد واریانت (SKU) قبلاً استفاده شده است' };
+        }
+        const errorMsg = error instanceof Error && error.message ? error.message : 'خطا در ایجاد واریانت';
+        return { success: false, error: errorMsg };
     }
 }
 
-export async function updateProductVariant(id: number, formData: FormData) {
-    // Auth check
-    await requireRoleAction('PRODUCTS');
-
-    const raw = parseVariantFormData(formData);
-    const result = variantSchema.safeParse(raw);
-
-    if (!result.success) {
-        throw new Error(result.error.issues.map(i => i.message).join('، '));
-    }
-
-    const data = result.data;
-
+export async function updateProductVariant(id: number, formData: FormData): Promise<ActionResult> {
     try {
+        // Auth check
+        await requireRoleAction('PRODUCTS');
+
+        const raw = parseVariantFormData(formData);
+        const result = variantSchema.safeParse(raw);
+
+        if (!result.success) {
+            return { success: false, error: result.error.issues.map(i => i.message).join('، ') };
+        }
+
+        const data = result.data;
+
         await prisma.productVariant.update({
             where: { id },
             data: {
@@ -374,15 +439,19 @@ export async function updateProductVariant(id: number, formData: FormData) {
         return { success: true };
     } catch (error: unknown) {
         console.error('Failed to update variant:', error);
-        throw new Error('خطا در ویرایش واریانت');
+        if (isUniqueConstraintError(error)) {
+            return { success: false, error: 'این کد واریانت (SKU) قبلاً استفاده شده است' };
+        }
+        const errorMsg = error instanceof Error && error.message ? error.message : 'خطا در ویرایش واریانت';
+        return { success: false, error: errorMsg };
     }
 }
 
-export async function deleteProductVariant(id: number) {
-    // Auth check
-    await requireRoleAction('PRODUCTS');
-
+export async function deleteProductVariant(id: number): Promise<ActionResult> {
     try {
+        // Auth check
+        await requireRoleAction('PRODUCTS');
+
         await prisma.productVariant.delete({
             where: { id }
         });
@@ -393,7 +462,8 @@ export async function deleteProductVariant(id: number) {
         return { success: true };
     } catch (error: unknown) {
         console.error('Failed to delete variant:', error);
-        throw new Error('خطا در حذف واریانت');
+        const errorMsg = error instanceof Error && error.message ? error.message : 'خطا در حذف واریانت';
+        return { success: false, error: errorMsg };
     }
 }
 
@@ -401,28 +471,28 @@ export async function bulkUpdateProductsAction(
     productIds: number[],
     action: 'ACTIVATE' | 'DEACTIVATE' | 'DELETE' | 'CHANGE_SUBCATEGORY',
     subcategoryId?: number
-) {
-    const admin = await requireRoleAction('PRODUCTS');
-
-    if (!productIds || productIds.length === 0) {
-        throw new Error('هیچ محصولی انتخاب نشده است.');
-    }
-
-    if (!productIds.every(id => Number.isInteger(id) && id > 0)) {
-        throw new Error('شناسه محصولات نامعتبر است');
-    }
-
-    if (productIds.length > 100) {
-        throw new Error('حداکثر ۱۰۰ محصول در هر عملیات مجاز است');
-    }
-
-    if (action === 'CHANGE_SUBCATEGORY') {
-        if (typeof subcategoryId !== 'number' || !Number.isInteger(subcategoryId) || subcategoryId <= 0) {
-            throw new Error('زیردسته نامعتبر است');
-        }
-    }
-
+): Promise<ActionResult> {
     try {
+        const admin = await requireRoleAction('PRODUCTS');
+
+        if (!productIds || productIds.length === 0) {
+            return { success: false, error: 'هیچ محصولی انتخاب نشده است' };
+        }
+
+        if (!productIds.every(id => Number.isInteger(id) && id > 0)) {
+            return { success: false, error: 'شناسه محصولات نامعتبر است' };
+        }
+
+        if (productIds.length > 100) {
+            return { success: false, error: 'حداکثر ۱۰۰ محصول در هر عملیات مجاز است' };
+        }
+
+        if (action === 'CHANGE_SUBCATEGORY') {
+            if (typeof subcategoryId !== 'number' || !Number.isInteger(subcategoryId) || subcategoryId <= 0) {
+                return { success: false, error: 'زیردسته نامعتبر است' };
+            }
+        }
+
         if (action === 'ACTIVATE') {
             await prisma.product.updateMany({
                 where: { id: { in: productIds } },
@@ -436,7 +506,7 @@ export async function bulkUpdateProductsAction(
             });
             await recordAudit(admin.adminId, 'PRODUCT_TOGGLE', 'Product', productIds[0], `غیرفعال‌سازی گروهی ${productIds.length} محصول (شناسه‌ها: ${productIds.join(', ')})`);
         } else if (action === 'DELETE') {
-            // Check for products with variants (same as single delete)
+            // Check for products with variants
             const productsWithVariants = await prisma.productVariant.groupBy({
                 by: ['productId'],
                 where: { productId: { in: productIds } },
@@ -445,7 +515,7 @@ export async function bulkUpdateProductsAction(
             const deletableIds = productIds.filter(id => !blockedIds.has(id));
 
             if (deletableIds.length === 0) {
-                throw new Error('تمامی محصولات انتخاب شده دارای واریانت هستند. ابتدا واریانت‌ها را حذف کنید.');
+                return { success: false, error: 'تمامی محصولات انتخاب شده دارای واریانت هستند. ابتدا واریانت‌ها را حذف کنید.' };
             }
 
             await prisma.product.deleteMany({
@@ -459,7 +529,7 @@ export async function bulkUpdateProductsAction(
             await recordAudit(admin.adminId, 'PRODUCT_DELETE', 'Product', deletableIds[0], details);
         } else if (action === 'CHANGE_SUBCATEGORY') {
             if (!subcategoryId) {
-                throw new Error('زیردسته جدید مشخص نشده است.');
+                return { success: false, error: 'زیردسته جدید مشخص نشده است' };
             }
             await prisma.product.updateMany({
                 where: { id: { in: productIds } },
@@ -471,9 +541,11 @@ export async function bulkUpdateProductsAction(
         revalidatePath('/admin/dashboard/products');
         revalidateTag('homepage', CACHE_PROFILE);
         revalidateTag('products', CACHE_PROFILE);
+
         return { success: true };
     } catch (error: unknown) {
         console.error('Failed bulk products update:', error);
-        throw new Error('خطا در عملیات گروهی محصولات');
+        const errorMsg = error instanceof Error && error.message ? error.message : 'خطا در عملیات گروهی محصولات';
+        return { success: false, error: errorMsg };
     }
 }

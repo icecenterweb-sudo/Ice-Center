@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 import { Prisma } from '@prisma/client';
 import MultiImageUpload from '@/components/admin/MultiImageUpload';
 import FeaturesManager from '@/components/admin/FeaturesManager';
@@ -23,20 +25,38 @@ interface EditProductFormProps {
 }
 
 export default function EditProductForm({ product, subcategories }: EditProductFormProps) {
+    const router = useRouter();
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [, setImageUrls] = useState<string[]>([]);
     const [features, setFeatures] = useState<string[]>(product.features || []);
     const [specifications, setSpecifications] = useState<Record<string, string>>(
         (product.specifications as Record<string, string> | null) ?? {}
     );
 
-    const handleSubmit = async (formData: FormData) => {
-        // Images are now already uploaded to Cloudinary by MultiImageUpload
-        // The imagesData hidden field is automatically populated by the component
-        await updateProduct(product.id, formData);
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        setIsSubmitting(true);
+        const t = toast.loading('در حال ذخیره تغییرات...');
+
+        try {
+            const res = await updateProduct(product.id, formData);
+            if (res.success) {
+                toast.success('تغییرات با موفقیت ذخیره شد', { id: t });
+                router.push('/admin/dashboard/products');
+                router.refresh();
+            } else {
+                toast.error(res.error || 'خطا در ذخیره تغییرات', { id: t });
+            }
+        } catch {
+            toast.error('خطای غیرمنتظره رخ داد', { id: t });
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
-        <form action={handleSubmit} className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Name */}
                 <div className="md:col-span-2">
@@ -61,11 +81,12 @@ export default function EditProductForm({ product, subcategories }: EditProductF
                         type="text"
                         name="sku"
                         defaultValue={product.sku || ''}
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800 font-mono text-left"
+                        dir="ltr"
                     />
                 </div>
 
-                {/* Slug (URL) */}
+                {/* Slug */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                         اسلاگ (آدرس URL) <span className="text-red-500">*</span>
@@ -75,12 +96,12 @@ export default function EditProductForm({ product, subcategories }: EditProductF
                         name="slug"
                         defaultValue={product.slug || ''}
                         required
-                        pattern="[a-zA-Z0-9-]+"
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800 font-mono text-left"
+                        pattern="[a-zA-Z0-9\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF\-]+"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800 font-mono"
                         dir="ltr"
-                        placeholder="product-name-here"
+                        placeholder="آب-هویج-گیری-هلال-مدل-g100"
                     />
-                    <p className="text-xs text-gray-500 mt-1">فقط حروف انگلیسی، اعداد و خط تیره مجاز است</p>
+                    <p className="text-xs text-gray-500 mt-1">حروف فارسی، انگلیسی، اعداد و خط تیره مجاز است</p>
                 </div>
 
                 {/* Brand */}
@@ -96,26 +117,10 @@ export default function EditProductForm({ product, subcategories }: EditProductF
                     />
                 </div>
 
-                {/* List Price */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        قیمت اصلی / لیست (تومان)
-                        <span className="text-xs text-gray-500 mr-2">(اختیاری)</span>
-                    </label>
-                    <input
-                        type="number"
-                        name="listPrice"
-                        defaultValue={product.listPrice || ''}
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-100 focus:border-gray-500 transition-all outline-none text-gray-800"
-                        placeholder="قیمت قبل از تخفیف"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">قیمت اصلی محصول (MSRP)</p>
-                </div>
-
                 {/* Price */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                        قیمت (تومان) <span className="text-red-500">*</span>
+                        قیمت فروش (تومان) <span className="text-red-500">*</span>
                     </label>
                     <input
                         type="number"
@@ -123,22 +128,40 @@ export default function EditProductForm({ product, subcategories }: EditProductF
                         defaultValue={product.price}
                         required
                         min="0"
-                        step="1000"
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800 font-bold"
+                        step="any"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800 font-mono text-left"
+                        dir="ltr"
+                    />
+                </div>
+
+                {/* List Price */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        قیمت خط خورده (تومان)
+                    </label>
+                    <input
+                        type="number"
+                        name="listPrice"
+                        defaultValue={product.listPrice || ''}
+                        min="0"
+                        step="any"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800 font-mono text-left"
+                        dir="ltr"
                     />
                 </div>
 
                 {/* Stock */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                        موجودی
+                        موجودی انبار
                     </label>
                     <input
                         type="number"
                         name="stock"
                         defaultValue={product.stock}
                         min="0"
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800 font-mono text-left"
+                        dir="ltr"
                     />
                 </div>
 
@@ -152,48 +175,48 @@ export default function EditProductForm({ product, subcategories }: EditProductF
                         defaultValue={product.subcategoryId || ''}
                         className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800"
                     >
-                        <option value="">بدون دسته‌بندی</option>
+                        <option value="">انتخاب دسته‌بندی</option>
                         {subcategories.map((sub) => (
                             <option key={sub.id} value={sub.id}>
-                                {sub.category.name} / {sub.name}
+                                {sub.category.name} &larr; {sub.name}
                             </option>
                         ))}
                     </select>
                 </div>
 
-                {/* Active Status */}
-                <div className="md:col-span-2">
-                    <label className="flex items-center gap-3 cursor-pointer">
-                        <input
-                            type="checkbox"
-                            name="isActive"
-                            value="true"
-                            defaultChecked={product.isActive}
-                            className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                        <span className="text-sm font-medium text-gray-700">محصول فعال است</span>
+                {/* Status */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        وضعیت نمایش
                     </label>
+                    <select
+                        name="isActive"
+                        defaultValue={product.isActive ? 'true' : 'false'}
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800"
+                    >
+                        <option value="true">فعال (نمایش در سایت)</option>
+                        <option value="false">غیرفعال (عدم نمایش)</option>
+                    </select>
                 </div>
 
                 {/* Description */}
                 <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                        توضیحات
+                        توضیحات محصول
                     </label>
                     <textarea
                         name="description"
                         defaultValue={product.description || ''}
-                        rows={6}
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none resize-none text-gray-800"
+                        rows={4}
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800"
                     />
                 </div>
 
-                {/* Image Upload */}
+                {/* Multi Image Upload */}
                 <div className="md:col-span-2">
                     <MultiImageUpload
                         currentImages={product.images || []}
                         onImagesChange={setImageUrls}
-                        maxImages={5}
                         folder="products"
                     />
                 </div>
@@ -221,9 +244,10 @@ export default function EditProductForm({ product, subcategories }: EditProductF
                 </Link>
                 <button
                     type="submit"
-                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all"
+                    disabled={isSubmitting}
+                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
-                    ذخیره تغییرات
+                    {isSubmitting ? 'در حال ذخیره...' : 'ذخیره تغییرات'}
                 </button>
             </div>
         </form>

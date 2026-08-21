@@ -3,8 +3,9 @@
 import { createProduct } from '@/app/actions/products';
 import { ArrowRight, Save, Info } from 'lucide-react';
 import Link from 'next/link';
-import { useFormStatus } from 'react-dom';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 import MultiImageUpload from '@/components/admin/MultiImageUpload';
 import FeaturesManager from '@/components/admin/FeaturesManager';
 import SpecificationsManager from '@/components/admin/SpecificationsManager';
@@ -24,28 +25,9 @@ interface AddProductFormProps {
     subcategories: Subcategory[];
 }
 
-function SubmitButton() {
-    const { pending } = useFormStatus();
-
-    return (
-        <button
-            type="submit"
-            disabled={pending}
-            className="w-full bg-gradient-to-l from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-500/20 transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-            {pending ? (
-                <span>در حال ذخیره...</span>
-            ) : (
-                <>
-                    <Save className="w-5 h-5" />
-                    ذخیره محصول
-                </>
-            )}
-        </button>
-    );
-}
-
 export default function AddProductForm({ subcategories }: AddProductFormProps) {
+    const router = useRouter();
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<string>('');
     const [nameLength, setNameLength] = useState(0);
     const [descLength, setDescLength] = useState(0);
@@ -66,10 +48,26 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
 
     const [sku, setSku] = useState(generateSKU());
 
-    const handleSubmit = async (formData: FormData) => {
-        // Images are now already uploaded to Cloudinary by MultiImageUpload
-        // The imagesData hidden field is automatically populated by the component
-        return createProduct(formData);
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        setIsSubmitting(true);
+        const t = toast.loading('در حال ثبت محصول جدید...');
+
+        try {
+            const res = await createProduct(formData);
+            if (res.success) {
+                toast.success('محصول با موفقیت ایجاد شد', { id: t });
+                router.push('/admin/dashboard/products');
+                router.refresh();
+            } else {
+                toast.error(res.error || 'خطا در ثبت محصول', { id: t });
+            }
+        } catch {
+            toast.error('خطای غیرمنتظره رخ داد', { id: t });
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     // Group subcategories by category
@@ -99,172 +97,194 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
     return (
         <div className="space-y-6 max-w-5xl mx-auto pb-12">
             {/* Header */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-black text-gray-800">افزودن محصول جدید</h1>
+                    <p className="text-gray-500 text-sm mt-1">مشخصات محصول جدید را با دقت وارد کنید</p>
+                </div>
                 <Link
                     href="/admin/dashboard/products"
-                    className="p-2 rounded-xl bg-gray-800 text-white hover:bg-gray-700 transition-colors shadow-sm"
+                    className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors font-medium text-sm"
                 >
-                    <ArrowRight className="w-5 h-5" />
+                    <ArrowRight className="w-4 h-4" />
+                    بازگشت به لیست
                 </Link>
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-800">افزودن محصول جدید</h1>
-                    <p className="text-gray-500 text-sm mt-1">مشخصات محصول جدید را وارد کنید</p>
-                </div>
             </div>
 
-            <form action={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Main Info */}
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Main Form Area */}
                 <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm">
-                        <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                            <Info className="w-5 h-5 text-blue-500" />
-                            اطلاعات پایه
-                        </h2>
+                    {/* Basic Info */}
+                    <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm space-y-6">
+                        <h2 className="text-lg font-bold text-gray-800 border-b border-gray-100 pb-4">اطلاعات پایه</h2>
 
                         <div className="space-y-4">
                             <div>
-                                <div className="flex items-center justify-between mb-2">
+                                <div className="flex justify-between items-center mb-2">
                                     <label className="block text-sm font-medium text-gray-700">
-                                        نام محصول<span className="text-red-500">*</span>
+                                        نام محصول <span className="text-red-500">*</span>
                                     </label>
-                                    <span className={`text-xs font-mono ${nameLength > 70 ? 'text-red-500' : nameLength > 50 ? 'text-orange-500' : 'text-gray-500'}`}>
-                                        {nameLength}/70
-                                    </span>
+                                    <span className="text-xs text-gray-400">{nameLength}/150</span>
                                 </div>
                                 <input
-                                    name="name"
                                     type="text"
-                                    maxLength={70}
-                                    placeholder="مثلاً: دستگاه بستنی‌ساز شمس مدل 2024"
-                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900"
-                                    onChange={(e) => setNameLength(e.target.value.length)}
+                                    name="name"
                                     required
+                                    maxLength={150}
+                                    onChange={(e) => setNameLength(e.target.value.length)}
+                                    placeholder="مثال: دستگاه بستنی ساز قیفی شمس مدل سناتور"
+                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900 placeholder:text-gray-400 text-sm"
                                 />
-                                <p className="text-xs text-gray-500 mt-1.5 flex items-start gap-1.5">
-                                    <span className="text-blue-500 mt-0.5">💡</span>
-                                    <span>عنوان باید واضح، مختصر و حاوی کلمات کلیدی مهم باشد. بهینه: 40-60 کاراکتر</span>
-                                </p>
+                            </div>
+
+                            {/* Optional Slug */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    اسلاگ دلخواه (اختیاری)
+                                </label>
+                                <input
+                                    type="text"
+                                    name="slug"
+                                    pattern="[a-zA-Z0-9\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF\-]+"
+                                    placeholder="در صورت خالی بودن، خودکار تولید می‌شود"
+                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900 placeholder:text-gray-400 text-sm font-mono"
+                                    dir="ltr"
+                                />
+                                <p className="text-xs text-gray-400 mt-1">حروف فارسی، انگلیسی، اعداد و خط تیره مجاز است</p>
                             </div>
 
                             <div>
-                                <div className="flex items-center justify-between mb-2">
-                                    <label className="block text-sm font-medium text-gray-700">توضیحات</label>
-                                    <span className={`text-xs font-mono ${descLength > 500 ? 'text-red-500' : descLength > 300 ? 'text-orange-500' : 'text-gray-500'}`}>
-                                        {descLength}/500
-                                    </span>
+                                <div className="flex justify-between items-center mb-2">
+                                    <label className="block text-sm font-medium text-gray-700">توضیحات محصول</label>
+                                    <span className="text-xs text-gray-400">{descLength}/2000</span>
                                 </div>
                                 <textarea
                                     name="description"
                                     rows={5}
-                                    maxLength={500}
-                                    placeholder="توضیحات کامل در مورد محصول..."
-                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none resize-none text-gray-900"
+                                    maxLength={2000}
                                     onChange={(e) => setDescLength(e.target.value.length)}
+                                    placeholder="توضیحات کامل درباره ویژگی‌ها، کاربرد و مزایای محصول..."
+                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900 placeholder:text-gray-400 text-sm leading-relaxed"
                                 />
-                                <p className="text-xs text-gray-500 mt-1.5 flex items-start gap-1.5">
-                                    <span className="text-blue-500 mt-0.5">💡</span>
-                                    <span>توضیحات دقیق شامل: ویژگی‌های کلیدی، کاربردها، مزایا. بهینه: 150-300 کاراکتر برای سئو</span>
-                                </p>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">برند</label>
-                                    <input
-                                        name="brand"
-                                        type="text"
-                                        placeholder="مثال: شمس، الکترواستیل"
-                                        className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900"
-                                    />
-                                    <p className="text-xs text-gray-500 mt-1.5">نام برند سازنده محصول</p>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">کد محصول (SKU)</label>
-                                    <div className="flex gap-2">
-                                        <input
-                                            name="sku"
-                                            type="text"
-                                            value={sku}
-                                            onChange={(e) => setSku(e.target.value)}
-                                            placeholder="مثال: PRD-20241214-1130"
-                                            className="flex-1 px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none font-mono dir-ltr text-right text-gray-900"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setSku(generateSKU())}
-                                            className="px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-colors font-bold text-sm whitespace-nowrap"
-                                            title="تولید کد جدید"
-                                        >
-                                            🔄
-                                        </button>
-                                    </div>
-                                    <p className="text-xs text-gray-500 mt-1.5">کد خودکار ایجاد شده - می‌توانید ویرایش کنید</p>
-                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <MultiImageUpload onImagesChange={setImageUrls} maxImages={5} folder="products" />
+                    {/* Images */}
+                    <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm space-y-6">
+                        <div>
+                            <h2 className="text-lg font-bold text-gray-800">تصاویر محصول</h2>
+                            <p className="text-gray-500 text-xs mt-1">تصاویر با کیفیت و پس‌زمینه مناسب بارگذاری کنید</p>
+                        </div>
+
+                        <MultiImageUpload
+                            onImagesChange={setImageUrls}
+                            folder="products"
+                        />
+                    </div>
 
                     {/* Features & Specifications */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                        <FeaturesManager
-                            initialFeatures={features}
-                            onChange={setFeatures}
-                        />
-                        <SpecificationsManager
-                            initialSpecs={specifications}
-                            onChange={setSpecifications}
-                        />
+                    <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm space-y-6">
+                        <h2 className="text-lg font-bold text-gray-800 border-b border-gray-100 pb-4">ویژگی‌ها و مشخصات فنی</h2>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <FeaturesManager onChange={setFeatures} />
+                            <SpecificationsManager onChange={setSpecifications} />
+                        </div>
                     </div>
                 </div>
 
-                {/* Sidebar Settings */}
+                {/* Sidebar Controls */}
                 <div className="space-y-6">
-                    <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm">
-                        <h2 className="text-lg font-bold text-gray-800 mb-4">وضعیت و قیمت</h2>
+                    {/* Pricing & Stock */}
+                    <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm space-y-6">
+                        <h2 className="text-lg font-bold text-gray-800 border-b border-gray-100 pb-4">قیمت و موجودی</h2>
 
                         <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    قیمت اصلی / لیست (تومان)
-                                    <span className="text-xs text-gray-500 mr-2">(اختیاری)</span>
-                                </label>
-                                <input
-                                    name="listPrice"
-                                    type="number"
-                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-gray-100 focus:bg-white transition-all outline-none text-gray-900"
-                                    placeholder="قیمت قبل از تخفیف"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">قیمت اصلی محصول (MSRP)</p>
-                            </div>
-
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     قیمت فروش (تومان) <span className="text-red-500">*</span>
                                 </label>
                                 <input
+                                    type="number"
                                     name="price"
-                                    type="number"
-                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none font-bold text-gray-900"
-                                    placeholder="قیمت نهایی برای مشتری"
                                     required
-                                />
-                                <p className="text-xs text-gray-500 mt-1">قیمتی که مشتری می‌پردازد</p>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">تعداد موجودی</label>
-                                <input
-                                    name="stock"
-                                    type="number"
-                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900"
+                                    min="0"
+                                    step="any"
                                     placeholder="0"
+                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900 text-left font-mono"
+                                    dir="ltr"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">دسته‌بندی اصلی</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    قیمت قبل از تخفیف (تومان)
+                                </label>
+                                <input
+                                    type="number"
+                                    name="listPrice"
+                                    min="0"
+                                    step="any"
+                                    placeholder="0"
+                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900 text-left font-mono"
+                                    dir="ltr"
+                                />
+                                <p className="text-xs text-gray-400 mt-1">جهت نمایش خط‌خورده در صفحه محصول</p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">موجودی انبار</label>
+                                <input
+                                    type="number"
+                                    name="stock"
+                                    defaultValue="0"
+                                    min="0"
+                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900 text-left font-mono"
+                                    dir="ltr"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">برند</label>
+                                <input
+                                    type="text"
+                                    name="brand"
+                                    placeholder="مثال: شمس، نیکنام، البرز"
+                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900"
+                                />
+                            </div>
+
+                            <div>
+                                <div className="flex justify-between items-center mb-2">
+                                    <label className="block text-sm font-medium text-gray-700">کد محصول (SKU)</label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setSku(generateSKU())}
+                                        className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                                    >
+                                        تولید خودکار
+                                    </button>
+                                </div>
+                                <input
+                                    type="text"
+                                    name="sku"
+                                    value={sku}
+                                    onChange={(e) => setSku(e.target.value)}
+                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900 font-mono text-left"
+                                    dir="ltr"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Organization & Status */}
+                    <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm space-y-6">
+                        <h2 className="text-lg font-bold text-gray-800 border-b border-gray-100 pb-4">دسته‌بندی و وضعیت</h2>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">دسته اصلی</label>
                                 <select
                                     value={selectedCategory}
                                     onChange={(e) => setSelectedCategory(e.target.value)}
@@ -314,7 +334,20 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
                         </div>
                     </div>
 
-                    <SubmitButton />
+                    <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="w-full bg-gradient-to-l from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-500/20 transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                        {isSubmitting ? (
+                            <span>در حال ذخیره...</span>
+                        ) : (
+                            <>
+                                <Save className="w-5 h-5" />
+                                ذخیره محصول
+                            </>
+                        )}
+                    </button>
                 </div>
             </form>
         </div>

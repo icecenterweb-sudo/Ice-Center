@@ -8,6 +8,7 @@ import {
     Eye,
     Edit,
     Trash2,
+    AlertTriangle,
     Check,
     X,
     FolderEdit,
@@ -77,6 +78,9 @@ export default function ProductsTableClient({ initialProducts, categories }: Pro
     const [showCategoryModal, setShowCategoryModal] = useState(false);
     const [targetSubcategoryId, setTargetSubcategoryId] = useState<number | null>(null);
 
+    // Bulk delete confirmation modal state
+    const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+
     // Handle single row checkbox toggle
     const handleSelectRow = (id: number) => {
         setSelectedIds(prev => 
@@ -132,11 +136,8 @@ export default function ProductsTableClient({ initialProducts, categories }: Pro
     const handleBulkOperation = async (action: 'ACTIVATE' | 'DEACTIVATE' | 'DELETE' | 'CHANGE_SUBCATEGORY', subId?: number) => {
         if (selectedIds.length === 0) return;
 
-        if (action === 'DELETE' && !confirm(`آیا از حذف گروهی ${toPersianNumber(selectedIds.length)} محصول مطمئن هستید؟ این عمل غیر قابل بازگشت است.`)) {
-            return;
-        }
-
-        const actionLabel = 
+        // DELETE is confirmed through a styled modal (see showBulkDeleteConfirm) before reaching here.
+        const actionLabel =
             action === 'ACTIVATE' ? 'فعال‌سازی گروهی' :
             action === 'DEACTIVATE' ? 'غیرفعال‌سازی گروهی' :
             action === 'DELETE' ? 'حذف گروهی' : 'تغییر گروهی دسته‌بندی';
@@ -149,8 +150,11 @@ export default function ProductsTableClient({ initialProducts, categories }: Pro
                     toast.success('عملیات گروهی با موفقیت انجام شد.', { id: loadingToast });
                     setSelectedIds([]);
                     setShowCategoryModal(false);
+                    setShowBulkDeleteConfirm(false);
                     setTargetSubcategoryId(null);
                     router.refresh();
+                } else {
+                    toast.error(res.error || 'خطایی در عملیات گروهی رخ داد.', { id: loadingToast });
                 }
             } catch (err: unknown) {
                 const message = err instanceof Error ? err.message : String(err);
@@ -410,7 +414,7 @@ export default function ProductsTableClient({ initialProducts, categories }: Pro
                                     تغییر دسته‌بندی
                                 </button>
                                 <button
-                                    onClick={() => handleBulkOperation('DELETE')}
+                                    onClick={() => setShowBulkDeleteConfirm(true)}
                                     disabled={isPending}
                                     className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white px-4 py-2.5 rounded-2xl font-bold text-xs transition-colors"
                                 >
@@ -499,6 +503,58 @@ export default function ProductsTableClient({ initialProducts, categories }: Pro
                                     className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-2xl font-bold transition-colors text-sm"
                                 >
                                     انصراف
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* BULK DELETE CONFIRMATION MODAL */}
+            <AnimatePresence>
+                {showBulkDeleteConfirm && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => !isPending && setShowBulkDeleteConfirm(false)}
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            className="relative w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border border-gray-100 space-y-5"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center text-red-500">
+                                    <AlertTriangle className="w-5 h-5" />
+                                </div>
+                                <h3 className="text-lg font-bold text-gray-800">حذف گروهی محصولات</h3>
+                            </div>
+
+                            <p className="text-sm text-gray-600 leading-relaxed">
+                                آیا از حذف گروهی {toPersianNumber(selectedIds.length)} محصول اطمینان دارید؟ این عملیات قابل بازگشت نیست.
+                            </p>
+
+                            <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowBulkDeleteConfirm(false)}
+                                    disabled={isPending}
+                                    className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-bold transition-colors cursor-pointer disabled:opacity-50"
+                                >
+                                    انصراف
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleBulkOperation('DELETE')}
+                                    disabled={isPending}
+                                    className="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-red-500/20 transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-2"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                    {isPending ? 'در حال حذف...' : 'حذف گروهی'}
                                 </button>
                             </div>
                         </motion.div>
