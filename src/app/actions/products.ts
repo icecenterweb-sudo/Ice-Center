@@ -105,7 +105,8 @@ export async function createProduct(formData: FormData): Promise<ActionResult<{ 
         if (!result.success) {
             return {
                 success: false,
-                error: result.error.issues.map(i => i.message).join('، ')
+                error: result.error.issues.map(i => i.message).join('، '),
+                fieldErrors: result.error.flatten().fieldErrors,
             };
         }
 
@@ -118,7 +119,11 @@ export async function createProduct(formData: FormData): Promise<ActionResult<{ 
         } else {
             const existing = await prisma.product.findUnique({ where: { slug } });
             if (existing) {
-                return { success: false, error: 'این اسلاگ قبلاً استفاده شده است' };
+                return {
+                    success: false,
+                    error: 'این اسلاگ قبلاً استفاده شده است',
+                    fieldErrors: { slug: ['این اسلاگ قبلاً استفاده شده است'] },
+                };
             }
         }
 
@@ -155,7 +160,11 @@ export async function createProduct(formData: FormData): Promise<ActionResult<{ 
     } catch (error: unknown) {
         console.error('Failed to create product:', error);
         if (isUniqueConstraintError(error)) {
-            return { success: false, error: 'این اسلاگ یا کد محصول (SKU) قبلاً استفاده شده است' };
+            return {
+                success: false,
+                error: 'این اسلاگ یا کد محصول (SKU) قبلاً استفاده شده است',
+                fieldErrors: { slug: ['این اسلاگ یا کد محصول (SKU) قبلاً استفاده شده است'] },
+            };
         }
         const errorMsg = error instanceof Error && error.message ? error.message : 'خطا در ثبت محصول. لطفاً دوباره تلاش کنید';
         return { success: false, error: errorMsg };
@@ -174,7 +183,8 @@ export async function updateProduct(id: number, formData: FormData): Promise<Act
         if (!result.success) {
             return {
                 success: false,
-                error: result.error.issues.map(i => i.message).join('، ')
+                error: result.error.issues.map(i => i.message).join('، '),
+                fieldErrors: result.error.flatten().fieldErrors,
             };
         }
 
@@ -196,7 +206,11 @@ export async function updateProduct(id: number, formData: FormData): Promise<Act
                 where: { slug: data.slug, id: { not: id } }
             });
             if (existingWithSlug) {
-                return { success: false, error: 'این اسلاگ قبلاً برای محصول دیگری استفاده شده است' };
+                return {
+                    success: false,
+                    error: 'این اسلاگ قبلاً برای محصول دیگری استفاده شده است',
+                    fieldErrors: { slug: ['این اسلاگ قبلاً برای محصول دیگری استفاده شده است'] },
+                };
             }
         }
 
@@ -370,7 +384,11 @@ export async function createProductVariant(productId: number, formData: FormData
         const result = variantSchema.safeParse(raw);
 
         if (!result.success) {
-            return { success: false, error: result.error.issues.map(i => i.message).join('، ') };
+            return {
+                success: false,
+                error: result.error.issues.map(i => i.message).join('، '),
+                fieldErrors: result.error.flatten().fieldErrors,
+            };
         }
 
         const data = result.data;
@@ -397,7 +415,11 @@ export async function createProductVariant(productId: number, formData: FormData
     } catch (error: unknown) {
         console.error('Failed to create variant:', error);
         if (isUniqueConstraintError(error)) {
-            return { success: false, error: 'این کد واریانت (SKU) قبلاً استفاده شده است' };
+            return {
+                success: false,
+                error: 'این کد واریانت (SKU) قبلاً استفاده شده است',
+                fieldErrors: { sku: ['این کد واریانت (SKU) قبلاً استفاده شده است'] },
+            };
         }
         const errorMsg = error instanceof Error && error.message ? error.message : 'خطا در ایجاد واریانت';
         return { success: false, error: errorMsg };
@@ -413,7 +435,11 @@ export async function updateProductVariant(id: number, formData: FormData): Prom
         const result = variantSchema.safeParse(raw);
 
         if (!result.success) {
-            return { success: false, error: result.error.issues.map(i => i.message).join('، ') };
+            return {
+                success: false,
+                error: result.error.issues.map(i => i.message).join('، '),
+                fieldErrors: result.error.flatten().fieldErrors,
+            };
         }
 
         const data = result.data;

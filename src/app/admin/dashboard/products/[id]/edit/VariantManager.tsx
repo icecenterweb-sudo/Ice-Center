@@ -5,6 +5,7 @@ import { Plus, Edit, Trash2, X, Save, AlertTriangle } from 'lucide-react';
 import { createProductVariant, updateProductVariant, deleteProductVariant } from '@/app/actions/products';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { fieldClass } from '@/lib/form-classes';
 
 interface Variant {
     id: number;
@@ -32,6 +33,28 @@ export default function VariantManager({ productId, variants: propVariants, init
     const [editingId, setEditingId] = useState<number | null>(null);
     const [deletingVariant, setDeletingVariant] = useState<Variant | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [addErrors, setAddErrors] = useState<Record<string, string>>({});
+    const [editErrors, setEditErrors] = useState<Record<string, string>>({});
+
+    const clearAddError = (field: string) => {
+        if (addErrors[field]) {
+            setAddErrors(prev => {
+                const next = { ...prev };
+                delete next[field];
+                return next;
+            });
+        }
+    };
+
+    const clearEditError = (field: string) => {
+        if (editErrors[field]) {
+            setEditErrors(prev => {
+                const next = { ...prev };
+                delete next[field];
+                return next;
+            });
+        }
+    };
 
     const performDelete = async () => {
         if (!deletingVariant) return;
@@ -58,6 +81,7 @@ export default function VariantManager({ productId, variants: propVariants, init
 
     const handleSubmitNew = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        setAddErrors({});
         const formData = new FormData(e.currentTarget);
         const t = toast.loading('در حال ایجاد واریانت...');
 
@@ -68,6 +92,14 @@ export default function VariantManager({ productId, variants: propVariants, init
                 setIsAdding(false);
                 router.refresh();
             } else {
+                if (res.fieldErrors) {
+                    const flat: Record<string, string> = {};
+                    for (const [k, v] of Object.entries(res.fieldErrors)) {
+                        if (Array.isArray(v) && v[0]) flat[k] = v[0] as string;
+                        else if (typeof v === 'string') flat[k] = v;
+                    }
+                    setAddErrors(flat);
+                }
                 toast.error(res.error || 'خطا در ایجاد واریانت', { id: t });
             }
         } catch (error: unknown) {
@@ -78,6 +110,7 @@ export default function VariantManager({ productId, variants: propVariants, init
 
     const handleSubmitEdit = async (e: React.FormEvent<HTMLFormElement>, variantId: number) => {
         e.preventDefault();
+        setEditErrors({});
         const formData = new FormData(e.currentTarget);
         const t = toast.loading('در حال ذخیره تغییرات واریانت...');
 
@@ -88,6 +121,14 @@ export default function VariantManager({ productId, variants: propVariants, init
                 setEditingId(null);
                 router.refresh();
             } else {
+                if (res.fieldErrors) {
+                    const flat: Record<string, string> = {};
+                    for (const [k, v] of Object.entries(res.fieldErrors)) {
+                        if (Array.isArray(v) && v[0]) flat[k] = v[0] as string;
+                        else if (typeof v === 'string') flat[k] = v;
+                    }
+                    setEditErrors(flat);
+                }
                 toast.error(res.error || 'خطا در ویرایش واریانت', { id: t });
             }
         } catch (error: unknown) {
@@ -102,7 +143,10 @@ export default function VariantManager({ productId, variants: propVariants, init
                 <h2 className="text-lg font-bold text-gray-800">واریانت‌های محصول</h2>
                 <button
                     type="button"
-                    onClick={() => setIsAdding(true)}
+                    onClick={() => {
+                        setAddErrors({});
+                        setIsAdding(true);
+                    }}
                     className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm font-bold"
                 >
                     <Plus className="w-4 h-4" />
@@ -126,14 +170,23 @@ export default function VariantManager({ productId, variants: propVariants, init
                         </div>
                         <div className="grid grid-cols-2 gap-3 mb-3">
                             <div className="col-span-2">
-                                <label className="block text-xs font-medium text-gray-700 mb-1">نام واریانت *</label>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">نام واریانت <span className="text-red-500">*</span></label>
                                 <input
                                     name="name"
                                     type="text"
                                     required
                                     placeholder="مثال: ۲۰ کیلوگرم - سه فاز"
-                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-300"
+                                    aria-invalid={!!addErrors.name}
+                                    aria-describedby={addErrors.name ? 'new-variant-name-error' : undefined}
+                                    onChange={() => clearAddError('name')}
+                                    className={fieldClass(
+                                        "w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-300",
+                                        !!addErrors.name
+                                    )}
                                 />
+                                {addErrors.name && (
+                                    <p id="new-variant-name-error" className="text-xs font-medium text-red-600 mt-1">{addErrors.name}</p>
+                                )}
                             </div>
                             <div>
                                 <label className="block text-xs font-medium text-gray-700 mb-1">SKU</label>
@@ -141,8 +194,17 @@ export default function VariantManager({ productId, variants: propVariants, init
                                     name="sku"
                                     type="text"
                                     placeholder="ALBORZ-BF-20KG"
-                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-300"
+                                    aria-invalid={!!addErrors.sku}
+                                    aria-describedby={addErrors.sku ? 'new-variant-sku-error' : undefined}
+                                    onChange={() => clearAddError('sku')}
+                                    className={fieldClass(
+                                        "w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-300",
+                                        !!addErrors.sku
+                                    )}
                                 />
+                                {addErrors.sku && (
+                                    <p id="new-variant-sku-error" className="text-xs font-medium text-red-600 mt-1">{addErrors.sku}</p>
+                                )}
                             </div>
                             <div>
                                 <label className="block text-xs font-medium text-gray-700 mb-1">ظرفیت</label>
@@ -174,7 +236,7 @@ export default function VariantManager({ productId, variants: propVariants, init
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">قیمت (تومان) *</label>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">قیمت (تومان) <span className="text-red-500">*</span></label>
                                 <input
                                     name="price"
                                     type="number"
@@ -182,8 +244,17 @@ export default function VariantManager({ productId, variants: propVariants, init
                                     min="0"
                                     step="1000"
                                     placeholder="0"
-                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-300"
+                                    aria-invalid={!!addErrors.price}
+                                    aria-describedby={addErrors.price ? 'new-variant-price-error' : undefined}
+                                    onChange={() => clearAddError('price')}
+                                    className={fieldClass(
+                                        "w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-300",
+                                        !!addErrors.price
+                                    )}
                                 />
+                                {addErrors.price && (
+                                    <p id="new-variant-price-error" className="text-xs font-medium text-red-600 mt-1">{addErrors.price}</p>
+                                )}
                             </div>
                             <div>
                                 <label className="block text-xs font-medium text-gray-700 mb-1">موجودی</label>
@@ -192,8 +263,17 @@ export default function VariantManager({ productId, variants: propVariants, init
                                     type="number"
                                     min="0"
                                     defaultValue="0"
-                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-300"
+                                    aria-invalid={!!addErrors.stock}
+                                    aria-describedby={addErrors.stock ? 'new-variant-stock-error' : undefined}
+                                    onChange={() => clearAddError('stock')}
+                                    className={fieldClass(
+                                        "w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-300",
+                                        !!addErrors.stock
+                                    )}
                                 />
+                                {addErrors.stock && (
+                                    <p id="new-variant-stock-error" className="text-xs font-medium text-red-600 mt-1">{addErrors.stock}</p>
+                                )}
                             </div>
                         </div>
                         <div className="flex items-center gap-3 mb-3">
@@ -233,14 +313,23 @@ export default function VariantManager({ productId, variants: propVariants, init
                                 </div>
                                 <div className="grid grid-cols-2 gap-3 mb-3">
                                     <div className="col-span-2">
-                                        <label className="block text-xs font-medium text-gray-700 mb-1">نام واریانت *</label>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">نام واریانت <span className="text-red-500">*</span></label>
                                         <input
                                             name="name"
                                             type="text"
                                             required
                                             defaultValue={variant.name}
-                                            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-800 outline-none focus:ring-2 focus:ring-orange-300"
+                                            aria-invalid={!!editErrors.name}
+                                            aria-describedby={editErrors.name ? `edit-variant-name-error-${variant.id}` : undefined}
+                                            onChange={() => clearEditError('name')}
+                                            className={fieldClass(
+                                                "w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-800 outline-none focus:ring-2 focus:ring-orange-300",
+                                                !!editErrors.name
+                                            )}
                                         />
+                                        {editErrors.name && (
+                                            <p id={`edit-variant-name-error-${variant.id}`} className="text-xs font-medium text-red-600 mt-1">{editErrors.name}</p>
+                                        )}
                                     </div>
                                     <div>
                                         <label className="block text-xs font-medium text-gray-700 mb-1">SKU</label>
@@ -248,8 +337,17 @@ export default function VariantManager({ productId, variants: propVariants, init
                                             name="sku"
                                             type="text"
                                             defaultValue={variant.sku || ''}
-                                            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-800 outline-none focus:ring-2 focus:ring-orange-300"
+                                            aria-invalid={!!editErrors.sku}
+                                            aria-describedby={editErrors.sku ? `edit-variant-sku-error-${variant.id}` : undefined}
+                                            onChange={() => clearEditError('sku')}
+                                            className={fieldClass(
+                                                "w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-800 outline-none focus:ring-2 focus:ring-orange-300",
+                                                !!editErrors.sku
+                                            )}
                                         />
+                                        {editErrors.sku && (
+                                            <p id={`edit-variant-sku-error-${variant.id}`} className="text-xs font-medium text-red-600 mt-1">{editErrors.sku}</p>
+                                        )}
                                     </div>
                                     <div>
                                         <label className="block text-xs font-medium text-gray-700 mb-1">ظرفیت</label>
@@ -282,7 +380,7 @@ export default function VariantManager({ productId, variants: propVariants, init
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-medium text-gray-700 mb-1">قیمت (تومان) *</label>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">قیمت (تومان) <span className="text-red-500">*</span></label>
                                         <input
                                             name="price"
                                             type="number"
@@ -290,8 +388,17 @@ export default function VariantManager({ productId, variants: propVariants, init
                                             min="0"
                                             step="1000"
                                             defaultValue={variant.price}
-                                            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-800 outline-none focus:ring-2 focus:ring-orange-300"
+                                            aria-invalid={!!editErrors.price}
+                                            aria-describedby={editErrors.price ? `edit-variant-price-error-${variant.id}` : undefined}
+                                            onChange={() => clearEditError('price')}
+                                            className={fieldClass(
+                                                "w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-800 outline-none focus:ring-2 focus:ring-orange-300",
+                                                !!editErrors.price
+                                            )}
                                         />
+                                        {editErrors.price && (
+                                            <p id={`edit-variant-price-error-${variant.id}`} className="text-xs font-medium text-red-600 mt-1">{editErrors.price}</p>
+                                        )}
                                     </div>
                                     <div>
                                         <label className="block text-xs font-medium text-gray-700 mb-1">موجودی</label>
@@ -300,8 +407,17 @@ export default function VariantManager({ productId, variants: propVariants, init
                                             type="number"
                                             min="0"
                                             defaultValue={variant.stock}
-                                            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-800 outline-none focus:ring-2 focus:ring-orange-300"
+                                            aria-invalid={!!editErrors.stock}
+                                            aria-describedby={editErrors.stock ? `edit-variant-stock-error-${variant.id}` : undefined}
+                                            onChange={() => clearEditError('stock')}
+                                            className={fieldClass(
+                                                "w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-800 outline-none focus:ring-2 focus:ring-orange-300",
+                                                !!editErrors.stock
+                                            )}
                                         />
+                                        {editErrors.stock && (
+                                            <p id={`edit-variant-stock-error-${variant.id}`} className="text-xs font-medium text-red-600 mt-1">{editErrors.stock}</p>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3 mb-3">

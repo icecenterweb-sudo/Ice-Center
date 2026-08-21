@@ -9,6 +9,7 @@ import MultiImageUpload from '@/components/admin/MultiImageUpload';
 import FeaturesManager from '@/components/admin/FeaturesManager';
 import SpecificationsManager from '@/components/admin/SpecificationsManager';
 import { updateProduct } from '@/app/actions/products';
+import { fieldClass } from '@/lib/form-classes';
 
 interface EditProductFormProps {
     product: Prisma.ProductGetPayload<{
@@ -27,14 +28,25 @@ interface EditProductFormProps {
 export default function EditProductForm({ product, subcategories }: EditProductFormProps) {
     const router = useRouter();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [, setImageUrls] = useState<string[]>([]);
     const [features, setFeatures] = useState<string[]>(product.features || []);
     const [specifications, setSpecifications] = useState<Record<string, string>>(
         (product.specifications as Record<string, string> | null) ?? {}
     );
 
+    const clearFieldError = (name: string) => {
+        setFieldErrors((prev) => {
+            if (!prev[name]) return prev;
+            const next = { ...prev };
+            delete next[name];
+            return next;
+        });
+    };
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        setFieldErrors({});
         const formData = new FormData(e.currentTarget);
         setIsSubmitting(true);
         const t = toast.loading('در حال ذخیره تغییرات...');
@@ -46,6 +58,13 @@ export default function EditProductForm({ product, subcategories }: EditProductF
                 router.push('/admin/dashboard/products');
                 router.refresh();
             } else {
+                if (res.fieldErrors) {
+                    const flat: Record<string, string> = {};
+                    for (const [k, v] of Object.entries(res.fieldErrors)) {
+                        if (v?.[0]) flat[k] = v[0];
+                    }
+                    setFieldErrors(flat);
+                }
                 toast.error(res.error || 'خطا در ذخیره تغییرات', { id: t });
             }
         } catch {
@@ -68,8 +87,17 @@ export default function EditProductForm({ product, subcategories }: EditProductF
                         name="name"
                         defaultValue={product.name}
                         required
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800"
+                        aria-invalid={!!fieldErrors.name}
+                        aria-describedby={fieldErrors.name ? 'name-error' : undefined}
+                        onChange={() => clearFieldError('name')}
+                        className={fieldClass(
+                            "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800",
+                            !!fieldErrors.name
+                        )}
                     />
+                    {fieldErrors.name && (
+                        <p id="name-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.name}</p>
+                    )}
                 </div>
 
                 {/* SKU */}
@@ -81,9 +109,18 @@ export default function EditProductForm({ product, subcategories }: EditProductF
                         type="text"
                         name="sku"
                         defaultValue={product.sku || ''}
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800 font-mono text-left"
+                        aria-invalid={!!fieldErrors.sku}
+                        aria-describedby={fieldErrors.sku ? 'sku-error' : undefined}
+                        onChange={() => clearFieldError('sku')}
+                        className={fieldClass(
+                            "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800 font-mono text-left",
+                            !!fieldErrors.sku
+                        )}
                         dir="ltr"
                     />
+                    {fieldErrors.sku && (
+                        <p id="sku-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.sku}</p>
+                    )}
                 </div>
 
                 {/* Slug */}
@@ -97,11 +134,21 @@ export default function EditProductForm({ product, subcategories }: EditProductF
                         defaultValue={product.slug || ''}
                         required
                         pattern="[a-zA-Z0-9\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF\-]+"
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800 font-mono"
+                        aria-invalid={!!fieldErrors.slug}
+                        aria-describedby={fieldErrors.slug ? 'slug-error' : undefined}
+                        onChange={() => clearFieldError('slug')}
+                        className={fieldClass(
+                            "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800 font-mono",
+                            !!fieldErrors.slug
+                        )}
                         dir="ltr"
                         placeholder="آب-هویج-گیری-هلال-مدل-g100"
                     />
-                    <p className="text-xs text-gray-500 mt-1">حروف فارسی، انگلیسی، اعداد و خط تیره مجاز است</p>
+                    {fieldErrors.slug ? (
+                        <p id="slug-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.slug}</p>
+                    ) : (
+                        <p className="text-xs text-gray-500 mt-1">حروف فارسی، انگلیسی، اعداد و خط تیره مجاز است</p>
+                    )}
                 </div>
 
                 {/* Brand */}
@@ -113,8 +160,17 @@ export default function EditProductForm({ product, subcategories }: EditProductF
                         type="text"
                         name="brand"
                         defaultValue={product.brand || ''}
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800"
+                        aria-invalid={!!fieldErrors.brand}
+                        aria-describedby={fieldErrors.brand ? 'brand-error' : undefined}
+                        onChange={() => clearFieldError('brand')}
+                        className={fieldClass(
+                            "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800",
+                            !!fieldErrors.brand
+                        )}
                     />
+                    {fieldErrors.brand && (
+                        <p id="brand-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.brand}</p>
+                    )}
                 </div>
 
                 {/* Price */}
@@ -129,9 +185,18 @@ export default function EditProductForm({ product, subcategories }: EditProductF
                         required
                         min="0"
                         step="any"
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800 font-mono text-left"
+                        aria-invalid={!!fieldErrors.price}
+                        aria-describedby={fieldErrors.price ? 'price-error' : undefined}
+                        onChange={() => clearFieldError('price')}
+                        className={fieldClass(
+                            "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800 font-mono text-left",
+                            !!fieldErrors.price
+                        )}
                         dir="ltr"
                     />
+                    {fieldErrors.price && (
+                        <p id="price-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.price}</p>
+                    )}
                 </div>
 
                 {/* List Price */}
@@ -145,9 +210,20 @@ export default function EditProductForm({ product, subcategories }: EditProductF
                         defaultValue={product.listPrice || ''}
                         min="0"
                         step="any"
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800 font-mono text-left"
+                        aria-invalid={!!fieldErrors.listPrice}
+                        aria-describedby={fieldErrors.listPrice ? 'listPrice-error' : undefined}
+                        onChange={() => clearFieldError('listPrice')}
+                        className={fieldClass(
+                            "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800 font-mono text-left",
+                            !!fieldErrors.listPrice
+                        )}
                         dir="ltr"
                     />
+                    {fieldErrors.listPrice ? (
+                        <p id="listPrice-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.listPrice}</p>
+                    ) : (
+                        <p className="text-xs text-gray-400 mt-1">جهت نمایش خط‌خورده در صفحه محصول</p>
+                    )}
                 </div>
 
                 {/* Stock */}
@@ -160,9 +236,18 @@ export default function EditProductForm({ product, subcategories }: EditProductF
                         name="stock"
                         defaultValue={product.stock}
                         min="0"
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800 font-mono text-left"
+                        aria-invalid={!!fieldErrors.stock}
+                        aria-describedby={!!fieldErrors.stock ? 'stock-error' : undefined}
+                        onChange={() => clearFieldError('stock')}
+                        className={fieldClass(
+                            "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800 font-mono text-left",
+                            !!fieldErrors.stock
+                        )}
                         dir="ltr"
                     />
+                    {fieldErrors.stock && (
+                        <p id="stock-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.stock}</p>
+                    )}
                 </div>
 
                 {/* Subcategory */}
@@ -173,7 +258,13 @@ export default function EditProductForm({ product, subcategories }: EditProductF
                     <select
                         name="subcategoryId"
                         defaultValue={product.subcategoryId || ''}
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800"
+                        aria-invalid={!!fieldErrors.subcategoryId}
+                        aria-describedby={fieldErrors.subcategoryId ? 'subcategoryId-error' : undefined}
+                        onChange={() => clearFieldError('subcategoryId')}
+                        className={fieldClass(
+                            "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800",
+                            !!fieldErrors.subcategoryId
+                        )}
                     >
                         <option value="">انتخاب دسته‌بندی</option>
                         {subcategories.map((sub) => (
@@ -182,6 +273,9 @@ export default function EditProductForm({ product, subcategories }: EditProductF
                             </option>
                         ))}
                     </select>
+                    {fieldErrors.subcategoryId && (
+                        <p id="subcategoryId-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.subcategoryId}</p>
+                    )}
                 </div>
 
                 {/* Status */}
@@ -208,8 +302,17 @@ export default function EditProductForm({ product, subcategories }: EditProductF
                         name="description"
                         defaultValue={product.description || ''}
                         rows={4}
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800"
+                        aria-invalid={!!fieldErrors.description}
+                        aria-describedby={fieldErrors.description ? 'description-error' : undefined}
+                        onChange={() => clearFieldError('description')}
+                        className={fieldClass(
+                            "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none text-gray-800",
+                            !!fieldErrors.description
+                        )}
                     />
+                    {fieldErrors.description && (
+                        <p id="description-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.description}</p>
+                    )}
                 </div>
 
                 {/* Multi Image Upload */}

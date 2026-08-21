@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { slugify } from '@/lib/slugify-client';
+import { fieldClass } from '@/lib/form-classes';
 
 interface Category {
     id: number;
@@ -25,16 +26,29 @@ export default function SubcategoryForm({ categories, defaultCategoryId }: Subca
     const [slug, setSlug] = useState('');
     const [nameLength, setNameLength] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+    const clearFieldError = (fieldName: string) => {
+        setFieldErrors((prev) => {
+            if (!prev[fieldName]) return prev;
+            const next = { ...prev };
+            delete next[fieldName];
+            return next;
+        });
+    };
 
     // Auto-generate slug from name with Persian support
     const handleNameChange = (value: string) => {
         setName(value);
         setNameLength(value.length);
         setSlug(slugify(value));
+        clearFieldError('name');
+        clearFieldError('slug');
     };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        setFieldErrors({});
         const formData = new FormData(e.currentTarget);
         setIsSubmitting(true);
         const t = toast.loading('در حال ذخیره زیردسته...');
@@ -46,6 +60,13 @@ export default function SubcategoryForm({ categories, defaultCategoryId }: Subca
                 router.push('/admin/dashboard/categories');
                 router.refresh();
             } else {
+                if (res.fieldErrors) {
+                    const flat: Record<string, string> = {};
+                    for (const [k, v] of Object.entries(res.fieldErrors)) {
+                        if (v?.[0]) flat[k] = v[0];
+                    }
+                    setFieldErrors(flat);
+                }
                 toast.error(res.error || 'خطا در ایجاد زیردسته', { id: t });
             }
         } catch {
@@ -82,7 +103,13 @@ export default function SubcategoryForm({ categories, defaultCategoryId }: Subca
                         name="categoryId"
                         defaultValue={defaultCategoryId || ''}
                         required
-                        className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-green-100 focus:bg-white transition-all outline-none text-gray-900"
+                        aria-invalid={!!fieldErrors.categoryId}
+                        aria-describedby={fieldErrors.categoryId ? 'categoryId-error' : undefined}
+                        onChange={() => clearFieldError('categoryId')}
+                        className={fieldClass(
+                            "w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-green-100 focus:bg-white transition-all outline-none text-gray-900",
+                            !!fieldErrors.categoryId
+                        )}
                     >
                         <option value="">انتخاب کنید</option>
                         {categories.map((cat) => (
@@ -91,6 +118,9 @@ export default function SubcategoryForm({ categories, defaultCategoryId }: Subca
                             </option>
                         ))}
                     </select>
+                    {fieldErrors.categoryId && (
+                        <p id="categoryId-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.categoryId}</p>
+                    )}
                     <p className="text-xs text-gray-500 mt-1.5">
                         دسته‌بندی اصلی که این زیردسته به آن تعلق دارد
                     </p>
@@ -111,11 +141,19 @@ export default function SubcategoryForm({ categories, defaultCategoryId }: Subca
                         type="text"
                         value={name}
                         maxLength={60}
+                        aria-invalid={!!fieldErrors.name}
+                        aria-describedby={fieldErrors.name ? 'name-error' : undefined}
                         onChange={(e) => handleNameChange(e.target.value)}
                         placeholder="مثال: دستگاه بستنی ایتالیایی"
-                        className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-green-100 focus:bg-white transition-all outline-none text-gray-900"
+                        className={fieldClass(
+                            "w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-green-100 focus:bg-white transition-all outline-none text-gray-900",
+                            !!fieldErrors.name
+                        )}
                         required
                     />
+                    {fieldErrors.name && (
+                        <p id="name-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.name}</p>
+                    )}
                     <p className="text-xs text-gray-500 mt-1.5 flex items-start gap-1.5">
                         <span className="text-green-500 mt-0.5">💡</span>
                         <span>نام واضح و مختصر - بهینه برای سئو: 30-50 کاراکتر</span>
@@ -132,12 +170,23 @@ export default function SubcategoryForm({ categories, defaultCategoryId }: Subca
                         type="text"
                         value={slug}
                         pattern="[a-zA-Z0-9\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF\-]+"
-                        onChange={(e) => setSlug(e.target.value)}
+                        aria-invalid={!!fieldErrors.slug}
+                        aria-describedby={fieldErrors.slug ? 'slug-error' : undefined}
+                        onChange={(e) => {
+                            setSlug(e.target.value);
+                            clearFieldError('slug');
+                        }}
                         placeholder="دستگاه-بستنی-ایتالیایی"
-                        className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-green-100 focus:bg-white transition-all outline-none text-gray-900 font-mono"
+                        className={fieldClass(
+                            "w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-green-100 focus:bg-white transition-all outline-none text-gray-900 font-mono",
+                            !!fieldErrors.slug
+                        )}
                         dir="ltr"
                         required
                     />
+                    {fieldErrors.slug && (
+                        <p id="slug-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.slug}</p>
+                    )}
                     <p className="text-xs text-gray-500 mt-1.5">
                         آدرس URL زیردسته (خودکار از نام ایجاد می‌شود، قابل ویرایش)
                     </p>
@@ -153,9 +202,18 @@ export default function SubcategoryForm({ categories, defaultCategoryId }: Subca
                         name="description"
                         rows={4}
                         maxLength={200}
+                        aria-invalid={!!fieldErrors.description}
+                        aria-describedby={fieldErrors.description ? 'description-error' : undefined}
+                        onChange={() => clearFieldError('description')}
                         placeholder="توضیحات کوتاه درباره این زیردسته..."
-                        className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-green-100 focus:bg-white transition-all outline-none resize-none text-gray-900"
+                        className={fieldClass(
+                            "w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-green-100 focus:bg-white transition-all outline-none resize-none text-gray-900",
+                            !!fieldErrors.description
+                        )}
                     />
+                    {fieldErrors.description && (
+                        <p id="description-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.description}</p>
+                    )}
                     <p className="text-xs text-gray-500 mt-1.5 flex items-start gap-1.5">
                         <span className="text-green-500 mt-0.5">💡</span>
                         <span>توضیحات برای سئو و نمایش در صفحه دسته‌بندی - توصیه: 100-160 کاراکتر</span>
@@ -165,7 +223,7 @@ export default function SubcategoryForm({ categories, defaultCategoryId }: Subca
                 <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full bg-gradient-to-l from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg transition-all disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full bg-gradient-to-l from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-500/20 transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                     {isSubmitting ? (
                         <span>در حال ذخیره...</span>

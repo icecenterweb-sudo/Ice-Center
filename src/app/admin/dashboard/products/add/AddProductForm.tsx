@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import MultiImageUpload from '@/components/admin/MultiImageUpload';
 import FeaturesManager from '@/components/admin/FeaturesManager';
 import SpecificationsManager from '@/components/admin/SpecificationsManager';
+import { fieldClass } from '@/lib/form-classes';
 
 interface Subcategory {
     id: number;
@@ -28,12 +29,22 @@ interface AddProductFormProps {
 export default function AddProductForm({ subcategories }: AddProductFormProps) {
     const router = useRouter();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [selectedCategory, setSelectedCategory] = useState<string>('');
     const [nameLength, setNameLength] = useState(0);
     const [descLength, setDescLength] = useState(0);
     const [, setImageUrls] = useState<string[]>([]);
     const [features, setFeatures] = useState<string[]>([]);
     const [specifications, setSpecifications] = useState<Record<string, string>>({});
+
+    const clearFieldError = (name: string) => {
+        setFieldErrors((prev) => {
+            if (!prev[name]) return prev;
+            const next = { ...prev };
+            delete next[name];
+            return next;
+        });
+    };
 
     // Generate SKU based on current date and time
     const generateSKU = () => {
@@ -50,6 +61,7 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        setFieldErrors({});
         const formData = new FormData(e.currentTarget);
         setIsSubmitting(true);
         const t = toast.loading('در حال ثبت محصول جدید...');
@@ -61,6 +73,13 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
                 router.push('/admin/dashboard/products');
                 router.refresh();
             } else {
+                if (res.fieldErrors) {
+                    const flat: Record<string, string> = {};
+                    for (const [k, v] of Object.entries(res.fieldErrors)) {
+                        if (v?.[0]) flat[k] = v[0];
+                    }
+                    setFieldErrors(flat);
+                }
                 toast.error(res.error || 'خطا در ثبت محصول', { id: t });
             }
         } catch {
@@ -131,10 +150,21 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
                                     name="name"
                                     required
                                     maxLength={150}
-                                    onChange={(e) => setNameLength(e.target.value.length)}
+                                    aria-invalid={!!fieldErrors.name}
+                                    aria-describedby={fieldErrors.name ? 'name-error' : undefined}
+                                    onChange={(e) => {
+                                        setNameLength(e.target.value.length);
+                                        clearFieldError('name');
+                                    }}
                                     placeholder="مثال: دستگاه بستنی ساز قیفی شمس مدل سناتور"
-                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900 placeholder:text-gray-400 text-sm"
+                                    className={fieldClass(
+                                        "w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900 placeholder:text-gray-400 text-sm",
+                                        !!fieldErrors.name
+                                    )}
                                 />
+                                {fieldErrors.name && (
+                                    <p id="name-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.name}</p>
+                                )}
                             </div>
 
                             {/* Optional Slug */}
@@ -146,11 +176,21 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
                                     type="text"
                                     name="slug"
                                     pattern="[a-zA-Z0-9\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF\-]+"
+                                    aria-invalid={!!fieldErrors.slug}
+                                    aria-describedby={fieldErrors.slug ? 'slug-error' : undefined}
+                                    onChange={() => clearFieldError('slug')}
                                     placeholder="در صورت خالی بودن، خودکار تولید می‌شود"
-                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900 placeholder:text-gray-400 text-sm font-mono"
+                                    className={fieldClass(
+                                        "w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900 placeholder:text-gray-400 text-sm font-mono",
+                                        !!fieldErrors.slug
+                                    )}
                                     dir="ltr"
                                 />
-                                <p className="text-xs text-gray-400 mt-1">حروف فارسی، انگلیسی، اعداد و خط تیره مجاز است</p>
+                                {fieldErrors.slug ? (
+                                    <p id="slug-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.slug}</p>
+                                ) : (
+                                    <p className="text-xs text-gray-400 mt-1">حروف فارسی، انگلیسی، اعداد و خط تیره مجاز است</p>
+                                )}
                             </div>
 
                             <div>
@@ -162,10 +202,21 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
                                     name="description"
                                     rows={5}
                                     maxLength={2000}
-                                    onChange={(e) => setDescLength(e.target.value.length)}
+                                    aria-invalid={!!fieldErrors.description}
+                                    aria-describedby={fieldErrors.description ? 'description-error' : undefined}
+                                    onChange={(e) => {
+                                        setDescLength(e.target.value.length);
+                                        clearFieldError('description');
+                                    }}
                                     placeholder="توضیحات کامل درباره ویژگی‌ها، کاربرد و مزایای محصول..."
-                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900 placeholder:text-gray-400 text-sm leading-relaxed"
+                                    className={fieldClass(
+                                        "w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900 placeholder:text-gray-400 text-sm leading-relaxed",
+                                        !!fieldErrors.description
+                                    )}
                                 />
+                                {fieldErrors.description && (
+                                    <p id="description-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.description}</p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -212,9 +263,18 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
                                     min="0"
                                     step="any"
                                     placeholder="0"
-                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900 text-left font-mono"
+                                    aria-invalid={!!fieldErrors.price}
+                                    aria-describedby={fieldErrors.price ? 'price-error' : undefined}
+                                    onChange={() => clearFieldError('price')}
+                                    className={fieldClass(
+                                        "w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900 text-left font-mono",
+                                        !!fieldErrors.price
+                                    )}
                                     dir="ltr"
                                 />
+                                {fieldErrors.price && (
+                                    <p id="price-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.price}</p>
+                                )}
                             </div>
 
                             <div>
@@ -227,10 +287,20 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
                                     min="0"
                                     step="any"
                                     placeholder="0"
-                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900 text-left font-mono"
+                                    aria-invalid={!!fieldErrors.listPrice}
+                                    aria-describedby={fieldErrors.listPrice ? 'listPrice-error' : undefined}
+                                    onChange={() => clearFieldError('listPrice')}
+                                    className={fieldClass(
+                                        "w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900 text-left font-mono",
+                                        !!fieldErrors.listPrice
+                                    )}
                                     dir="ltr"
                                 />
-                                <p className="text-xs text-gray-400 mt-1">جهت نمایش خط‌خورده در صفحه محصول</p>
+                                {fieldErrors.listPrice ? (
+                                    <p id="listPrice-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.listPrice}</p>
+                                ) : (
+                                    <p className="text-xs text-gray-400 mt-1">جهت نمایش خط‌خورده در صفحه محصول</p>
+                                )}
                             </div>
 
                             <div>
@@ -240,9 +310,18 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
                                     name="stock"
                                     defaultValue="0"
                                     min="0"
-                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900 text-left font-mono"
+                                    aria-invalid={!!fieldErrors.stock}
+                                    aria-describedby={fieldErrors.stock ? 'stock-error' : undefined}
+                                    onChange={() => clearFieldError('stock')}
+                                    className={fieldClass(
+                                        "w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900 text-left font-mono",
+                                        !!fieldErrors.stock
+                                    )}
                                     dir="ltr"
                                 />
+                                {fieldErrors.stock && (
+                                    <p id="stock-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.stock}</p>
+                                )}
                             </div>
 
                             <div>
@@ -251,8 +330,17 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
                                     type="text"
                                     name="brand"
                                     placeholder="مثال: شمس، نیکنام، البرز"
-                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900"
+                                    aria-invalid={!!fieldErrors.brand}
+                                    aria-describedby={fieldErrors.brand ? 'brand-error' : undefined}
+                                    onChange={() => clearFieldError('brand')}
+                                    className={fieldClass(
+                                        "w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900",
+                                        !!fieldErrors.brand
+                                    )}
                                 />
+                                {fieldErrors.brand && (
+                                    <p id="brand-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.brand}</p>
+                                )}
                             </div>
 
                             <div>
@@ -260,7 +348,10 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
                                     <label className="block text-sm font-medium text-gray-700">کد محصول (SKU)</label>
                                     <button
                                         type="button"
-                                        onClick={() => setSku(generateSKU())}
+                                        onClick={() => {
+                                            setSku(generateSKU());
+                                            clearFieldError('sku');
+                                        }}
                                         className="text-xs text-blue-600 hover:text-blue-700 font-medium"
                                     >
                                         تولید خودکار
@@ -270,10 +361,21 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
                                     type="text"
                                     name="sku"
                                     value={sku}
-                                    onChange={(e) => setSku(e.target.value)}
-                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900 font-mono text-left"
+                                    aria-invalid={!!fieldErrors.sku}
+                                    aria-describedby={fieldErrors.sku ? 'sku-error' : undefined}
+                                    onChange={(e) => {
+                                        setSku(e.target.value);
+                                        clearFieldError('sku');
+                                    }}
+                                    className={fieldClass(
+                                        "w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900 font-mono text-left",
+                                        !!fieldErrors.sku
+                                    )}
                                     dir="ltr"
                                 />
+                                {fieldErrors.sku && (
+                                    <p id="sku-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.sku}</p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -287,8 +389,11 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
                                 <label className="block text-sm font-medium text-gray-700 mb-2">دسته اصلی</label>
                                 <select
                                     value={selectedCategory}
-                                    onChange={(e) => setSelectedCategory(e.target.value)}
-                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900"
+                                    onChange={(e) => {
+                                        setSelectedCategory(e.target.value);
+                                        clearFieldError('subcategoryId');
+                                    }}
+                                    className="w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900"
                                 >
                                     <option value="">انتخاب کنید</option>
                                     {categories.map((cat) => (
@@ -304,7 +409,13 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
                                     <label className="block text-sm font-medium text-gray-700 mb-2">زیردسته</label>
                                     <select
                                         name="subcategoryId"
-                                        className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900"
+                                        aria-invalid={!!fieldErrors.subcategoryId}
+                                        aria-describedby={fieldErrors.subcategoryId ? 'subcategoryId-error' : undefined}
+                                        onChange={() => clearFieldError('subcategoryId')}
+                                        className={fieldClass(
+                                            "w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all outline-none text-gray-900",
+                                            !!fieldErrors.subcategoryId
+                                        )}
                                     >
                                         <option value="">انتخاب کنید</option>
                                         {filteredSubcategories.map((sub) => (
@@ -313,6 +424,9 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
                                             </option>
                                         ))}
                                     </select>
+                                    {fieldErrors.subcategoryId && (
+                                        <p id="subcategoryId-error" className="mt-1 text-xs font-medium text-red-600">{fieldErrors.subcategoryId}</p>
+                                    )}
                                 </div>
                             )}
 

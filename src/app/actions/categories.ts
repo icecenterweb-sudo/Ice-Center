@@ -48,7 +48,11 @@ export async function createCategory(formData: FormData): Promise<ActionResult<{
 
         const result = categorySchema.safeParse(raw);
         if (!result.success) {
-            return { success: false, error: result.error.issues.map(i => i.message).join('، ') };
+            return {
+                success: false,
+                error: result.error.issues.map(i => i.message).join('، '),
+                fieldErrors: result.error.flatten().fieldErrors,
+            };
         }
 
         const data = result.data;
@@ -60,7 +64,9 @@ export async function createCategory(formData: FormData): Promise<ActionResult<{
                 where: { slug: data.slug }
             });
             if (existing) {
-                throw new Error('این اسلاگ قبلاً استفاده شده است');
+                const err = new Error('این اسلاگ قبلاً استفاده شده است');
+                (err as { isSlugError?: boolean }).isSlugError = true;
+                throw err;
             }
 
             // Create the category
@@ -94,8 +100,12 @@ export async function createCategory(formData: FormData): Promise<ActionResult<{
     } catch (error: unknown) {
         console.error('Failed to create category:', error);
 
-        if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
-            return { success: false, error: 'این اسلاگ قبلاً استفاده شده است' };
+        if ((error && typeof error === 'object' && 'code' in error && error.code === 'P2002') || (error && typeof error === 'object' && 'isSlugError' in error)) {
+            return {
+                success: false,
+                error: 'این اسلاگ قبلاً استفاده شده است',
+                fieldErrors: { slug: ['این اسلاگ قبلاً استفاده شده است'] },
+            };
         }
 
         const message = error instanceof Error && error.message ? error.message : 'خطا در ایجاد دسته‌بندی';
@@ -117,7 +127,11 @@ export async function updateCategory(id: number, formData: FormData): Promise<Ac
 
         const result = categorySchema.safeParse(raw);
         if (!result.success) {
-            return { success: false, error: result.error.issues.map(i => i.message).join('، ') };
+            return {
+                success: false,
+                error: result.error.issues.map(i => i.message).join('، '),
+                fieldErrors: result.error.flatten().fieldErrors,
+            };
         }
 
         const data = result.data;
@@ -127,7 +141,11 @@ export async function updateCategory(id: number, formData: FormData): Promise<Ac
             where: { slug: data.slug, id: { not: id } }
         });
         if (existing) {
-            return { success: false, error: 'این اسلاگ قبلاً استفاده شده است' };
+            return {
+                success: false,
+                error: 'این اسلاگ قبلاً استفاده شده است',
+                fieldErrors: { slug: ['این اسلاگ قبلاً استفاده شده است'] },
+            };
         }
 
         await prisma.category.update({
@@ -216,7 +234,11 @@ export async function createSubcategory(formData: FormData): Promise<ActionResul
 
         const result = subcategorySchema.safeParse(raw);
         if (!result.success) {
-            return { success: false, error: result.error.issues.map(i => i.message).join('، ') };
+            return {
+                success: false,
+                error: result.error.issues.map(i => i.message).join('، '),
+                fieldErrors: result.error.flatten().fieldErrors,
+            };
         }
 
         const data = result.data;
@@ -226,7 +248,11 @@ export async function createSubcategory(formData: FormData): Promise<ActionResul
             where: { categoryId: data.categoryId, slug: data.slug }
         });
         if (existing) {
-            return { success: false, error: `این اسلاگ (${raw.slug}) قبلاً در این دسته‌بندی استفاده شده است` };
+            return {
+                success: false,
+                error: `این اسلاگ (${raw.slug}) قبلاً در این دسته‌بندی استفاده شده است`,
+                fieldErrors: { slug: [`این اسلاگ قبلاً در این دسته‌بندی استفاده شده است`] },
+            };
         }
 
         const subcategory = await prisma.subcategory.create({
@@ -249,7 +275,11 @@ export async function createSubcategory(formData: FormData): Promise<ActionResul
         console.error('Failed to create subcategory:', error);
 
         if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
-            return { success: false, error: `این اسلاگ قبلاً استفاده شده است` };
+            return {
+                success: false,
+                error: `این اسلاگ قبلاً استفاده شده است`,
+                fieldErrors: { slug: ['این اسلاگ قبلاً استفاده شده است'] },
+            };
         }
 
         const message = error instanceof Error && error.message ? error.message : 'خطا در ایجاد زیردسته';
@@ -271,7 +301,11 @@ export async function updateSubcategory(id: number, formData: FormData): Promise
 
         const result = subcategorySchema.safeParse(raw);
         if (!result.success) {
-            return { success: false, error: result.error.issues.map(i => i.message).join('، ') };
+            return {
+                success: false,
+                error: result.error.issues.map(i => i.message).join('، '),
+                fieldErrors: result.error.flatten().fieldErrors,
+            };
         }
 
         const data = result.data;
@@ -281,7 +315,11 @@ export async function updateSubcategory(id: number, formData: FormData): Promise
             where: { categoryId: data.categoryId, slug: data.slug, id: { not: id } }
         });
         if (existing) {
-            return { success: false, error: `این اسلاگ (${raw.slug}) قبلاً در این دسته‌بندی استفاده شده است` };
+            return {
+                success: false,
+                error: `این اسلاگ (${raw.slug}) قبلاً در این دسته‌بندی استفاده شده است`,
+                fieldErrors: { slug: [`این اسلاگ قبلاً در این دسته‌بندی استفاده شده است`] },
+            };
         }
 
         await prisma.subcategory.update({
