@@ -206,16 +206,9 @@ export default function FeaturesManager({ initialFeatures = [], onChange }: Feat
 
     return (
         <div className="space-y-3">
-            <div className="flex items-center justify-between">
-                <label className="block text-sm font-medium text-gray-700">
-                    ویژگی‌های محصول
-                </label>
-                {items.length > 1 && (
-                    <span className="text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded-full font-medium border border-green-200">
-                        قابلیت جابجایی با Drag & Drop
-                    </span>
-                )}
-            </div>
+            <label className="block text-sm font-medium text-gray-700">
+                ویژگی‌های محصول
+            </label>
 
             {/* Draggable Feature List */}
             {items.length > 0 && (
