@@ -82,8 +82,8 @@ function SortableFeatureItem({
             </span>
 
             {/* Position Badge */}
-            <span className="text-[11px] font-mono font-bold text-green-700 bg-green-200/70 px-2 py-0.5 rounded-md shrink-0">
-                #{index + 1}
+            <span className="w-5 h-5 rounded-md bg-green text-gray-600 text-[11px] font-bold font-mono flex items-center justify-center border border-gray-200 shadow-2xs group-hover:border-green-300 group-hover:text-green-700 transition-colors shrink-0">
+                {index + 1}
             </span>
 
             {/* Remove Button */}
@@ -112,8 +112,8 @@ function DragOverlayItem({ item, index }: { item: FeatureItem; index: number }) 
             <span className="flex-1 text-sm font-medium text-gray-900 leading-snug break-words">
                 {item.text}
             </span>
-            <span className="text-[11px] font-mono font-bold text-green-800 bg-green-200 px-2 py-0.5 rounded-md shrink-0">
-                #{index + 1}
+            <span className="w-5 h-5 rounded-full bg-white text-green-800 text-[11px] font-bold font-mono flex items-center justify-center border border-green-400 shadow-xs shrink-0">
+                {index + 1}
             </span>
         </div>
     );
