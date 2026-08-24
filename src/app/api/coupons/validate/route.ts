@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { verifyUserToken } from '@/lib/jwt';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
+import { validateCouponRules } from '@/lib/coupons';
 
 const applySchema = z.object({
     code: z.string().min(1, 'کد تخفیف را وارد کنید'),
@@ -49,46 +50,14 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'کد تخفیف یافت نشد' }, { status: 404 });
         }
 
-        if (coupon.status !== 'ACTIVE') {
-            return NextResponse.json({ error: 'این کد تخفیف غیرفعال است' }, { status: 400 });
-        }
+        const result = validateCouponRules({
+            coupon,
+            userUsageCount: coupon.usages.length,
+            subtotal,
+        });
 
-        const now = new Date();
-        if (coupon.startDate && now < coupon.startDate) {
-            return NextResponse.json({ error: 'این کد تخفیف هنوز فعال نشده است' }, { status: 400 });
-        }
-        if (coupon.endDate && now > coupon.endDate) {
-            return NextResponse.json({ error: 'مدت استفاده از این کد تخفیف به پایان رسیده است' }, { status: 400 });
-        }
-
-        if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) {
-            return NextResponse.json({ error: 'سقف استفاده از این کد تخفیف تکمیل شده است' }, { status: 400 });
-        }
-
-        if (coupon.usages.length >= coupon.perUserLimit) {
-            return NextResponse.json({ error: 'شما قبلا از این کد تخفیف استفاده کرده‌اید' }, { status: 400 });
-        }
-
-        if (coupon.minOrderAmount && subtotal < coupon.minOrderAmount) {
-            return NextResponse.json({
-                error: `حداقل مبلغ سفارش برای این کد ${coupon.minOrderAmount.toLocaleString('fa-IR')} تومان است`,
-            }, { status: 400 });
-        }
-
-        // Calculate discount
-        let discount = 0;
-        if (coupon.type === 'PERCENTAGE') {
-            discount = Math.round(subtotal * (coupon.value / 100));
-            if (coupon.maxDiscount && discount > coupon.maxDiscount) {
-                discount = coupon.maxDiscount;
-            }
-        } else {
-            discount = coupon.value;
-        }
-
-        // Don't allow discount to exceed the subtotal
-        if (discount > subtotal) {
-            discount = subtotal;
+        if (!result.valid) {
+            return NextResponse.json({ error: result.error || 'کد تخفیف نامعتبر است' }, { status: 400 });
         }
 
         return NextResponse.json({
@@ -97,7 +66,7 @@ export async function POST(request: NextRequest) {
                 id: coupon.id,
                 code: coupon.code,
                 type: coupon.type,
-                discount,
+                discount: result.discount,
             },
         });
     } catch (error) {
