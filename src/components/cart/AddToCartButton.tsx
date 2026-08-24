@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ShoppingCart, Check } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
 
@@ -31,6 +31,14 @@ export default function AddToCartButton({
     const { addItem, openCart } = useCart()
     const [isAdding, setIsAdding] = useState(false)
     const [added, setAdded] = useState(false)
+    const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+    // Clear the pending reset timer on unmount (#33)
+    useEffect(() => {
+        return () => {
+            if (resetTimerRef.current) clearTimeout(resetTimerRef.current)
+        }
+    }, [])
 
     const handleClick = async () => {
         if (isAdding || added) return
@@ -44,7 +52,7 @@ export default function AddToCartButton({
         openCart()
 
         // Reset after animation
-        setTimeout(() => {
+        resetTimerRef.current = setTimeout(() => {
             setAdded(false)
         }, 2000)
     }

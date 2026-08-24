@@ -111,11 +111,16 @@ export async function POST(request: NextRequest) {
 
         const freshPrices = await getCartItemPrices([cartItem.productId]);
         const priceInfo = freshPrices.find(p => p.productId === cartItem.productId);
-        if (priceInfo) {
-            cartItem.product.price = priceInfo.effectivePrice;
-        }
+        const formattedItem = {
+            ...cartItem,
+            product: {
+                ...cartItem.product,
+                price: priceInfo ? priceInfo.effectivePrice : Number(cartItem.product.price),
+                listPrice: cartItem.product.listPrice ? Number(cartItem.product.listPrice) : null,
+            },
+        };
 
-        return NextResponse.json({ item: cartItem })
+        return NextResponse.json({ item: formattedItem })
     } catch (error) {
         console.error('Cart add error:', error)
         return NextResponse.json({ error: 'خطا در افزودن به سبد خرید' }, { status: 500 })

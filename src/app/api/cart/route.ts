@@ -47,7 +47,8 @@ export async function GET() {
                 ...item,
                 product: {
                     ...item.product,
-                    price: priceInfo ? priceInfo.effectivePrice : item.product.price,
+                    price: priceInfo ? priceInfo.effectivePrice : Number(item.product.price),
+                    listPrice: item.product.listPrice ? Number(item.product.listPrice) : null,
                 }
             };
         });

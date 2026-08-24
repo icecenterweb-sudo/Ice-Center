@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 interface AdminSidebarContextType {
     isCollapsed: boolean;
@@ -14,23 +14,36 @@ const AdminSidebarContext = createContext<AdminSidebarContextType | undefined>(u
 export const AdminSidebarProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
+    const [isInitialized, setIsInitialized] = useState(false);
 
     // Load state from localStorage on mount
     useEffect(() => {
-        const saved = localStorage.getItem('sidebarCollapsed');
-        if (saved) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setIsCollapsed(JSON.parse(saved));
+        try {
+            const saved = localStorage.getItem('sidebarCollapsed');
+            if (saved) {
+                setIsCollapsed(JSON.parse(saved) === true);
+            }
+        } catch (e) {
+            console.error('Failed to parse sidebarCollapsed:', e);
+        } finally {
+            setIsInitialized(true);
         }
     }, []);
 
-    const toggleSidebar = () => {
-        setIsCollapsed((prev) => {
-            const next = !prev;
-            localStorage.setItem('sidebarCollapsed', JSON.stringify(next));
-            return next;
-        });
-    };
+    // Persist state changes after initialization (#8)
+    useEffect(() => {
+        if (isInitialized) {
+            try {
+                localStorage.setItem('sidebarCollapsed', JSON.stringify(isCollapsed));
+            } catch (e) {
+                console.error('Failed to save sidebarCollapsed:', e);
+            }
+        }
+    }, [isCollapsed, isInitialized]);
+
+    const toggleSidebar = useCallback(() => {
+        setIsCollapsed((prev) => !prev);
+    }, []);
 
     return (
         <AdminSidebarContext.Provider

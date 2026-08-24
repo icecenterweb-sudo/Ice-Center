@@ -43,11 +43,26 @@ export async function POST(request: NextRequest) {
 
             if (!product) continue
 
-            // Validate stock: skip if out of stock, otherwise cap to available stock
+            // Validate stock: skip if out of stock
             if (product.stock <= 0) continue
-            const effectiveQuantity = Math.min(item.quantity, product.stock)
 
-            // Upsert: if exists, add to quantity; if not, create
+            // Fetch existing cart item to cap total merged quantity to available stock (#21)
+            const existingCartItem = await prisma.cartItem.findUnique({
+                where: {
+                    userId_productId: {
+                        userId: payload.userId,
+                        productId: item.productId,
+                    }
+                },
+                select: { quantity: true }
+            });
+
+            const currentQty = existingCartItem?.quantity ?? 0;
+            const newQty = Math.min(currentQty + item.quantity, product.stock);
+
+            if (newQty <= 0) continue;
+
+            // Upsert: set total merged quantity capped by available stock
             await prisma.cartItem.upsert({
                 where: {
                     userId_productId: {
@@ -56,12 +71,12 @@ export async function POST(request: NextRequest) {
                     }
                 },
                 update: {
-                    quantity: { increment: effectiveQuantity }
+                    quantity: newQty
                 },
                 create: {
                     userId: payload.userId,
                     productId: item.productId,
-                    quantity: effectiveQuantity
+                    quantity: newQty
                 }
             })
         }
@@ -90,10 +105,14 @@ export async function POST(request: NextRequest) {
         const freshPrices = await getCartItemPrices(productIds);
         const updatedCartItems = cartItems.map(item => {
             const priceInfo = freshPrices.find(p => p.productId === item.productId);
-            if (priceInfo) {
-                item.product.price = priceInfo.effectivePrice;
-            }
-            return item;
+            return {
+                ...item,
+                product: {
+                    ...item.product,
+                    price: priceInfo ? priceInfo.effectivePrice : Number(item.product.price),
+                    listPrice: item.product.listPrice ? Number(item.product.listPrice) : null,
+                }
+            };
         });
 
         return NextResponse.json({ items: updatedCartItems })
