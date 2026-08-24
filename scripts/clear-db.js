@@ -1,5 +1,6 @@
 const { Pool } = require('pg');
 const path = require('path');
+const readline = require('readline');
 
 // Load .env from the project root by absolute path — dotenv defaults to the
 // current working directory, so `node scripts/clear-db.js` launched from
@@ -47,7 +48,47 @@ const tables = [
     'SiteSetting',
 ];
 
+// Extract a human-readable target (host:port/db) without leaking credentials.
+function describeTarget(connStr) {
+    try {
+        const url = new URL(connStr);
+        return `${url.hostname}${url.port ? ':' + url.port : ''}/${url.pathname.replace(/^\//, '')}`;
+    } catch {
+        // Not a URL-shaped connection string (key=value style) — mask passwords.
+        const host = (connStr.match(/host=([^ ]+)/i) || [])[1] || 'unknown-host';
+        const db = (connStr.match(/dbname=([^ ]+)/i) || [])[1] || '';
+        return `${host}${db ? '/' + db : ''}`;
+    }
+}
+
+// Interactive Y/n confirmation. Defaults to ABORT unless the user types y/yes.
+async function confirm(message) {
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    try {
+        const answer = await new Promise((resolve) => {
+            rl.question(`${message} `, resolve);
+        });
+        const normalized = answer.trim().toLowerCase();
+        return normalized === 'y' || normalized === 'yes';
+    } finally {
+        rl.close();
+    }
+}
+
 async function main() {
+    const target = describeTarget(connectionString);
+    const isRemote = !/(^|\.)(localhost|127\.0\.0\.1|::1)$/i.test(target.split('/')[0]);
+
+    console.log('\n⚠️  DESTRUCTIVE OPERATION');
+    console.log(`   Target database : ${target}${isRemote ? '  (REMOTE — not localhost!)' : ''}`);
+    console.log(`   Tables to clear : ${tables.length} (all data will be permanently deleted)`);
+
+    const confirmed = await confirm('Type y to TRUNCATE ALL TABLES on this database, anything else to abort:');
+    if (!confirmed) {
+        console.log('\n❌ Aborted. No changes were made.');
+        process.exit(0);
+    }
+
     const client = await pool.connect();
     try {
         // Disable FK checks, truncate, re-enable

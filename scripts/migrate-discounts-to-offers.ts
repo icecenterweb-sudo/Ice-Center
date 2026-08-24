@@ -69,7 +69,9 @@ async function migrateDiscountsToOffers() {
             console.log(`Adding ${newProducts.length} new products to legacy offer...\n`);
 
             for (const product of newProducts) {
-                const discountPercent = ((product.listPrice! - product.price) / product.listPrice!) * 100;
+                const listPriceNum = Number(product.listPrice);
+                const priceNum = Number(product.price);
+                const discountPercent = ((listPriceNum - priceNum) / listPriceNum) * 100;
 
                 await prisma.offerProduct.create({
                     data: {
@@ -117,7 +119,9 @@ async function migrateDiscountsToOffers() {
 
         for (const product of productsWithDiscount) {
             try {
-                const discountPercent = ((product.listPrice! - product.price) / product.listPrice!) * 100;
+                const listPriceNum = Number(product.listPrice);
+                const priceNum = Number(product.price);
+                const discountPercent = ((listPriceNum - priceNum) / listPriceNum) * 100;
 
                 await prisma.offerProduct.create({
                     data: {

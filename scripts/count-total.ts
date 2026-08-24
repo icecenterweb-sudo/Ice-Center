@@ -9,9 +9,7 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-    await prisma.product.deleteMany({
-        where: { id: 56 }
-    });
+    // Read-only reporting script — must never mutate or delete data.
     const count = await prisma.product.count();
     console.log(`Current Total Products in DB: ${count}`);
 

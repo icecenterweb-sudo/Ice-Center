@@ -23,18 +23,13 @@ Write-Host "==> Copying files to staging (excluding dev artifacts)..." -Foregrou
 robocopy $project $staging /E /NFL /NDL /NP $xdArgs $xfArgs /XA:SH | Out-Null
 if ($LASTEXITCODE -ge 8) { throw "robocopy failed with exit code $LASTEXITCODE" }
 
-# Replace .env with production version
+# SECURITY (#34): do NOT bake secrets into the artifact.
+# The zip must never contain .env / .env.production — transfer secrets out-of-band.
 $envProd = Join-Path $staging ".env.production"
 $envFinal = Join-Path $staging ".env"
-if (Test-Path $envProd) {
-  Copy-Item $envProd $envFinal -Force
-  Write-Host "==> .env.production -> .env (production env ready)" -ForegroundColor Green
-} else {
-  Write-Warning ".env.production not found! .env will be missing in the package."
-}
-
-# Remove .env.production from staging (keep only .env)
 if (Test-Path $envProd) { Remove-Item $envProd -Force }
+if (Test-Path $envFinal) { Remove-Item $envFinal -Force }
+Write-Host "==> Secrets excluded from package. Upload your .env to the VPS separately (e.g. scp)." -ForegroundColor Green
 
 Write-Host "==> Compressing to $OutName ..." -ForegroundColor Cyan
 Compress-Archive -Path (Join-Path $staging "*") -DestinationPath $zipPath -CompressionLevel Optimal
@@ -43,5 +38,5 @@ Remove-Item -Recurse -Force $staging
 
 $size = [math]::Round((Get-Item $zipPath).Length / 1MB, 2)
 Write-Host "==> Done: $zipPath ($size MB)" -ForegroundColor Green
-Write-Host "==> Transfer this zip to your VPS, unzip, then run:" -ForegroundColor Yellow
-Write-Host "    npm install && npx prisma generate && npx prisma db push && npm run build" -ForegroundColor Yellow
+Write-Host "==> Transfer this zip to your VPS, upload your .env alongside it, then run:" -ForegroundColor Yellow
+Write-Host "    npm install && npx prisma generate && npx prisma migrate deploy && npm run build" -ForegroundColor Yellow

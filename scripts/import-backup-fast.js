@@ -268,6 +268,7 @@ async function main() {
 }
 
 async function bulkInsert(pool, table, cols, rows) {
+    let droppedRows = 0;
     const parsed = rows.map(row =>
         row.split('\t').map(col => col === '\\N' ? null : col)
     );
@@ -296,9 +297,15 @@ async function bulkInsert(pool, table, cols, rows) {
                         `INSERT INTO "${table}" (${cols}) VALUES ${rowPlaceholder} ON CONFLICT DO NOTHING`,
                         values
                     );
-                } catch {}
+                } catch (err) {
+                    droppedRows++;
+                    console.error(`[import] row dropped in ${table}:`, err.message);
+                }
             }
         }
+    }
+    if (droppedRows > 0) {
+        console.log(`  ⚠️  ${droppedRows} rows dropped in ${table} (see errors above)`);
     }
 }
 
