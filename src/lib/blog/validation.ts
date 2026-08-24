@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CANONICAL_SLUG_REGEX } from '@/lib/slugify-client';
 
 // Post Status
 export const PostStatusEnum = z.enum(['DRAFT', 'PUBLISHED', 'SCHEDULED']);
@@ -57,7 +58,7 @@ export const createPostSchema = z.object({
     title: z.string().min(1, 'عنوان الزامی است').max(200, 'عنوان حداکثر ۲۰۰ کاراکتر'),
     slug: z.string()
         .min(1, 'اسلاگ الزامی است')
-        .regex(/^[a-z0-9-]+$/, 'اسلاگ باید فقط شامل حروف کوچک، اعداد و خط تیره باشد'),
+        .regex(CANONICAL_SLUG_REGEX, 'اسلاگ باید فقط شامل حروف، اعداد و خط تیره باشد'),
     summary: z.string().max(160, 'خلاصه حداکثر ۱۶۰ کاراکتر').optional().nullable(),
     coverImage: optionalUrl,
     thumbnail: optionalUrl,
@@ -96,7 +97,7 @@ export const createCategorySchema = z.object({
     name: z.string().min(1, 'نام الزامی است'),
     slug: z.string()
         .min(1, 'اسلاگ الزامی است')
-        .regex(/^[a-z0-9-]+$/, 'اسلاگ باید فقط شامل حروف کوچک، اعداد و خط تیره باشد'),
+        .regex(CANONICAL_SLUG_REGEX, 'اسلاگ باید فقط شامل حروف، اعداد و خط تیره باشد'),
     description: z.string().optional().nullable(),
     image: z.string().url().optional().nullable(),
 });
@@ -108,7 +109,7 @@ export const createTagSchema = z.object({
     name: z.string().min(1, 'نام الزامی است'),
     slug: z.string()
         .min(1, 'اسلاگ الزامی است')
-        .regex(/^[a-z0-9-]+$/, 'اسلاگ باید فقط شامل حروف کوچک، اعداد و خط تیره باشد'),
+        .regex(CANONICAL_SLUG_REGEX, 'اسلاگ باید فقط شامل حروف، اعداد و خط تیره باشد'),
 });
 
 export type CreateTagInput = z.infer<typeof createTagSchema>;

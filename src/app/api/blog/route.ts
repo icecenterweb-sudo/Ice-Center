@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const { tagIds, authorId: _clientAuthorId, ...postData } = result.data;
+        const { tagIds, ...postData } = result.data;
 
         // Check slug uniqueness
         const existingPost = await prisma.blogPost.findUnique({
