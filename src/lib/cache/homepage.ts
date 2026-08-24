@@ -9,7 +9,7 @@
 
 import { cacheLife, cacheTag, revalidatePath, revalidateTag } from 'next/cache';
 import { prisma } from '@/lib/db';
-import { BannerPosition, DiscountType } from '@prisma/client';
+import { BannerPosition, DiscountType, Prisma } from '@prisma/client';
 import { getProductPricing } from '@/lib/offers/pricing';
 
 const CACHE_PROFILE = { expire: 600 };
@@ -21,8 +21,9 @@ export function revalidateHomepageTag(tag?: string) {
         if (tag) {
             revalidateTag(tag, CACHE_PROFILE);
         }
-    } catch {
-        // fallback
+    } catch (error) {
+        // Revalidation failures must be visible, not silent (#29)
+        console.error('[revalidateHomepageTag] Failed to revalidate:', error);
     }
 }
 
@@ -34,13 +35,13 @@ type DBProduct = {
     id: number;
     name: string;
     slug: string;
-    price: number;
-    listPrice: number | null;
+    price: number | Prisma.Decimal;
+    listPrice: number | Prisma.Decimal | null;
     thumbnail: string | null;
     hasActiveOffer?: boolean;
     offerProducts?: Array<{
-        customDiscountValue: number | null;
-        offer: { discountType: DiscountType; discountValue: number };
+        customDiscountValue: number | Prisma.Decimal | null;
+        offer: { discountType: DiscountType; discountValue: number | Prisma.Decimal; maxDiscountCap?: number | Prisma.Decimal | null };
     }>;
 };
 

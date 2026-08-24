@@ -222,8 +222,8 @@ export async function getProductDynamicData(productId: number): Promise<ProductD
 
     return {
         id: product.id,
-        price: product.price,
-        listPrice: product.listPrice,
+        price: Number(product.price),
+        listPrice: product.listPrice ? Number(product.listPrice) : null,
         stock: product.stock,
         inventoryStatus: product.inventoryStatus,
         rating: product.rating,
