@@ -21,13 +21,15 @@ import {
     MessageSquare,
     Terminal,
     Shield,
-    Settings
+    Settings,
+    Star
 } from 'lucide-react';
 import { canAccessSection, AdminSection } from '@/lib/admin-roles';
 
-const menuItems: { icon: any; label: string; href: string; section: AdminSection }[] = [
+const menuItems: { icon: React.ComponentType<{ className?: string }>; label: string; href: string; section: AdminSection }[] = [
     { icon: LayoutDashboard, label: 'داشبورد', href: '/admin/dashboard', section: 'DASHBOARD' },
     { icon: Package, label: 'محصولات', href: '/admin/dashboard/products', section: 'PRODUCTS' },
+    { icon: Star, label: 'نظرات محصولات', href: '/admin/dashboard/reviews', section: 'PRODUCTS' },
     { icon: Tag, label: 'پیشنهادها', href: '/admin/dashboard/offers', section: 'OFFERS' },
     { icon: FolderTree, label: 'دسته‌بندی‌ها', href: '/admin/dashboard/categories', section: 'CATEGORIES' },
     { icon: FileText, label: 'بلاگ', href: '/admin/dashboard/blog', section: 'BLOG' },
