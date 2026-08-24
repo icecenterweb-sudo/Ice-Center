@@ -172,8 +172,8 @@ async function OffersContent() {
                                             <td className="px-4 py-3">
                                                 <span className="inline-flex items-center px-2 py-1 rounded-lg bg-red-50 text-red-600 font-bold text-sm">
                                                     {offer.discountType === 'PERCENTAGE'
-                                                        ? `${formatPersianNumber(offer.discountValue)}٪`
-                                                        : `${formatPersianNumber(offer.discountValue)} تومان`
+                                                        ? `${formatPersianNumber(Number(offer.discountValue))}٪`
+                                                        : `${formatPersianNumber(Number(offer.discountValue))} تومان`
                                                     }
                                                 </span>
                                             </td>

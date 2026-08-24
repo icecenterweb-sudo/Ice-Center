@@ -22,10 +22,18 @@ export default async function OrdersPage({
         search,
     });
 
-    // Transform dates for client component (passed as simple objects)
+    // Transform dates and Decimals for client component (passed as simple objects)
     const serializedOrders = orders.map(order => ({
         ...order,
-        // _count is handled by Prisma type inference usually, but we need to ensure it matches interface
+        subtotal: Number(order.subtotal),
+        discount: Number(order.discount),
+        shippingCost: Number(order.shippingCost),
+        total: Number(order.total),
+        items: order.items.map(item => ({
+            ...item,
+            unitPrice: Number(item.unitPrice),
+            totalPrice: Number(item.totalPrice),
+        })),
     }));
 
     return (

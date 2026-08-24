@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireRole } from '@/lib/admin-auth';
+import { recordAudit } from '@/lib/audit';
 import { z } from 'zod';
 
 const couponUpdateSchema = z.object({
@@ -82,8 +83,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
                 return NextResponse.json({ error: 'کد یافت نشد' }, { status: 404 });
             }
             const effectiveType = data.type ?? existingCoupon.type;
-            const effectiveValue = data.value ?? existingCoupon.value;
-            if (effectiveType === 'PERCENTAGE' && effectiveValue > 100) {
+            const effectiveValue = data.value ?? Number(existingCoupon.value);
+            if (effectiveType === 'PERCENTAGE' && Number(effectiveValue) > 100) {
                 return NextResponse.json({ error: 'درصد تخفیف نمی‌تواند بیشتر از ۱۰۰ باشد' }, { status: 400 });
             }
         }
@@ -104,6 +105,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
             where: { id: couponId },
             data: updateData,
         });
+
+        recordAudit(auth.payload.adminId, 'COUPON_UPDATE', 'Coupon', couponId, `ویرایش کد تخفیف #${couponId}`);
 
         return NextResponse.json({ coupon });
     } catch (error: unknown) {
@@ -126,6 +129,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
         const { id } = await params;
         const couponId = parseInt(id, 10);
         await prisma.coupon.delete({ where: { id: couponId } });
+        recordAudit(auth.payload.adminId, 'COUPON_DELETE', 'Coupon', couponId, `حذف کد تخفیف #${couponId}`);
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('[Coupons] Failed to delete:', error);

@@ -48,7 +48,11 @@ export async function GET() {
                 id: item.id,
                 productId: item.productId,
                 createdAt: item.createdAt,
-                product: item.product,
+                product: {
+                    ...item.product,
+                    price: Number(item.product.price),
+                    listPrice: item.product.listPrice ? Number(item.product.listPrice) : null,
+                },
             })),
             count: wishlistItems.length,
         });

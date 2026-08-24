@@ -4,7 +4,7 @@ import { prisma } from '@/lib/db';
 import { OrderStatus, Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { notifyOrderStatusChange } from '@/lib/notifications';
-import { requireAdminAction, requireRoleAction } from '@/lib/admin-auth';
+import { requireRoleAction } from '@/lib/admin-auth';
 import { recordAudit } from '@/lib/audit';
 
 export async function getOrders({

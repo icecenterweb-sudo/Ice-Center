@@ -17,8 +17,8 @@ model Product {
   model                String?
   manufacturingCountry String?
   condition            ProductCondition @default(NEW)
-  price                Float
-  listPrice            Float?
+  price                Decimal          @db.Decimal(14, 2)
+  listPrice            Decimal?         @db.Decimal(14, 2)
   stock                Int              @default(0)
   inventoryStatus      InventoryStatus  @default(IN_STOCK)
   isActive             Boolean          @default(true)
@@ -66,7 +66,6 @@ model Product {
   analyticsEvents      AnalyticsEvent[]
   reviews              ProductReview[]
 
-  @@index([slug])
   @@index([subcategoryId])
   @@index([brand])
   @@index([sku])
@@ -84,8 +83,8 @@ model ProductVariant {
   capacity        String?
   phase           Int?
   voltage         String?
-  price           Float
-  listPrice       Float?
+  price           Decimal         @db.Decimal(14, 2)
+  listPrice       Decimal?        @db.Decimal(14, 2)
   stock           Int             @default(0)
   inventoryStatus InventoryStatus @default(IN_STOCK)
   specifications  Json?
@@ -153,7 +152,6 @@ model User {
   reviews         ProductReview[]
   couponUsages    CouponUsage[]
 
-  @@index([phone])
 }
 
 model CartItem {
@@ -213,7 +211,6 @@ model Admin {
   auditLogs       AuditLog[]
   reviews         ProductReview[]
 
-  @@index([phone])
 }
 
 model AuditLog {
@@ -313,7 +310,6 @@ model BlogPost {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  @@index([slug])
   @@index([status])
   @@index([categoryId])
   @@index([publishedAt])
@@ -329,7 +325,6 @@ model BlogCategory {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
-  @@index([slug])
 }
 
 model BlogTag {
@@ -338,7 +333,6 @@ model BlogTag {
   slug  String     @unique
   posts BlogPost[]
 
-  @@index([slug])
 }
 
 // Blog Comments/Reviews
@@ -397,8 +391,8 @@ model Offer {
   
   // Discount Configuration
   discountType    DiscountType @default(PERCENTAGE)
-  discountValue   Float        // 20 for 20%, or 50000 for fixed amount
-  maxDiscountCap  Float?       // Optional: cap for percentage discounts
+  discountValue   Decimal      @db.Decimal(14, 2)  // 20 for 20%, or 50000 for fixed amount
+  maxDiscountCap  Decimal?     @db.Decimal(14, 2)  // Optional: cap for percentage discounts
   
   // Timing
   startDate       DateTime     @default(now())
@@ -439,7 +433,7 @@ model OfferProduct {
   product             Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   
   // Optional: Override discount for this specific product
-  customDiscountValue Float?
+  customDiscountValue Decimal? @db.Decimal(14, 2)
   
   createdAt           DateTime @default(now())
   
@@ -464,7 +458,6 @@ model Campaign {
   updatedAt   DateTime @updatedAt
 
   @@index([isActive, startDate, endDate])
-  @@index([slug])
 }
 
 // Hero Slider Slides
@@ -562,10 +555,10 @@ model Order {
   
   // Order Details
   items           OrderItem[]
-  subtotal        Float       // جمع قبل از تخفیف
-  discount        Float       @default(0)
-  shippingCost    Float       @default(0)
-  total           Float       // جمع کل
+  subtotal        Decimal     @db.Decimal(14, 2)  // جمع قبل از تخفیف
+  discount        Decimal     @default(0) @db.Decimal(14, 2)
+  shippingCost    Decimal     @default(0) @db.Decimal(14, 2)
+  total           Decimal     @db.Decimal(14, 2)  // جمع کل
   
   // Status & Notes
   status          OrderStatus @default(PENDING)
@@ -607,8 +600,8 @@ model OrderItem {
   
   // Pricing
   quantity    Int
-  unitPrice   Float    // قیمت واحد
-  totalPrice  Float    // قیمت کل (quantity * unitPrice)
+  unitPrice   Decimal  @db.Decimal(14, 2)  // قیمت واحد
+  totalPrice  Decimal  @db.Decimal(14, 2)  // قیمت کل (quantity * unitPrice)
   
   createdAt   DateTime @default(now())
   
@@ -818,9 +811,9 @@ model Coupon {
   id              Int          @id @default(autoincrement())
   code            String       @unique  // کد تخفیف
   type            CouponType
-  value           Float        // درصد یا مبلغ (تومان)
-  minOrderAmount  Float?       // حداقل مبلغ سفارش برای اعمال
-  maxDiscount     Float?       // سقف تخفیف (برای نوع درصدی)
+  value           Decimal      @db.Decimal(14, 2)  // درصد یا مبلغ (تومان)
+  minOrderAmount  Decimal?     @db.Decimal(14, 2)  // حداقل مبلغ سفارش برای اعمال
+  maxDiscount     Decimal?     @db.Decimal(14, 2)  // سقف تخفیف (برای نوع درصدی)
 
   status          CouponStatus @default(ACTIVE)
   startDate       DateTime?
@@ -834,7 +827,6 @@ model Coupon {
 
   usages          CouponUsage[]
 
-  @@index([code])
   @@index([status])
 }
 
@@ -846,7 +838,7 @@ model CouponUsage {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   orderId   Int      @unique  // هر سفارش فقط یک کوپن
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  discount  Float    // مبلغ تخفیف اعمال شده
+  discount  Decimal  @db.Decimal(14, 2)  // مبلغ تخفیف اعمال شده
   createdAt DateTime @default(now())
 
   @@index([couponId])
@@ -872,6 +864,5 @@ model SiteSetting {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([key])
 }
 

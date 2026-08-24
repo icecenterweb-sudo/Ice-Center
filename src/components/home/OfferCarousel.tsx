@@ -43,6 +43,41 @@ interface AmazingOfferCarouselProps {
   offers?: OfferItem[];
 }
 
+// Isolated countdown leaf — only this component re-renders every second (#33)
+function OfferCountdown({ endDate, variant = 'compact' }: { endDate: Date; variant?: 'compact' | 'large' }) {
+    const calc = React.useCallback(() => {
+        const diff = Math.max(0, new Date(endDate).getTime() - Date.now());
+        const totalHours = Math.floor(diff / (1000 * 60 * 60));
+        return {
+            hours: totalHours % 24,
+            minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+            seconds: Math.floor((diff % (1000 * 60)) / 1000),
+        };
+    }, [endDate]);
+    const [time, setTime] = React.useState(calc);
+    React.useEffect(() => {
+        const t = setInterval(() => setTime(calc()), 1000);
+        return () => clearInterval(t);
+    }, [calc]);
+    const fmt = (n: number) => n.toString().padStart(2, '0');
+    const isLarge = variant === 'large';
+    return (
+        <div className={isLarge ? 'flex gap-1.5' : 'flex items-center gap-1'} dir="ltr">
+            <div className={isLarge ? 'bg-white text-ocean w-9 h-9 rounded-lg flex items-center justify-center font-bold text-base shadow-md' : 'bg-white text-ocean w-7 h-7 md:w-8 md:h-8 rounded flex items-center justify-center font-bold text-xs md:text-sm'}>
+                {toPersianDigits(fmt(time.hours))}
+            </div>
+            <span className={isLarge ? 'text-white font-bold self-center text-lg' : 'text-white font-bold'}>:</span>
+            <div className={isLarge ? 'bg-white text-ocean w-9 h-9 rounded-lg flex items-center justify-center font-bold text-base shadow-md' : 'bg-white text-ocean w-7 h-7 md:w-8 md:h-8 rounded flex items-center justify-center font-bold text-xs md:text-sm'}>
+                {toPersianDigits(fmt(time.minutes))}
+            </div>
+            <span className={isLarge ? 'text-white font-bold self-center text-lg' : 'text-white font-bold'}>:</span>
+            <div className={isLarge ? 'bg-white text-ocean w-9 h-9 rounded-lg flex items-center justify-center font-bold text-base shadow-md' : 'bg-white text-ocean w-7 h-7 md:w-8 md:h-8 rounded flex items-center justify-center font-bold text-xs md:text-sm'}>
+                {toPersianDigits(fmt(time.seconds))}
+            </div>
+        </div>
+    );
+}
+
 const AmazingOfferCarousel = ({ offers }: AmazingOfferCarouselProps) => {
   // Transform offers to product format
   const products: OfferProduct[] = useMemo(() => {
@@ -69,27 +104,7 @@ const AmazingOfferCarousel = ({ offers }: AmazingOfferCarouselProps) => {
     return new Date(Date.now() + 24 * 60 * 60 * 1000);
   }, [offers]);
 
-  // --- Timer Logic ---
-  const calculateTimeLeft = useCallback(() => {
-    const diff = Math.max(0, new Date(earliestEndDate).getTime() - Date.now());
-    const totalHours = Math.floor(diff / (1000 * 60 * 60));
-    return {
-      hours: totalHours % 24,
-      minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
-      seconds: Math.floor((diff % (1000 * 60)) / 1000),
-    };
-  }, [earliestEndDate]);
 
-  const [time, setTime] = useState(calculateTimeLeft);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTime(calculateTimeLeft());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [calculateTimeLeft]);
-
-  const formatTime = (num: number) => num.toString().padStart(2, '0');
 
   // --- Embla Carousel Setup for Mobile ---
   const [mobileEmblaRef, mobileEmblaApi] = useEmblaCarousel(
@@ -176,20 +191,8 @@ const AmazingOfferCarousel = ({ offers }: AmazingOfferCarouselProps) => {
             <span className="text-base md:text-lg font-extrabold text-white">شگفت‌انگیز</span>
           </div>
 
-          {/* Timer */}
-          <div className="flex items-center gap-1" dir="ltr">
-            <div className="bg-white text-ocean w-7 h-7 md:w-8 md:h-8 rounded flex items-center justify-center font-bold text-xs md:text-sm">
-              {toPersianDigits(formatTime(time.hours))}
-            </div>
-            <span className="text-white font-bold">:</span>
-            <div className="bg-white text-ocean w-7 h-7 md:w-8 md:h-8 rounded flex items-center justify-center font-bold text-xs md:text-sm">
-              {toPersianDigits(formatTime(time.minutes))}
-            </div>
-            <span className="text-white font-bold">:</span>
-            <div className="bg-white text-ocean w-7 h-7 md:w-8 md:h-8 rounded flex items-center justify-center font-bold text-xs md:text-sm">
-              {toPersianDigits(formatTime(time.seconds))}
-            </div>
-          </div>
+          {/* Timer — isolated leaf */}
+          <OfferCountdown endDate={earliestEndDate} variant="compact" />
 
           {/* View All */}
           <Link href="/offers" className="flex items-center text-xs md:text-sm text-white">
@@ -289,19 +292,9 @@ const AmazingOfferCarousel = ({ offers }: AmazingOfferCarouselProps) => {
               <h3 className="text-xl font-extrabold leading-snug">شگــفت انگیز!</h3>
             </div>
 
-            {/* Timer */}
-            <div className="flex gap-1.5 mb-4" dir="ltr">
-              <div className="bg-white text-ocean w-9 h-9 rounded-lg flex items-center justify-center font-bold text-base shadow-md">
-                {toPersianDigits(formatTime(time.hours))}
-              </div>
-              <span className="text-white font-bold self-center text-lg">:</span>
-              <div className="bg-white text-ocean w-9 h-9 rounded-lg flex items-center justify-center font-bold text-base shadow-md">
-                {toPersianDigits(formatTime(time.minutes))}
-              </div>
-              <span className="text-white font-bold self-center text-lg">:</span>
-              <div className="bg-white text-ocean w-9 h-9 rounded-lg flex items-center justify-center font-bold text-base shadow-md">
-                {toPersianDigits(formatTime(time.seconds))}
-              </div>
+            {/* Timer — isolated leaf */}
+            <div className="mb-4">
+                <OfferCountdown endDate={earliestEndDate} variant="large" />
             </div>
 
             {/* Icon */}

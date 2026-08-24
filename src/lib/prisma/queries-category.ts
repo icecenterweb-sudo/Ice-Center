@@ -185,11 +185,26 @@ export async function getProducts({
         where.inventoryStatus = { in: availability };
     }
 
-    // Discount filter - now uses hasActiveOffer OR legacy listPrice
+    // Discount filter - query-time active offer check or legacy listPrice (#23)
     if (onlyDiscount) {
         where.OR = [
-            { hasActiveOffer: true },
-            { listPrice: { not: null } }
+            {
+                offerProducts: {
+                    some: {
+                        offer: {
+                            isActive: true,
+                            startDate: { lte: now },
+                            endDate: { gt: now },
+                        }
+                    }
+                }
+            },
+            {
+                AND: [
+                    { listPrice: { not: null } },
+                    { listPrice: { gt: 0 } },
+                ]
+            }
         ];
     }
 

@@ -26,7 +26,7 @@ async function DashboardContent() {
         }) : Promise.resolve([]),
     ]);
 
-    const monthlySales = ordersThisMonth.reduce((sum, o) => sum + o.total, 0);
+    const monthlySales = ordersThisMonth.reduce((sum, o) => sum + Number(o.total), 0);
 
     return (
         <DashboardView

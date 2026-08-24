@@ -131,13 +131,32 @@ async function getCustomerData(id: number) {
         }),
     ]);
 
-    const totalSpent = orderStatsAggregate._sum.total || 0;
+    const totalSpent = orderStatsAggregate._sum.total ? Number(orderStatsAggregate._sum.total) : 0;
 
     return {
         user,
-        orders,
-        cartItems,
-        wishlistItems,
+        orders: orders.map(o => ({
+            ...o,
+            total: Number(o.total),
+            items: o.items.map(i => ({
+                ...i,
+                unitPrice: Number(i.unitPrice),
+            })),
+        })),
+        cartItems: cartItems.map(c => ({
+            ...c,
+            product: {
+                ...c.product,
+                price: Number(c.product.price),
+            },
+        })),
+        wishlistItems: wishlistItems.map(w => ({
+            ...w,
+            product: {
+                ...w.product,
+                price: Number(w.product.price),
+            },
+        })),
         supportRooms,
         analyticsEvents,
         notifications,

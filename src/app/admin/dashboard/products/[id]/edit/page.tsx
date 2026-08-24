@@ -57,7 +57,21 @@ async function EditProductContent({ params }: { params: Promise<{ id: string }> 
             <EditProductForm product={product} subcategories={subcategories} />
 
             {/* Variant Manager */}
-            <VariantManager productId={productId} variants={product.variants} />
+            <VariantManager
+                productId={productId}
+                variants={product.variants.map((v) => ({
+                    id: v.id,
+                    name: v.name,
+                    sku: v.sku,
+                    capacity: v.capacity,
+                    phase: v.phase,
+                    voltage: v.voltage,
+                    price: Number(v.price),
+                    stock: v.stock,
+                    isDefault: v.isDefault,
+                    isActive: v.isActive,
+                }))}
+            />
         </div>
     );
 }

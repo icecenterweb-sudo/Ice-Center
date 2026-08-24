@@ -39,20 +39,20 @@ export function getProductPricing(product: ProductWithVariants): ProductPricing 
 
     if (!hasVariants) {
         return {
-            price: product.price,
-            listPrice: product.listPrice || undefined,
+            price: Number(product.price),
+            listPrice: product.listPrice ? Number(product.listPrice) : undefined,
             hasVariants: false,
         };
     }
 
     const activeVariants = product.variants.filter((v) => v.isActive);
-    const prices = activeVariants.map((v) => v.price);
+    const prices = activeVariants.map((v) => Number(v.price));
     const minPrice = Math.min(...prices);
     const maxPrice = Math.max(...prices);
 
     return {
         price: minPrice,
-        listPrice: product.listPrice || undefined,
+        listPrice: product.listPrice ? Number(product.listPrice) : undefined,
         hasVariants: true,
         priceRange:
             minPrice !== maxPrice

@@ -69,7 +69,7 @@ export async function getProductBySlug(slug: string) {
  * Get similar products (same subcategory, excluding current product)
  */
 export async function getSimilarProducts(productId: number, subcategoryId: number, limit = 8) {
-    return await prisma.product.findMany({
+    const products = await prisma.product.findMany({
         where: {
             subcategoryId,
             id: { not: productId },
@@ -88,6 +88,12 @@ export async function getSimilarProducts(productId: number, subcategoryId: numbe
         take: limit,
         orderBy: { createdAt: 'desc' }
     });
+
+    return products.map(p => ({
+        ...p,
+        price: Number(p.price),
+        listPrice: p.listPrice ? Number(p.listPrice) : null,
+    }));
 }
 
 /**

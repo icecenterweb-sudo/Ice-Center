@@ -1,14 +1,12 @@
 'use server';
 
 import { prisma } from '@/lib/db';
-import { revalidatePath, revalidateTag } from 'next/cache';
 import { requireRoleAction } from '@/lib/admin-auth';
+import { recordAudit } from '@/lib/audit';
 import { z } from 'zod';
 import type { ActionResult } from '@/lib/action-result';
-
-const CACHE_PROFILE = { expire: 600 };
-
-const slugRegex = /^[a-zA-Z0-9\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF\-]+$/;
+import { invalidateCategoryCache, invalidateSubcategoryCache } from '@/lib/cache/invalidation';
+import { CANONICAL_SLUG_REGEX } from '@/lib/slugify-client';
 
 // ============================================
 // Validation Schemas
@@ -16,7 +14,7 @@ const slugRegex = /^[a-zA-Z0-9\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFE
 
 const categorySchema = z.object({
     name: z.string().min(1, 'نام دسته‌بندی الزامی است'),
-    slug: z.string().min(1, 'اسلاگ الزامی است').regex(slugRegex, 'اسلاگ فقط شامل حروف فارسی، انگلیسی، اعداد و خط تیره باشد'),
+    slug: z.string().min(1, 'اسلاگ الزامی است').regex(CANONICAL_SLUG_REGEX, 'اسلاگ فقط شامل حروف فارسی، انگلیسی، اعداد و خط تیره باشد'),
     description: z.string().optional(),
     imageUrl: z.string().min(1).optional().nullable(),
     order: z.coerce.number().int('ترتیب باید یک عدد صحیح باشد').default(0),
@@ -24,7 +22,7 @@ const categorySchema = z.object({
 
 const subcategorySchema = z.object({
     name: z.string().min(1, 'نام زیردسته الزامی است'),
-    slug: z.string().min(1, 'اسلاگ الزامی است').regex(slugRegex, 'اسلاگ فقط شامل حروف فارسی، انگلیسی، اعداد و خط تیره باشد'),
+    slug: z.string().min(1, 'اسلاگ الزامی است').regex(CANONICAL_SLUG_REGEX, 'اسلاگ فقط شامل حروف فارسی، انگلیسی، اعداد و خط تیره باشد'),
     description: z.string().optional(),
     categoryId: z.number().int().positive('دسته‌بندی اصلی الزامی است'),
     order: z.coerce.number().int('ترتیب باید یک عدد صحیح باشد').default(0),
@@ -37,7 +35,7 @@ const subcategorySchema = z.object({
 export async function createCategory(formData: FormData): Promise<ActionResult<{ id: number }>> {
     try {
         // Auth check
-        await requireRoleAction('CATEGORIES');
+        const admin = await requireRoleAction('CATEGORIES');
 
         const raw = {
             name: (formData.get('name') as string) || '',
@@ -95,9 +93,13 @@ export async function createCategory(formData: FormData): Promise<ActionResult<{
             return category;
         });
 
-        revalidatePath('/admin/dashboard/categories');
-        revalidateTag('homepage', CACHE_PROFILE);
-        revalidateTag('categories', CACHE_PROFILE);
+        // Centralized invalidation (#5, #6, B2)
+        await invalidateCategoryCache({
+            id: createdCategory.id,
+            slug: createdCategory.slug,
+        });
+
+        recordAudit(admin.adminId, 'CATEGORY_CREATE', 'Category', createdCategory.id, `ایجاد دسته‌بندی "${createdCategory.name}" (اسلاگ: ${createdCategory.slug})`);
 
         return { success: true, data: { id: createdCategory.id } };
     } catch (error: unknown) {
@@ -119,7 +121,7 @@ export async function createCategory(formData: FormData): Promise<ActionResult<{
 export async function updateCategory(id: number, formData: FormData): Promise<ActionResult> {
     try {
         // Auth check
-        await requireRoleAction('CATEGORIES');
+        const admin = await requireRoleAction('CATEGORIES');
 
         const raw = {
             name: (formData.get('name') as string) || '',
@@ -139,6 +141,16 @@ export async function updateCategory(id: number, formData: FormData): Promise<Ac
         }
 
         const data = result.data;
+
+        // Fetch current category to track old slug
+        const currentCategory = await prisma.category.findUnique({
+            where: { id },
+            select: { slug: true }
+        });
+
+        if (!currentCategory) {
+            return { success: false, error: 'دسته‌بندی مورد نظر یافت نشد' };
+        }
 
         // Check if slug is taken by another category
         const existing = await prisma.category.findFirst({
@@ -163,10 +175,14 @@ export async function updateCategory(id: number, formData: FormData): Promise<Ac
             }
         });
 
-        revalidatePath('/admin/dashboard/categories');
-        revalidateTag('homepage', CACHE_PROFILE);
-        revalidateTag('categories', CACHE_PROFILE);
-        revalidateTag(`category:${id}`, CACHE_PROFILE);
+        // Centralized invalidation (#5, #6, B2)
+        await invalidateCategoryCache({
+            id,
+            slug: data.slug,
+            oldSlug: currentCategory.slug,
+        });
+
+        recordAudit(admin.adminId, 'CATEGORY_UPDATE', 'Category', id, `ویرایش دسته‌بندی "${data.name}" (اسلاگ: ${currentCategory.slug} → ${data.slug})`);
 
         return { success: true };
     } catch (error: unknown) {
@@ -184,7 +200,16 @@ export async function updateCategory(id: number, formData: FormData): Promise<Ac
 export async function deleteCategory(id: number): Promise<ActionResult> {
     try {
         // Auth check
-        await requireRoleAction('CATEGORIES');
+        const admin = await requireRoleAction('CATEGORIES');
+
+        const currentCategory = await prisma.category.findUnique({
+            where: { id },
+            select: { slug: true }
+        });
+
+        if (!currentCategory) {
+            return { success: false, error: 'دسته‌بندی مورد نظر یافت نشد' };
+        }
 
         // Check if category has subcategories other than the automatic 'public' or if subcategories have products
         const subcategories = await prisma.subcategory.findMany({
@@ -208,10 +233,13 @@ export async function deleteCategory(id: number): Promise<ActionResult> {
             prisma.category.delete({ where: { id } })
         ]);
 
-        revalidatePath('/admin/dashboard/categories');
-        revalidateTag('homepage', CACHE_PROFILE);
-        revalidateTag('categories', CACHE_PROFILE);
-        revalidateTag(`category:${id}`, CACHE_PROFILE);
+        // Centralized invalidation (#5, #6, B2)
+        await invalidateCategoryCache({
+            id,
+            slug: currentCategory.slug,
+        });
+
+        recordAudit(admin.adminId, 'CATEGORY_DELETE', 'Category', id, `حذف دسته‌بندی (اسلاگ: ${currentCategory.slug})`);
 
         return { success: true };
     } catch (error: unknown) {
@@ -228,7 +256,7 @@ export async function deleteCategory(id: number): Promise<ActionResult> {
 export async function createSubcategory(formData: FormData): Promise<ActionResult<{ id: number }>> {
     try {
         // Auth check
-        await requireRoleAction('CATEGORIES');
+        const admin = await requireRoleAction('CATEGORIES');
 
         const raw = {
             name: (formData.get('name') as string) || '',
@@ -268,14 +296,20 @@ export async function createSubcategory(formData: FormData): Promise<ActionResul
                 description: data.description || undefined,
                 categoryId: data.categoryId,
                 order: data.order,
+            },
+            include: {
+                category: { select: { slug: true } }
             }
         });
 
-        revalidatePath('/admin/dashboard/categories');
-        revalidateTag('homepage', CACHE_PROFILE);
-        revalidateTag('categories', CACHE_PROFILE);
-        revalidateTag(`subcategories:${data.categoryId}`, CACHE_PROFILE);
-        revalidateTag(`products:category:${data.categoryId}`, CACHE_PROFILE);
+        // Centralized invalidation (#5, #6, B2)
+        await invalidateSubcategoryCache({
+            id: subcategory.id,
+            categoryId: subcategory.categoryId,
+            categorySlug: subcategory.category?.slug,
+        });
+
+        recordAudit(admin.adminId, 'SUBCATEGORY_CREATE', 'Subcategory', subcategory.id, `ایجاد زیردسته "${subcategory.name}" در دسته‌بندی #${subcategory.categoryId}`);
 
         return { success: true, data: { id: subcategory.id } };
     } catch (error: unknown) {
@@ -297,7 +331,7 @@ export async function createSubcategory(formData: FormData): Promise<ActionResul
 export async function updateSubcategory(id: number, formData: FormData): Promise<ActionResult> {
     try {
         // Auth check
-        await requireRoleAction('CATEGORIES');
+        const admin = await requireRoleAction('CATEGORIES');
 
         const raw = {
             name: (formData.get('name') as string) || '',
@@ -318,6 +352,16 @@ export async function updateSubcategory(id: number, formData: FormData): Promise
 
         const data = result.data;
 
+        // Fetch current subcategory for parent/slug tracking on move
+        const currentSub = await prisma.subcategory.findUnique({
+            where: { id },
+            select: { categoryId: true, category: { select: { slug: true } } }
+        });
+
+        if (!currentSub) {
+            return { success: false, error: 'زیردسته مورد نظر یافت نشد' };
+        }
+
         // Check if subcategory slug exists under this category
         const existing = await prisma.subcategory.findFirst({
             where: { categoryId: data.categoryId, slug: data.slug, id: { not: id } }
@@ -330,7 +374,7 @@ export async function updateSubcategory(id: number, formData: FormData): Promise
             };
         }
 
-        await prisma.subcategory.update({
+        const updated = await prisma.subcategory.update({
             where: { id },
             data: {
                 name: data.name,
@@ -338,14 +382,22 @@ export async function updateSubcategory(id: number, formData: FormData): Promise
                 description: data.description || undefined,
                 categoryId: data.categoryId,
                 order: data.order,
+            },
+            include: {
+                category: { select: { slug: true } }
             }
         });
 
-        revalidatePath('/admin/dashboard/categories');
-        revalidateTag('homepage', CACHE_PROFILE);
-        revalidateTag('categories', CACHE_PROFILE);
-        revalidateTag(`subcategories:${data.categoryId}`, CACHE_PROFILE);
-        revalidateTag(`products:category:${data.categoryId}`, CACHE_PROFILE);
+        // Centralized invalidation (#5, #6, B2) — handles move between parent categories
+        await invalidateSubcategoryCache({
+            id,
+            categoryId: updated.categoryId,
+            oldCategoryId: currentSub.categoryId !== updated.categoryId ? currentSub.categoryId : undefined,
+            categorySlug: updated.category?.slug,
+            oldCategorySlug: currentSub.category?.slug,
+        });
+
+        recordAudit(admin.adminId, 'SUBCATEGORY_UPDATE', 'Subcategory', id, `ویرایش زیردسته "${data.name}" (#${currentSub.categoryId} → #${data.categoryId})`);
 
         return { success: true };
     } catch (error: unknown) {
@@ -363,7 +415,16 @@ export async function updateSubcategory(id: number, formData: FormData): Promise
 export async function deleteSubcategory(id: number): Promise<ActionResult> {
     try {
         // Auth check
-        await requireRoleAction('CATEGORIES');
+        const admin = await requireRoleAction('CATEGORIES');
+
+        const currentSub = await prisma.subcategory.findUnique({
+            where: { id },
+            select: { categoryId: true, category: { select: { slug: true } } }
+        });
+
+        if (!currentSub) {
+            return { success: false, error: 'زیردسته مورد نظر یافت نشد' };
+        }
 
         // Check if subcategory has products
         const productCount = await prisma.product.count({
@@ -378,9 +439,14 @@ export async function deleteSubcategory(id: number): Promise<ActionResult> {
             where: { id }
         });
 
-        revalidatePath('/admin/dashboard/categories');
-        revalidateTag('homepage', CACHE_PROFILE);
-        revalidateTag('categories', CACHE_PROFILE);
+        // Centralized invalidation (#5, #6, B2)
+        await invalidateSubcategoryCache({
+            id,
+            categoryId: currentSub.categoryId,
+            categorySlug: currentSub.category?.slug,
+        });
+
+        recordAudit(admin.adminId, 'SUBCATEGORY_DELETE', 'Subcategory', id, `حذف زیردسته #${id} از دسته‌بندی #${currentSub.categoryId}`);
 
         return { success: true };
     } catch (error: unknown) {

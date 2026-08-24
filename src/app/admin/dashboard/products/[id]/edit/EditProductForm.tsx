@@ -181,7 +181,7 @@ export default function EditProductForm({ product, subcategories }: EditProductF
                     <input
                         type="number"
                         name="price"
-                        defaultValue={product.price}
+                        defaultValue={Number(product.price)}
                         required
                         min="0"
                         step="any"
@@ -207,7 +207,7 @@ export default function EditProductForm({ product, subcategories }: EditProductF
                     <input
                         type="number"
                         name="listPrice"
-                        defaultValue={product.listPrice || ''}
+                        defaultValue={product.listPrice ? Number(product.listPrice) : ''}
                         min="0"
                         step="any"
                         aria-invalid={!!fieldErrors.listPrice}

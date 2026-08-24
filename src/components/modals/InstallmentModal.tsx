@@ -14,14 +14,34 @@ export default function InstallmentModal({ isOpen, onClose }: InstallmentModalPr
     const [phone, setPhone] = useState('');
     const [submitted, setSubmitted] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!phone || phone.length < 10) {
-            toast.error('لطفاً شماره همراه معتبر وارد کنید');
+            toast.error('لطفاً شماره موبایل معتبر وارد کنید');
             return;
         }
-        setSubmitted(true);
-        toast.success('شماره شما با موفقیت جهت اطلاع‌رسانی خرید اقساطی ثبت شد');
+        try {
+            // Wire the request to the real support system (#33)
+            const res = await fetch('/api/support/chat/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: 'متقاضی اقساط', phone }),
+            });
+            if (!res.ok) throw new Error('support start failed');
+            const data = await res.json().catch(() => ({}));
+            const roomId = data.room?.id ?? data.roomId;
+            if (roomId) {
+                await fetch('/api/support/chat/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ roomId, text: `درخواست خرید اقساطی — شماره تماس: ${phone}` }),
+                }).catch(() => {});
+            }
+            setSubmitted(true);
+            toast.success('درخواست شما ثبت شد. کارشناسان ما به زودی با شما تماس خواهند گرفت.');
+        } catch {
+            toast.error('خطا در ثبت درخواست. لطفاً از پشتیبانی آنلاین استفاده کنید.');
+        }
     };
 
     const handleClose = () => {

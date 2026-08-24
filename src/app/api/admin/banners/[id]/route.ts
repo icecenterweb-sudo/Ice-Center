@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireRole } from '@/lib/admin-auth';
+import { recordAudit } from '@/lib/audit';
 import { z } from 'zod';
 import { revalidateHomepageTag } from '@/lib/cache/homepage';
 
@@ -134,6 +135,8 @@ export async function PUT(request: NextRequest, context: RouteContext) {
 
         revalidateHomepageTag('banners');
 
+        recordAudit(auth.payload.adminId, 'BANNER_UPDATE', 'Banner', bannerId, `ویرایش بنر #${bannerId}`);
+
         return NextResponse.json({ success: true, banner });
     } catch (error) {
         console.error('Failed to update banner:', error);
@@ -165,6 +168,8 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
         });
 
         revalidateHomepageTag('banners');
+
+        recordAudit(auth.payload.adminId, 'BANNER_DELETE', 'Banner', bannerId, `حذف بنر #${bannerId}`);
 
         return NextResponse.json({ success: true });
     } catch (error) {

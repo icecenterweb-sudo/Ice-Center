@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -27,7 +27,7 @@ import { toPersianDigits } from '@/lib/persian';
 import { SHIPPING_COST, FREE_SHIPPING_THRESHOLD } from '@/lib/shipping';
 import { recordClientEvent } from '@/lib/client-analytics';
 import toast from 'react-hot-toast';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch, Control } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { fieldClass } from '@/lib/form-classes';
@@ -187,6 +187,38 @@ function StepperArrow({ steps, currentStep }: { steps: typeof STEPS; currentStep
     );
 }
 
+function ReviewInfoSection({ control }: { control: Control<CheckoutFormData> }) {
+    const formValues = useWatch({ control });
+
+    return (
+        <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <h3 className="text-base font-bold text-gray-900 mb-4">بررسی نهایی</h3>
+            <div className="space-y-3 text-sm">
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                    <span className="text-gray-600">نام</span>
+                    <span className="font-medium text-gray-900">{formValues.firstName || ''} {formValues.lastName || ''}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                    <span className="text-gray-600">موبایل</span>
+                    <span className="font-medium text-gray-900 dir-ltr">{formValues.phone || ''}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                    <span className="text-gray-600">استان</span>
+                    <span className="font-medium text-gray-900">{formValues.province || ''}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                    <span className="text-gray-600">شهر</span>
+                    <span className="font-medium text-gray-900">{formValues.city || ''}</span>
+                </div>
+                <div className="py-2">
+                    <span className="text-gray-600">آدرس</span>
+                    <p className="font-medium text-gray-900 mt-1">{formValues.address || ''}</p>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function CheckoutPage() {
     const router = useRouter();
     const { items, itemCount, totalPrice, isLoading: cartLoading } = useCart();
@@ -197,12 +229,13 @@ export default function CheckoutPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [orderId, setOrderId] = useState<string | null>(null);
 
-    // Form handling with react-hook-form + zod
+    // Form handling with react-hook-form + zod (#19: isolated control, no top-level watch)
     const {
         register,
-        watch,
+        control,
         trigger,
         reset,
+        getValues,
         formState: { errors },
     } = useForm<CheckoutFormData>({
         resolver: zodResolver(checkoutSchema),
@@ -219,9 +252,6 @@ export default function CheckoutPage() {
             deliveryNotes: '',
         },
     });
-
-    // Watch form values for review step
-    const formValues = watch();
 
     // Pre-fill user data
     useEffect(() => {
@@ -247,9 +277,11 @@ export default function CheckoutPage() {
         }
     }, [cartLoading, items.length, router, orderId]);
 
-    // Track Checkout Start
+    // Track Checkout Start - only once per session/lifecycle (#24)
+    const checkoutStartTrackedRef = useRef(false);
     useEffect(() => {
-        if (currentStep === 1) {
+        if (currentStep === 1 && !checkoutStartTrackedRef.current) {
+            checkoutStartTrackedRef.current = true;
             recordClientEvent('CHECKOUT_START');
         }
     }, [currentStep]);
@@ -342,12 +374,13 @@ export default function CheckoutPage() {
         setIsSubmitting(true);
 
         try {
+            const values = getValues();
             // Create order via API
             const res = await fetch('/api/orders', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    notes: formValues.deliveryNotes,
+                    notes: values.deliveryNotes,
                     couponCode: appliedCoupon?.code,
                 }),
             });
@@ -689,32 +722,8 @@ export default function CheckoutPage() {
                                             </div>
                                         </div>
 
-                                        {/* Review Info */}
-                                        <div className="bg-white rounded-2xl border border-gray-200 p-6">
-                                            <h3 className="text-base font-bold text-gray-900 mb-4">بررسی نهایی</h3>
-                                            <div className="space-y-3 text-sm">
-                                                <div className="flex justify-between py-2 border-b border-gray-100">
-                                                    <span className="text-gray-600">نام</span>
-                                                    <span className="font-medium text-gray-900">{formValues.firstName} {formValues.lastName}</span>
-                                                </div>
-                                                <div className="flex justify-between py-2 border-b border-gray-100">
-                                                    <span className="text-gray-600">موبایل</span>
-                                                    <span className="font-medium text-gray-900 dir-ltr">{formValues.phone}</span>
-                                                </div>
-                                                <div className="flex justify-between py-2 border-b border-gray-100">
-                                                    <span className="text-gray-600">استان</span>
-                                                    <span className="font-medium text-gray-900">{formValues.province}</span>
-                                                </div>
-                                                <div className="flex justify-between py-2 border-b border-gray-100">
-                                                    <span className="text-gray-600">شهر</span>
-                                                    <span className="font-medium text-gray-900">{formValues.city}</span>
-                                                </div>
-                                                <div className="py-2">
-                                                    <span className="text-gray-600">آدرس</span>
-                                                    <p className="font-medium text-gray-900 mt-1">{formValues.address}</p>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        {/* Review Info (#19 isolated subcomponent) */}
+                                        <ReviewInfoSection control={control} />
 
                                         <div className="flex justify-between">
                                             <button

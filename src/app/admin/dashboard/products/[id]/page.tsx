@@ -111,7 +111,7 @@ async function ProductDetailContent({ params }: { params: Promise<{ id: string }
                                             </p>
                                         </div>
                                         <div className="text-left">
-                                            <p className="font-bold text-gray-800">{formatCurrency(variant.price)} تومان</p>
+                                            <p className="font-bold text-gray-800">{formatCurrency(Number(variant.price))} تومان</p>
                                             <p className="text-sm text-gray-500 mt-1">موجودی: {variant.stock} عدد</p>
                                         </div>
                                     </div>
@@ -129,7 +129,7 @@ async function ProductDetailContent({ params }: { params: Promise<{ id: string }
                         <div className="space-y-4">
                             <div>
                                 <label className="text-sm text-gray-500">قیمت پایه</label>
-                                <p className="text-2xl font-bold text-gray-800 mt-1">{formatCurrency(product.price)} تومان</p>
+                                <p className="text-2xl font-bold text-gray-800 mt-1">{formatCurrency(Number(product.price))} تومان</p>
                             </div>
                             <div>
                                 <label className="text-sm text-gray-500">موجودی کل</label>

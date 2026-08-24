@@ -1,7 +1,6 @@
 'use server';
 
 import { prisma } from '@/lib/db';
-import { revalidatePath, revalidateTag } from 'next/cache';
 import { requireRoleAction } from '@/lib/admin-auth';
 import { recordAudit } from '@/lib/audit';
 import { z } from 'zod';
@@ -11,8 +10,7 @@ import {
     notifyWishlistUsersOnRestock,
 } from '@/lib/notifications';
 import type { ActionResult } from '@/lib/action-result';
-
-const CACHE_PROFILE = { expire: 600 };
+import { invalidateProductCache } from '@/lib/cache/invalidation';
 
 const productSlugRegex = /^[a-zA-Z0-9\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF\-]+$/;
 
@@ -28,12 +26,12 @@ function isUniqueConstraintError(error: unknown): boolean {
 
 const createProductSchema = z.object({
     name: z.string().min(1, 'نام محصول الزامی است'),
-    description: z.string().optional(),
+    description: z.string().optional().nullable(),
     price: z.number().positive('قیمت باید عدد مثبت باشد'),
     listPrice: z.number().positive('قیمت خط‌خورده باید عدد مثبت باشد').optional().nullable(),
     stock: z.number().int().min(0, 'موجودی نمی‌تواند منفی باشد').default(0),
-    brand: z.string().optional(),
-    sku: z.string().optional(),
+    brand: z.string().optional().nullable(),
+    sku: z.string().optional().nullable(),
     slug: z.string()
         .min(1, 'اسلاگ الزامی است')
         .regex(productSlugRegex, 'اسلاگ فقط می‌تواند شامل حروف فارسی، انگلیسی، اعداد و خط تیره باشد')
@@ -55,7 +53,9 @@ function parseJsonField(value: string | null, fallback: unknown) {
     if (!value) return fallback;
     try {
         return JSON.parse(value);
-    } catch {
+    } catch (error) {
+        // Malformed payload must not silently wipe the stored field (#29)
+        console.error('[parseJsonField] Malformed JSON, using fallback:', error);
         return fallback;
     }
 }
@@ -66,14 +66,18 @@ function parseProductFormData(formData: FormData) {
     const specificationsData = formData.get('specifications') as string | null;
     const slugRaw = (formData.get('slug') as string) || '';
 
+    const descRaw = formData.get('description') as string | null;
+    const brandRaw = formData.get('brand') as string | null;
+    const skuRaw = formData.get('sku') as string | null;
+
     return {
         name: formData.get('name') as string,
-        description: (formData.get('description') as string) || undefined,
+        description: descRaw !== null && descRaw !== undefined ? (descRaw.trim() || null) : null,
         price: parseFloat(formData.get('price') as string),
         listPrice: formData.get('listPrice') ? parseFloat(formData.get('listPrice') as string) : null,
         stock: parseInt(formData.get('stock') as string) || 0,
-        brand: (formData.get('brand') as string) || undefined,
-        sku: (formData.get('sku') as string) || undefined,
+        brand: brandRaw !== null && brandRaw !== undefined ? (brandRaw.trim() || null) : null,
+        sku: skuRaw !== null && skuRaw !== undefined ? (skuRaw.trim() || null) : null,
         slug: slugRaw.trim() || undefined,
         subcategoryId: formData.get('subcategoryId') ? parseInt(formData.get('subcategoryId') as string) : null,
         images: parseJsonField(imagesData, []),
@@ -130,16 +134,16 @@ export async function createProduct(formData: FormData): Promise<ActionResult<{ 
         const product = await prisma.product.create({
             data: {
                 name: data.name,
-                description: data.description,
+                description: data.description ?? null,
                 price: data.price,
-                listPrice: data.listPrice,
+                listPrice: data.listPrice ?? null,
                 stock: data.stock,
                 inventoryStatus: computeInventoryStatus(data.stock),
-                brand: data.brand,
-                sku: data.sku || undefined,
+                brand: data.brand ?? null,
+                sku: data.sku ? data.sku.trim() : null,
                 slug,
                 isActive: data.isActive,
-                subcategoryId: data.subcategoryId || undefined,
+                subcategoryId: data.subcategoryId ?? null,
                 images: data.images,
                 thumbnail,
                 features: data.features,
@@ -150,9 +154,12 @@ export async function createProduct(formData: FormData): Promise<ActionResult<{ 
         // Record Audit log
         await recordAudit(admin.adminId, "PRODUCT_CREATE", "Product", product.id, `ایجاد محصول جدید "${product.name}" با قیمت ${product.price}`);
 
-        revalidatePath('/admin/dashboard/products');
-        revalidateTag('homepage', CACHE_PROFILE);
-        revalidateTag('products', CACHE_PROFILE);
+        // Centralized cache invalidation (#5, #6, B2)
+        await invalidateProductCache({
+            id: product.id,
+            slug: product.slug,
+            subcategoryId: product.subcategoryId,
+        });
 
         return { success: true, data: { id: product.id, slug: product.slug } };
     } catch (error: unknown) {
@@ -188,10 +195,10 @@ export async function updateProduct(id: number, formData: FormData): Promise<Act
 
         const data = result.data;
 
-        // Fetch current values to detect changes
+        // Fetch current values to detect changes and for invalidation
         const currentProduct = await prisma.product.findUnique({
             where: { id },
-            select: { price: true, stock: true, name: true, slug: true, inventoryStatus: true },
+            select: { price: true, stock: true, name: true, slug: true, inventoryStatus: true, subcategoryId: true },
         });
 
         if (!currentProduct) {
@@ -212,17 +219,18 @@ export async function updateProduct(id: number, formData: FormData): Promise<Act
             }
         }
 
+        // #14 fix: Nullable fields must be explicitly passed as null when cleared
         const updateData: Record<string, unknown> = {
             name: data.name,
-            description: data.description,
+            description: data.description ?? null,
             price: data.price,
-            listPrice: data.listPrice,
+            listPrice: data.listPrice ?? null,
             stock: data.stock,
             inventoryStatus: computeInventoryStatus(data.stock),
-            brand: data.brand,
-            sku: data.sku || undefined,
+            brand: data.brand ?? null,
+            sku: data.sku ? data.sku.trim() : null,
             isActive: data.isActive,
-            subcategoryId: data.subcategoryId || null,
+            subcategoryId: data.subcategoryId ?? null,
         };
 
         if (data.slug) {
@@ -246,7 +254,8 @@ export async function updateProduct(id: number, formData: FormData): Promise<Act
         // Non-blocking wishlist notifications
         const wasOutOfStock = currentProduct.stock === 0 || currentProduct.inventoryStatus === 'OUT_OF_STOCK';
         const nowInStock = data.stock > 0;
-        const priceDropped = data.price < currentProduct.price;
+        const currentPriceNum = Number(currentProduct.price);
+        const priceDropped = data.price < currentPriceNum;
 
         if (wasOutOfStock && nowInStock) {
             notifyWishlistUsersOnRestock(id, currentProduct.name, currentProduct.slug).catch(console.error);
@@ -255,18 +264,19 @@ export async function updateProduct(id: number, formData: FormData): Promise<Act
                 id,
                 currentProduct.name,
                 currentProduct.slug,
-                currentProduct.price,
+                currentPriceNum,
                 data.price
             ).catch(console.error);
         }
 
-        revalidatePath('/admin/dashboard/products');
-        revalidateTag('homepage', CACHE_PROFILE);
-        revalidateTag('products', CACHE_PROFILE);
-        revalidateTag(`product:${currentProduct.slug}`, CACHE_PROFILE);
-        if (data.slug && data.slug !== currentProduct.slug) {
-            revalidateTag(`product:${data.slug}`, CACHE_PROFILE);
-        }
+        // Centralized cache invalidation (#5, #6, B2)
+        await invalidateProductCache({
+            id: product.id,
+            slug: product.slug,
+            oldSlug: currentProduct.slug,
+            subcategoryId: product.subcategoryId,
+            oldSubcategoryId: currentProduct.subcategoryId,
+        });
 
         return { success: true };
     } catch (error: unknown) {
@@ -294,16 +304,19 @@ export async function deleteProduct(id: number): Promise<ActionResult> {
         }
 
         const product = await prisma.product.delete({
-            where: { id }
+            where: { id },
+            select: { id: true, name: true, slug: true, subcategoryId: true }
         });
 
         // Record Audit log
         await recordAudit(admin.adminId, "PRODUCT_DELETE", "Product", product.id, `حذف محصول "${product.name}"`);
 
-        revalidatePath('/admin/dashboard/products');
-        revalidateTag('homepage', CACHE_PROFILE);
-        revalidateTag('products', CACHE_PROFILE);
-        revalidateTag(`product:${product.slug}`, CACHE_PROFILE);
+        // Centralized cache invalidation (#5, #6, B2)
+        await invalidateProductCache({
+            id: product.id,
+            slug: product.slug,
+            subcategoryId: product.subcategoryId,
+        });
 
         return { success: true };
     } catch (error: unknown) {
@@ -319,8 +332,8 @@ export async function toggleProductStatus(id: number): Promise<ActionResult<{ is
         const admin = await requireRoleAction('PRODUCTS');
 
         // Atomic toggle via raw SQL
-        const rows = await prisma.$queryRaw<{ isActive: boolean; name: string }[]>`
-            UPDATE "Product" SET "isActive" = NOT "isActive" WHERE "id" = ${id} RETURNING "isActive", "name"
+        const rows = await prisma.$queryRaw<{ id: number; isActive: boolean; name: string; slug: string; subcategoryId: number | null }[]>`
+            UPDATE "Product" SET "isActive" = NOT "isActive", "updatedAt" = NOW() WHERE "id" = ${id} RETURNING "id", "isActive", "name", "slug", "subcategoryId"
         `;
         const updated = rows[0];
 
@@ -331,9 +344,12 @@ export async function toggleProductStatus(id: number): Promise<ActionResult<{ is
         // Record Audit log
         await recordAudit(admin.adminId, "PRODUCT_TOGGLE", "Product", id, `تغییر وضعیت فعال بودن محصول "${updated.name}" به ${updated.isActive}`);
 
-        revalidatePath('/admin/dashboard/products');
-        revalidateTag('homepage', CACHE_PROFILE);
-        revalidateTag('products', CACHE_PROFILE);
+        // Centralized cache invalidation (#5, #6, B2)
+        await invalidateProductCache({
+            id: updated.id,
+            slug: updated.slug,
+            subcategoryId: updated.subcategoryId,
+        });
 
         return { success: true, data: { isActive: updated.isActive } };
     } catch (error: unknown) {
@@ -349,10 +365,10 @@ export async function toggleProductStatus(id: number): Promise<ActionResult<{ is
 
 const variantSchema = z.object({
     name: z.string().min(1, 'نام واریانت الزامی است'),
-    sku: z.string().optional(),
-    capacity: z.string().optional(),
+    sku: z.string().optional().nullable(),
+    capacity: z.string().optional().nullable(),
     phase: z.number().int().optional().nullable(),
-    voltage: z.string().optional(),
+    voltage: z.string().optional().nullable(),
     price: z.number().positive('قیمت باید عدد مثبت باشد'),
     stock: z.number().int().min(0, 'موجودی نمی‌تواند منفی باشد').default(0),
     isDefault: z.boolean().default(false),
@@ -360,12 +376,16 @@ const variantSchema = z.object({
 });
 
 function parseVariantFormData(formData: FormData) {
+    const skuRaw = formData.get('sku') as string | null;
+    const capRaw = formData.get('capacity') as string | null;
+    const voltRaw = formData.get('voltage') as string | null;
+
     return {
         name: formData.get('name') as string,
-        sku: (formData.get('sku') as string) || undefined,
-        capacity: (formData.get('capacity') as string) || undefined,
+        sku: skuRaw !== null && skuRaw !== undefined ? (skuRaw.trim() || null) : null,
+        capacity: capRaw !== null && capRaw !== undefined ? (capRaw.trim() || null) : null,
         phase: formData.get('phase') ? parseInt(formData.get('phase') as string) : null,
-        voltage: (formData.get('voltage') as string) || undefined,
+        voltage: voltRaw !== null && voltRaw !== undefined ? (voltRaw.trim() || null) : null,
         price: parseFloat(formData.get('price') as string),
         stock: parseInt(formData.get('stock') as string) || 0,
         isDefault: formData.get('isDefault') === 'true',
@@ -376,7 +396,7 @@ function parseVariantFormData(formData: FormData) {
 export async function createProductVariant(productId: number, formData: FormData): Promise<ActionResult> {
     try {
         // Auth check
-        await requireRoleAction('PRODUCTS');
+        const admin = await requireRoleAction('PRODUCTS');
 
         const raw = parseVariantFormData(formData);
         const result = variantSchema.safeParse(raw);
@@ -395,10 +415,10 @@ export async function createProductVariant(productId: number, formData: FormData
             data: {
                 productId,
                 name: data.name,
-                sku: data.sku || undefined,
-                capacity: data.capacity || undefined,
-                phase: data.phase || undefined,
-                voltage: data.voltage || undefined,
+                sku: data.sku ? data.sku.trim() : null,
+                capacity: data.capacity ?? null,
+                phase: data.phase ?? null,
+                voltage: data.voltage ?? null,
                 price: data.price,
                 stock: data.stock,
                 isDefault: data.isDefault,
@@ -406,9 +426,21 @@ export async function createProductVariant(productId: number, formData: FormData
             }
         });
 
-        revalidatePath('/admin/dashboard/products');
-        revalidateTag('homepage', CACHE_PROFILE);
-        revalidateTag('products', CACHE_PROFILE);
+        const product = await prisma.product.findUnique({
+            where: { id: productId },
+            select: { id: true, slug: true, subcategoryId: true },
+        });
+
+        if (product) {
+            await invalidateProductCache({
+                id: product.id,
+                slug: product.slug,
+                subcategoryId: product.subcategoryId,
+            });
+        }
+
+        recordAudit(admin.adminId, 'VARIANT_CREATE', 'ProductVariant', productId, `ایجاد واریانت "${data.name}" برای محصول #${productId}`);
+
         return { success: true };
     } catch (error: unknown) {
         console.error('Failed to create variant:', error);
@@ -427,7 +459,7 @@ export async function createProductVariant(productId: number, formData: FormData
 export async function updateProductVariant(id: number, formData: FormData): Promise<ActionResult> {
     try {
         // Auth check
-        await requireRoleAction('PRODUCTS');
+        const admin = await requireRoleAction('PRODUCTS');
 
         const raw = parseVariantFormData(formData);
         const result = variantSchema.safeParse(raw);
@@ -442,24 +474,35 @@ export async function updateProductVariant(id: number, formData: FormData): Prom
 
         const data = result.data;
 
-        await prisma.productVariant.update({
+        // #14 fix: Nullable fields explicitly set to null when cleared
+        const variant = await prisma.productVariant.update({
             where: { id },
             data: {
                 name: data.name,
-                sku: data.sku || undefined,
-                capacity: data.capacity || undefined,
-                phase: data.phase || undefined,
-                voltage: data.voltage || undefined,
+                sku: data.sku ? data.sku.trim() : null,
+                capacity: data.capacity ?? null,
+                phase: data.phase ?? null,
+                voltage: data.voltage ?? null,
                 price: data.price,
                 stock: data.stock,
                 isDefault: data.isDefault,
                 isActive: data.isActive,
-            }
+            },
+            include: {
+                product: { select: { id: true, slug: true, subcategoryId: true } },
+            },
         });
 
-        revalidatePath('/admin/dashboard/products');
-        revalidateTag('homepage', CACHE_PROFILE);
-        revalidateTag('products', CACHE_PROFILE);
+        if (variant.product) {
+            await invalidateProductCache({
+                id: variant.product.id,
+                slug: variant.product.slug,
+                subcategoryId: variant.product.subcategoryId,
+            });
+        }
+
+        recordAudit(admin.adminId, 'VARIANT_UPDATE', 'ProductVariant', id, `ویرایش واریانت "${data.name}" (#${id})`);
+
         return { success: true };
     } catch (error: unknown) {
         console.error('Failed to update variant:', error);
@@ -474,15 +517,25 @@ export async function updateProductVariant(id: number, formData: FormData): Prom
 export async function deleteProductVariant(id: number): Promise<ActionResult> {
     try {
         // Auth check
-        await requireRoleAction('PRODUCTS');
+        const admin = await requireRoleAction('PRODUCTS');
 
-        await prisma.productVariant.delete({
-            where: { id }
+        const variant = await prisma.productVariant.delete({
+            where: { id },
+            include: {
+                product: { select: { id: true, slug: true, subcategoryId: true } },
+            },
         });
 
-        revalidatePath('/admin/dashboard/products');
-        revalidateTag('homepage', CACHE_PROFILE);
-        revalidateTag('products', CACHE_PROFILE);
+        if (variant.product) {
+            await invalidateProductCache({
+                id: variant.product.id,
+                slug: variant.product.slug,
+                subcategoryId: variant.product.subcategoryId,
+            });
+        }
+
+        recordAudit(admin.adminId, 'VARIANT_DELETE', 'ProductVariant', id, `حذف واریانت #${id}`);
+
         return { success: true };
     } catch (error: unknown) {
         console.error('Failed to delete variant:', error);
@@ -562,9 +615,13 @@ export async function bulkUpdateProductsAction(
             await recordAudit(admin.adminId, 'PRODUCT_UPDATE', 'Product', productIds[0], `تغییر گروهی زیردسته ${productIds.length} محصول به زیردسته ${subcategoryId} (شناسه‌ها: ${productIds.join(', ')})`);
         }
 
-        revalidatePath('/admin/dashboard/products');
-        revalidateTag('homepage', CACHE_PROFILE);
-        revalidateTag('products', CACHE_PROFILE);
+        // Invalidate product caches
+        if (productIds.length > 0) {
+            await invalidateProductCache({
+                id: productIds[0],
+                subcategoryId: subcategoryId,
+            });
+        }
 
         return { success: true };
     } catch (error: unknown) {

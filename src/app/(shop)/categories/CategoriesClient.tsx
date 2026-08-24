@@ -7,6 +7,7 @@ import Image from 'next/image';
 import useEmblaCarousel from 'embla-carousel-react';
 import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, X, SlidersHorizontal, ArrowUpDown, Tag, DollarSign, Package, Grid3X3, Trash2, PanelLeftClose, PanelLeftOpen, Search } from 'lucide-react';
 import { toPersianDigits } from '@/lib/persian';
+import { PRICE_RANGES, AVAILABILITY_OPTIONS } from '@/lib/utils/formatters';
 import ProductCard from '@/components/product/ProductCard';
 
 type Category = {
@@ -40,20 +41,6 @@ type Props = {
     selectedCategoryId?: number;
     searchQuery?: string;
 };
-
-const PRICE_RANGES = [
-    { label: 'زیر ۱ میلیون', min: 0, max: 1000000 },
-    { label: '۱ تا ۵ میلیون', min: 1000000, max: 5000000 },
-    { label: '۵ تا ۱۰ میلیون', min: 5000000, max: 10000000 },
-    { label: '۱۰ تا ۲۰ میلیون', min: 10000000, max: 20000000 },
-    { label: 'بالای ۲۰ میلیون', min: 20000000, max: Infinity },
-];
-
-const AVAILABILITY_OPTIONS = [
-    { value: 'IN_STOCK', label: 'موجود در انبار', color: 'bg-green-500' },
-    { value: 'LOW_STOCK', label: 'موجودی کم', color: 'bg-yellow-500' },
-    { value: 'OUT_OF_STOCK', label: 'ناموجود', color: 'bg-red-500' },
-];
 
 export default function CategoriesClient({
     categories,
@@ -117,11 +104,6 @@ export default function CategoriesClient({
     }), [searchParams]);
 
     const formatPrice = (price: number) => new Intl.NumberFormat('fa-IR').format(price);
-
-    const getDiscount = (price: number, listPrice: number | null) => {
-        if (!listPrice || listPrice <= price) return null;
-        return Math.round(((listPrice - price) / listPrice) * 100);
-    };
 
     const updateURL = useCallback((params: Record<string, string | undefined>) => {
         const current = new URLSearchParams(Array.from(searchParams.entries()));

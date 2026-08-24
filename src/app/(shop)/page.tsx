@@ -1,11 +1,9 @@
 // ============================================
-// HOMEPAGE - FULLY CACHED (5 min TTL)
+// HOMEPAGE - CACHE COMPONENTS ARCHITECTURE (5 min TTL)
 // ============================================
-// ❌ Do NOT import from lib/offers/queries.ts
-// ❌ Do NOT import from lib/blog/queries.ts  
-// ❌ Do NOT use connection(), cookies(), headers()
-// ❌ Do NOT use new Date() in UI layer
-// ✅ Only import from lib/cache/homepage.ts
+// - Page shell uses connection() for build safety with cacheComponents
+// - All data queries use "use cache" layer in lib/cache/homepage.ts
+// - Tag-based invalidation via 'homepage' cache tags on mutations
 // ============================================
 
 import { Suspense } from 'react';
@@ -20,8 +18,6 @@ import {
   ArrowLeft,
   ShieldCheck,
   Wrench,
-  Newspaper,
-  CalendarDays,
   BadgeCheck
 } from 'lucide-react';
 
@@ -37,9 +33,11 @@ import {
   type BlogPostForDisplay,
   type SlideForDisplay,
   type BannerForDisplay,
+  type ProductForDisplay,
+  type CategoryForDisplay,
 } from '@/lib/cache/homepage';
 
-import { formatPersianCurrency, toPersianDigits } from '@/lib/persian';
+import { toPersianDigits } from '@/lib/persian';
 
 // Client components
 import HeroCarousel from '@/components/home/HeroCarousel';
@@ -58,9 +56,18 @@ interface HeroPromoAreaProps {
   doubleBanners?: BannerForDisplay[];
 }
 
+interface HeroBannerItem {
+  image: string;
+  link: string;
+  alt: string;
+  isDouble?: boolean;
+  desktopImage?: string;
+  mobileImage?: string;
+}
+
 // 1. Hero Promotional Area (Desktop single-card slider / Mobile carousel synced with Admin Panel)
 function HeroPromoArea({ slides = [], doubleBanners = [] }: HeroPromoAreaProps) {
-  const defaultHeroBanners = [
+  const defaultHeroBanners: HeroBannerItem[] = [
     {
       image: '/uploads/custom/banner_ice_cream_persian.png',
       link: '/categories/soft-ice-machines',
@@ -81,7 +88,7 @@ function HeroPromoArea({ slides = [], doubleBanners = [] }: HeroPromoAreaProps) 
     },
   ];
 
-  let mapped: any[] = [];
+  let mapped: HeroBannerItem[] = [];
 
   if (slides && slides.length > 0) {
     mapped = slides.map((s, idx) => ({
@@ -174,14 +181,14 @@ function TrustBar() {
 
 // 3. Top Products and Vertical Sticky Sidebar
 interface TopProductsProps {
-  popularProducts?: any[];
-  newestProducts?: any[];
-  juicerProducts?: any[];
-  iceCreamProducts?: any[];
+  popularProducts?: ProductForDisplay[];
+  newestProducts?: ProductForDisplay[];
+  juicerProducts?: ProductForDisplay[];
+  iceCreamProducts?: ProductForDisplay[];
 }
 
 // Single product card used inside product grids
-function TopProductCard({ p }: { p: any }) {
+function TopProductCard({ p }: { p: ProductForDisplay }) {
   const isCallForPrice = p.price === 0 || p.price === null || p.price === undefined;
   return (
     <Link
@@ -381,7 +388,7 @@ function TopProductsSection({
 
 // 4. Shop By Category (Vibrant blue offset folder shape backdrop - mapping DB categories)
 interface CategorySectionProps {
-  categories: any[];
+  categories: CategoryForDisplay[];
 }
 function ShopByCategorySection({ categories }: CategorySectionProps) {
   if (!categories || categories.length === 0) return null;
@@ -400,7 +407,7 @@ function ShopByCategorySection({ categories }: CategorySectionProps) {
         {displayCategories.map((c, i) => {
           const categoryImage = c.image || '/no-image.svg';
           const subText = c.subcategories && c.subcategories.length > 0
-            ? c.subcategories.slice(0, 2).map((s: any) => s.name).join(' ، ') + ' و ...'
+            ? c.subcategories.slice(0, 2).map((s: { name: string }) => s.name).join(' ، ') + ' و ...'
             : 'تجهیزات و لوازم جانبی';
 
           return (
@@ -443,7 +450,7 @@ function ShopByCategorySection({ categories }: CategorySectionProps) {
 
 // 5. Two-column Promotional Module
 interface PromoProps {
-  products: any[];
+  products: ProductForDisplay[];
 }
 function TwoColumnPromoModule({ products }: PromoProps) {
   const displayProducts = products.length >= 4 ? products.slice(0, 4) : products;
@@ -561,10 +568,10 @@ function TwoColumnPromoModule({ products }: PromoProps) {
 
 // 6. Three vertical "stand" promotional banners (side by side)
 interface StandBannerTrioProps {
-  products: any[];
+  products?: unknown[];
   singleBanners?: BannerForDisplay[];
 }
-function StandBannerTrio({ products: _products, singleBanners = [] }: StandBannerTrioProps) {
+function StandBannerTrio({ singleBanners = [] }: StandBannerTrioProps) {
   const defaultBanners = [
     {
       href: '/categories/soft-ice-machines',

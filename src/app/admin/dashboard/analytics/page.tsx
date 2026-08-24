@@ -116,7 +116,7 @@ export default async function AdminAnalyticsPage() {
             },
             select: { id: true, total: true }
         })
-        const orderMap = new Map(orders.map(o => [o.id, o.total]));
+        const orderMap = new Map(orders.map(o => [o.id, Number(o.total)]));
 
         const socialCounts: Record<string, { visits: number; cartAdds: number }> = {};
         for (const src of socialSources) {
@@ -159,9 +159,8 @@ export default async function AdminAnalyticsPage() {
             }
         }).filter(m => m.visits > 0 || m.orders > 0)
 
-        // 4. High-Visit No-Sales Products
-        // Group product views in database
-        const productViewCounts = await analyticsEventClient.groupBy({
+        // 4. High Views Low Sales / High Abandonment
+        const productViewsData = await analyticsEventClient.groupBy({
             by: ['productId'],
             where: {
                 type: 'PRODUCT_VIEW',
@@ -170,33 +169,28 @@ export default async function AdminAnalyticsPage() {
             },
             _count: { _all: true }
         })
-
-        // Group sales quantity per product in database
-        const productSalesData = await prisma.orderItem.groupBy({
-            by: ['productId'],
-            where: {
-                order: {
-                    status: { not: 'CANCELLED' },
-                    createdAt: { gte: start30 }
-                }
-            },
-            _sum: {
-                quantity: true
-            }
-        })
-
         const viewCountsByProduct: Record<number, number> = {}
-        productViewCounts.forEach((item) => {
-            if (item.productId) {
-                viewCountsByProduct[item.productId] = item._count._all;
-            }
+        productViewsData.forEach((item) => {
+            viewCountsByProduct[item.productId!] = item._count._all
         })
 
+        // Paid order items for product sales count
+        const paidOrdersEvents = await analyticsEventClient.findMany({
+            where: {
+                type: 'PAYMENT_SUCCESS',
+                createdAt: { gte: start30 },
+                orderId: { not: null }
+            },
+            select: { orderId: true }
+        })
+        const paidOrderIds = paidOrdersEvents.map(e => e.orderId!).filter(Boolean)
+        const orderItemsData = await prisma.orderItem.findMany({
+            where: { orderId: { in: paidOrderIds } },
+            select: { productId: true, quantity: true }
+        })
         const salesCountsByProduct: Record<number, number> = {}
-        productSalesData.forEach((item) => {
-            if (item.productId) {
-                salesCountsByProduct[item.productId] = item._sum.quantity || 0;
-            }
+        orderItemsData.forEach((item) => {
+            salesCountsByProduct[item.productId] = (salesCountsByProduct[item.productId] || 0) + item.quantity
         })
 
         const uniqueProductIds = Array.from(new Set([
@@ -216,7 +210,7 @@ export default async function AdminAnalyticsPage() {
                 id: p.id,
                 name: p.name,
                 slug: p.slug,
-                price: p.price,
+                price: Number(p.price),
                 views,
                 sales,
                 ratio

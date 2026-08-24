@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireRole } from '@/lib/admin-auth';
+import { recordAudit } from '@/lib/audit';
 import { z } from 'zod';
 
 const couponSchema = z.object({
@@ -75,6 +76,8 @@ export async function POST(request: NextRequest) {
                 perUserLimit: data.perUserLimit,
             },
         });
+
+        recordAudit(auth.payload.adminId, 'COUPON_CREATE', 'Coupon', coupon.id, `ایجاد کد تخفیف "${coupon.code}"`);
 
         return NextResponse.json({ coupon }, { status: 201 });
     } catch (error: unknown) {

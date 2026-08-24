@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { requireRole } from '@/lib/admin-auth';
+import { invalidateProductCache } from '@/lib/cache/invalidation';
 import { z } from 'zod';
 
 const updateProductSchema = z.object({
@@ -100,6 +101,13 @@ export async function PUT(
       data: validation.data
     });
 
+    // Invalidate product caches (#5, #6, B2)
+    await invalidateProductCache({
+      id: product.id,
+      slug: product.slug,
+      subcategoryId: product.subcategoryId,
+    });
+
     return NextResponse.json({ success: true, data: product });
   } catch (error: unknown) {
     console.error('خطا در ویرایش محصول:', error);
@@ -137,8 +145,16 @@ export async function DELETE(
       }, { status: 400 });
     }
 
-    await prisma.product.delete({
-      where: { id: productId }
+    const product = await prisma.product.delete({
+      where: { id: productId },
+      select: { id: true, slug: true, subcategoryId: true },
+    });
+
+    // Invalidate product caches (#5, #6, B2)
+    await invalidateProductCache({
+      id: product.id,
+      slug: product.slug,
+      subcategoryId: product.subcategoryId,
     });
 
     return NextResponse.json({
@@ -157,7 +173,7 @@ export async function DELETE(
 
     return NextResponse.json({
       success: false,
-      message: 'خطا در حذف محصول'
+      message: getErrorMessage(error, 'خطا در حذف محصول')
     }, { status: 500 });
   }
 }

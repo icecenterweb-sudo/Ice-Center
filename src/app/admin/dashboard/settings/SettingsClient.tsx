@@ -6,18 +6,12 @@ import {
     Settings as SettingsIcon,
     Globe,
     Phone,
-    Mail,
-    MapPin,
-    Clock,
     Share2,
     Save,
     Image as ImageIcon,
     Loader2,
-    CheckCircle2,
-    Sliders,
     Sparkles,
-    Megaphone,
-    Upload
+    Megaphone
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { SiteSettings, DEFAULT_SITE_SETTINGS } from '@/types/settings';

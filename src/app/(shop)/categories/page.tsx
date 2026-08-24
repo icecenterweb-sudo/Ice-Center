@@ -3,6 +3,7 @@ import CategoriesClient from './CategoriesClient';
 import { getAllCategories, getProducts, getAvailableBrands } from '@/lib/prisma/queries-category';
 import { InventoryStatus } from '@prisma/client';
 import { serializeJsonLd } from '@/lib/json-ld';
+import { tomanToIrr } from '@/lib/seo/currency';
 
 type Props = {
     searchParams: Promise<{
@@ -88,7 +89,7 @@ export default async function CategoriesPage({ searchParams }: Props) {
                             'image': product.thumbnail || undefined,
                             'offers': {
                                 '@type': 'Offer',
-                                'price': product.price,
+                                'price': tomanToIrr(product.price),
                                 'priceCurrency': 'IRR',
                                 'availability': product.inventoryStatus === 'IN_STOCK'
                                     ? 'https://schema.org/InStock'

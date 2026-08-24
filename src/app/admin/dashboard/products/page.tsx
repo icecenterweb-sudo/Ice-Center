@@ -49,7 +49,7 @@ async function ProductsContent() {
         slug: product.slug,
         sku: product.sku,
         brand: product.brand,
-        price: product.price,
+        price: Number(product.price),
         stock: product.stock,
         inventoryStatus: product.inventoryStatus,
         isActive: product.isActive,

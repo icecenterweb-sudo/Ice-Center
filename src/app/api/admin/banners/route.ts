@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireRole } from '@/lib/admin-auth';
+import { recordAudit } from '@/lib/audit';
 import { z } from 'zod';
 import { revalidateHomepageTag } from '@/lib/cache/homepage';
 
@@ -90,6 +91,8 @@ export async function POST(request: NextRequest) {
         });
 
         revalidateHomepageTag('banners');
+
+        recordAudit(auth.payload.adminId, 'BANNER_CREATE', 'Banner', banner.id, `ایجاد بنر "${banner.title}"`);
 
         return NextResponse.json({ success: true, banner });
     } catch (error) {

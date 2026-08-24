@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
 import prisma from '@/lib/db';
-import { getProductsCached, invalidateProductsCache } from '@/lib/cache/products';
+import { getProductsCached } from '@/lib/cache/products';
+import { invalidateProductCache } from '@/lib/cache/invalidation';
 import { requireRole } from '@/lib/admin-auth';
 import { z } from 'zod';
 import { checkRateLimit, getClientIp, RATE_LIMITS } from '@/lib/rate-limiter';
@@ -132,8 +133,12 @@ export async function POST(request: NextRequest) {
       data: validatedData
     });
 
-    // Invalidate products cache after creating new product
-    await invalidateProductsCache();
+    // Invalidate products cache after creating new product (#5, #6, B2)
+    await invalidateProductCache({
+      id: product.id,
+      slug: product.slug,
+      subcategoryId: product.subcategoryId,
+    });
 
     return NextResponse.json({
       success: true,

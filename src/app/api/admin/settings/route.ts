@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
 import { getSiteSettings, updateSiteSettings } from '@/lib/settings';
 import { requireRole } from '@/lib/admin-auth';
+import { recordAudit } from '@/lib/audit';
 import { SiteSettings } from '@/types/settings';
 
 export async function GET(request: NextRequest) {
@@ -26,6 +27,7 @@ export async function POST(request: NextRequest) {
         const settingsData: Partial<SiteSettings> = body.settings || body;
 
         const updated = await updateSiteSettings(settingsData);
+        recordAudit(auth.payload.adminId, 'SETTINGS_UPDATE', 'SiteSetting', 0, `ویرایش تنظیمات سایت`);
         return NextResponse.json({ success: true, settings: updated });
     } catch (error) {
         console.error('Error in POST /api/admin/settings:', error);

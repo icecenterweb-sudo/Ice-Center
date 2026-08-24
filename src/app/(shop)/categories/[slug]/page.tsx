@@ -2,15 +2,13 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import CategoryClient from './CategoryClient';
 import { serializeJsonLd } from '@/lib/json-ld';
+import { tomanToIrr } from '@/lib/seo/currency';
 import {
     getCachedCategoryBySlug,
     getCachedSubcategories,
     getCachedBrands,
-    getCachedBaseProducts,
-    applyFiltersToProducts,
     getFreshFilteredProducts,
 } from '@/lib/cache/category';
-import type { CachedProduct } from '@/lib/cache/category';
 import { InventoryStatus } from '@prisma/client';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ice-center.ir';
@@ -73,51 +71,18 @@ export default async function CategoryPage({ params, searchParams }: Props) {
     // STATIC LAYER: Cached brands (10 min TTL)
     const availableBrands = await getCachedBrands(category.id, subcategoryId);
 
-    // Determine if we should use cached filtering or fresh query
-    // Use fresh query for subcategory filter (different data set)
-    // Use cached + client-side filtering for other filters
-    const hasSubcategoryFilter = subcategoryId !== undefined;
-
-    let products: CachedProduct[];
-    let totalCount: number;
-    let totalPages: number;
-    let currentPage: number;
-
-    if (hasSubcategoryFilter) {
-        // DYNAMIC: Fresh query needed for subcategory (different product set)
-        const result = await getFreshFilteredProducts(category.id, {
-            subcategoryId,
-            minPrice,
-            maxPrice,
-            brands,
-            availability,
-            onlyDiscount,
-            sort,
-            page,
-            limit: 12,
-        });
-        products = result.products;
-        totalCount = result.totalCount;
-        totalPages = result.totalPages;
-        currentPage = result.currentPage;
-    } else {
-        // SEMI-DYNAMIC: Use cached base products + client-side filtering
-        const baseProducts = await getCachedBaseProducts(category.id);
-        const result = applyFiltersToProducts(baseProducts, {
-            minPrice,
-            maxPrice,
-            brands,
-            availability,
-            onlyDiscount,
-            sort,
-            page,
-            limit: 12,
-        });
-        products = result.products;
-        totalCount = result.totalCount;
-        totalPages = result.totalPages;
-        currentPage = result.currentPage;
-    }
+    // DB-side filtered, sorted, and paginated product query (#17)
+    const { products, totalCount, totalPages, currentPage } = await getFreshFilteredProducts(category.id, {
+        subcategoryId,
+        minPrice,
+        maxPrice,
+        brands,
+        availability,
+        onlyDiscount,
+        sort,
+        page,
+        limit: 12,
+    });
 
     // Transform subcategories for client component
     const subcategoriesForClient = subcategories.map(s => ({
@@ -179,7 +144,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
                             'image': product.thumbnail || undefined,
                             'offers': {
                                 '@type': 'Offer',
-                                'price': product.price,
+                                'price': tomanToIrr(product.price),
                                 'priceCurrency': 'IRR',
                                 'availability': product.inventoryStatus === 'IN_STOCK'
                                     ? 'https://schema.org/InStock'
