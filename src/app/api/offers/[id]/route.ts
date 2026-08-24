@@ -9,10 +9,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
-import { updateProductOfferFlag } from '@/lib/offers';
+import { syncOfferFlagsForProductIds } from '@/lib/offers/queries';
 import { z } from 'zod';
 import { requireRole } from '@/lib/admin-auth';
-import { revalidateHomepageTag } from '@/lib/cache/homepage';
+import { recordAudit } from '@/lib/audit';
+import { invalidateOfferCache } from '@/lib/cache/invalidation';
 
 // Product with optional custom discount
 const productEntrySchema = z.object({
@@ -23,39 +24,40 @@ const productEntrySchema = z.object({
 // Validation schema for updating an offer
 const updateOfferSchema = z.object({
     name: z.string().min(1).optional(),
-    slug: z.string().optional(),
+    slug: z.string().min(1).optional(),
     description: z.string().optional().nullable(),
     discountType: z.enum(['PERCENTAGE', 'FIXED_AMOUNT']).optional(),
-    discountValue: z.number().positive('مقدار تخفیف باید مثبت باشد').optional(),
+    discountValue: z.number().min(0).optional(),
     maxDiscountCap: z.number().min(0).optional().nullable(),
-    startDate: z.string().datetime().optional(),
-    endDate: z.string().datetime().optional(),
+    startDate: z.string().or(z.date()).optional(),
+    endDate: z.string().or(z.date()).optional(),
     isActive: z.boolean().optional(),
     isFeatured: z.boolean().optional(),
-    priority: z.number().optional(),
+    priority: z.number().int().optional(),
     badgeText: z.string().optional().nullable(),
     badgeColor: z.string().optional().nullable(),
     campaignId: z.number().optional().nullable(),
-    // New format: products with custom discounts
-    products: z.array(productEntrySchema).optional(),
-    // Legacy format: just product IDs (backwards compatible)
+    // Supports either an array of IDs or an array of product entries with custom discounts
     productIds: z.array(z.number()).optional(),
+    products: z.array(productEntrySchema).optional(),
 }).refine(data => {
-    if (data.discountType === 'PERCENTAGE' && data.discountValue !== undefined && data.discountValue > 100) {
-        return false;
+    // If dates are provided, validate end > start
+    if (data.startDate && data.endDate) {
+        return new Date(data.endDate) > new Date(data.startDate);
+    }
+    return true;
+}, {
+    message: 'تاریخ پایان باید بعد از تاریخ شروع باشد',
+    path: ['endDate'],
+}).refine(data => {
+    // If discountType is percentage, validate value <= 100
+    if (data.discountType === 'PERCENTAGE' && data.discountValue !== undefined) {
+        return data.discountValue <= 100;
     }
     return true;
 }, {
     message: 'درصد تخفیف نمی‌تواند بیشتر از ۱۰۰ باشد',
     path: ['discountValue'],
-}).refine(data => {
-    if (data.discountType === 'PERCENTAGE' && data.products) {
-        return data.products.every(p => p.customDiscountValue === null || p.customDiscountValue === undefined || p.customDiscountValue <= 100);
-    }
-    return true;
-}, {
-    message: 'درصد تخفیف سفارشی برای هر محصول نمی‌تواند بیشتر از ۱۰۰ باشد',
-    path: ['products'],
 });
 
 interface RouteParams {
@@ -64,10 +66,13 @@ interface RouteParams {
 
 /**
  * GET /api/offers/[id]
- * Fetch single offer details
+ * Fetch single offer details (requires OFFERS role)
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
     try {
+        const auth = await requireRole(request, 'OFFERS');
+        if (!auth.ok) return auth.response;
+
         const { id } = await params;
         const offerId = parseInt(id);
 
@@ -121,7 +126,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 /**
  * PUT /api/offers/[id]
- * Update an offer
+ * Update an offer atomically inside a transaction
  */
 export async function PUT(request: NextRequest, { params }: RouteParams) {
     try {
@@ -167,21 +172,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             );
         }
 
-        // Enforce percentage bounds against the EFFECTIVE discount type.
-        // The schema-level refines only run when `discountType` is present in the payload;
-        // a partial update that omits it (e.g. { discountValue: 5000 }) on a PERCENTAGE
-        // offer would otherwise bypass validation and drive the price to zero.
         const effectiveDiscountType = data.discountType ?? currentOffer.discountType;
         if (effectiveDiscountType === 'PERCENTAGE') {
             if (data.discountValue !== undefined && data.discountValue > 100) {
                 return NextResponse.json(
                     { success: false, error: 'درصد تخفیف نمی‌تواند بیشتر از ۱۰۰ باشد' },
-                    { status: 400 }
-                );
-            }
-            if (data.products?.some(p => p.customDiscountValue != null && p.customDiscountValue > 100)) {
-                return NextResponse.json(
-                    { success: false, error: 'درصد تخفیف سفارشی برای هر محصول نمی‌تواند بیشتر از ۱۰۰ باشد' },
                     { status: 400 }
                 );
             }
@@ -204,51 +199,57 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         if (data.badgeColor !== undefined) updateData.badgeColor = data.badgeColor;
         if (data.campaignId !== undefined) updateData.campaignId = data.campaignId;
 
-        // Handle product changes if provided (supports both new and legacy format)
         const productEntries = data.products
             ? data.products
             : (data.productIds ? data.productIds.map(id => ({ productId: id, customDiscountValue: null })) : null);
 
-        if (productEntries) {
-            // Delete existing and create new
-            await prisma.offerProduct.deleteMany({
-                where: { offerId },
-            });
-
-            updateData.products = {
-                create: productEntries.map(p => ({
-                    productId: p.productId,
-                    customDiscountValue: p.customDiscountValue || null,
-                })),
-            };
-        }
-
-        // Update offer
-        const offer = await prisma.offer.update({
-            where: { id: offerId },
-            data: updateData,
-            include: {
-                products: {
-                    include: { product: { select: { id: true, name: true } } }
-                },
-            },
-        });
-
-        // Update hasActiveOffer flags for affected products
         const newProductIds = data.products
             ? data.products.map(p => p.productId)
             : (data.productIds || []);
 
-        const allAffectedProductIds = new Set([
+        const allAffectedProductIds = Array.from(new Set([
             ...currentOffer.products.map(p => p.productId),
             ...newProductIds,
-        ]);
+        ]));
 
-        for (const productId of allAffectedProductIds) {
-            await updateProductOfferFlag(productId);
-        }
+        // Atomic update inside transaction (#15)
+        const offer = await prisma.$transaction(async (tx) => {
+            if (productEntries) {
+                await tx.offerProduct.deleteMany({
+                    where: { offerId },
+                });
 
-        revalidateHomepageTag('offers');
+                updateData.products = {
+                    create: productEntries.map(p => ({
+                        productId: p.productId,
+                        customDiscountValue: p.customDiscountValue || null,
+                    })),
+                };
+            }
+
+            const updatedOffer = await tx.offer.update({
+                where: { id: offerId },
+                data: updateData,
+                include: {
+                    products: {
+                        include: { product: { select: { id: true, name: true } } }
+                    },
+                },
+            });
+
+            // Batch sync flags inside transaction (#15)
+            await syncOfferFlagsForProductIds(allAffectedProductIds, tx);
+
+            return updatedOffer;
+        });
+
+        // Centralized cache invalidation (#5, #6, B2)
+        await invalidateOfferCache({
+            id: offerId,
+            productIds: allAffectedProductIds,
+        });
+
+        recordAudit(auth.payload.adminId, 'OFFER_UPDATE', 'Offer', offerId, `ویرایش پیشنهاد #${offerId}`);
 
         return NextResponse.json({ success: true, offer });
 
@@ -263,7 +264,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
 /**
  * DELETE /api/offers/[id]
- * Delete an offer
+ * Delete an offer atomically inside a transaction
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
     try {
@@ -295,17 +296,22 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
         const affectedProductIds = offer.products.map(p => p.productId);
 
-        // Delete offer (cascade will delete OfferProducts)
-        await prisma.offer.delete({
-            where: { id: offerId },
+        // Atomic delete and flag sync in transaction (#15)
+        await prisma.$transaction(async (tx) => {
+            await tx.offer.delete({
+                where: { id: offerId },
+            });
+
+            await syncOfferFlagsForProductIds(affectedProductIds, tx);
         });
 
-        // Update hasActiveOffer flags for affected products
-        for (const productId of affectedProductIds) {
-            await updateProductOfferFlag(productId);
-        }
+        // Centralized cache invalidation (#5, #6, B2)
+        await invalidateOfferCache({
+            id: offerId,
+            productIds: affectedProductIds,
+        });
 
-        revalidateHomepageTag('offers');
+        recordAudit(auth.payload.adminId, 'OFFER_DELETE', 'Offer', offerId, `حذف پیشنهاد #${offerId}`);
 
         return NextResponse.json({
             success: true,

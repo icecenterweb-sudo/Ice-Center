@@ -8,9 +8,12 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCarouselOffers } from '@/lib/offers';
+import { syncOfferFlagsForProductIds } from '@/lib/offers/queries';
 import { z } from 'zod';
 import { requireRole } from '@/lib/admin-auth';
-import { revalidateHomepageTag } from '@/lib/cache/homepage';
+import { recordAudit } from '@/lib/audit';
+import { invalidateOfferCache } from '@/lib/cache/invalidation';
+import { slugify, generateUniqueSlug } from '@/lib/slugify';
 
 // Product with optional custom discount
 const productEntrySchema = z.object({
@@ -144,11 +147,10 @@ export async function POST(request: NextRequest) {
 
         const data = validation.data;
 
-        // Generate slug if not provided
-        const slug = data.slug || data.name
-            .toLowerCase()
-            .replace(/[^a-z0-9\u0600-\u06FF]+/g, '-')
-            .replace(/(^-|-$)/g, '');
+        // Generate canonical unique slug if not provided or ensure uniqueness
+        const slug = data.slug
+            ? slugify(data.slug)
+            : await generateUniqueSlug(data.name, 'offer');
 
         // Determine products - support both new and legacy format
         const productEntries = data.products
@@ -189,15 +191,15 @@ export async function POST(request: NextRequest) {
         });
 
         // Update hasActiveOffer flag for affected products
-        const now = new Date();
-        if (offer.isActive && offer.startDate <= now && offer.endDate > now) {
-            await prisma.product.updateMany({
-                where: { id: { in: productIds } },
-                data: { hasActiveOffer: true },
-            });
-        }
+        await syncOfferFlagsForProductIds(productIds);
 
-        revalidateHomepageTag('offers');
+        // Centralized cache invalidation (#5, #6, B2)
+        await invalidateOfferCache({
+            id: offer.id,
+            productIds,
+        });
+
+        recordAudit(auth.payload.adminId, 'OFFER_CREATE', 'Offer', offer.id, `ایجاد پیشنهاد "${offer.name}" (${productIds.length} محصول)`);
 
         return NextResponse.json({
             success: true,

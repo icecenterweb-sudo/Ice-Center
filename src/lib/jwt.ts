@@ -140,6 +140,10 @@ export const ADMIN_TOKEN_COOKIE = 'admin_token'
 export const USER_TOKEN_COOKIE = 'user_token'
 
 export function isSecureRequest(request: Request): boolean {
+    // In production always mark auth cookies Secure — x-forwarded-proto is
+    // client-spooferable and must never be able to downgrade cookie security (#34)
+    if (process.env.NODE_ENV === 'production') return true;
+
     const forwardedProto = request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim()
     if (forwardedProto) {
         return forwardedProto === 'https'

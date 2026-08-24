@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
 import { readdir, stat } from 'fs/promises';
 import path from 'path';
-import { requireAdmin } from '@/lib/admin-auth';
+import { requireRole } from '@/lib/admin-auth';
 
 interface MediaItem {
     url: string;
@@ -45,7 +45,7 @@ async function scanDirectory(dirPath: string, relativeFolder: string): Promise<M
 export async function GET(request: NextRequest) {
     await connection(); // Required for request.headers with cacheComponents
     try {
-        const auth = await requireAdmin(request);
+        const auth = await requireRole(request, 'APPEARANCE');
         if (!auth.ok) return auth.response;
 
         const uploadsRoot = path.join(process.cwd(), 'public', 'uploads');

@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { readFileSync } from "fs";
 import { Pool, PoolConfig } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 
@@ -13,6 +14,25 @@ const globalForPrisma = globalThis as unknown as {
 
 const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
 
+/**
+ * TLS handling for managed Postgres (#34).
+ * Default preserves historical behavior (sslmode=require → no cert validation).
+ * To enforce server certificate validation, provide the provider CA bundle:
+ *   PGSSL_ROOT_CERT=/path/to/ca.pem
+ */
+function resolvePgSsl(connStr: string | undefined) {
+  if (!connStr?.includes('sslmode=require')) return undefined;
+  const rootCert = process.env.PGSSL_ROOT_CERT;
+  if (rootCert) {
+    try {
+      return { rejectUnauthorized: true, ca: readFileSync(rootCert, 'utf8') };
+    } catch (err) {
+      console.error('PGSSL_ROOT_CERT could not be read — falling back to unverified TLS:', err);
+    }
+  }
+  return { rejectUnauthorized: false };
+}
+
 // Pool configuration tuned for Cloud Postgres / Prisma Accelerate proxies
 const poolConfig: PoolConfig = {
   connectionString,
@@ -22,7 +42,7 @@ const poolConfig: PoolConfig = {
   connectionTimeoutMillis: 10000,   // Connection timeout
   keepAlive: true,                  // Enable TCP keepalive
   keepAliveInitialDelayMillis: 10000,
-  ssl: connectionString?.includes('sslmode=require') ? { rejectUnauthorized: false } : undefined,
+  ssl: resolvePgSsl(connectionString),
 };
 
 // Reuse pool in development to prevent connection exhaustion

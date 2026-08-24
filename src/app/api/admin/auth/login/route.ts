@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // Verify OTP against database (proper OTP validation)
+        // Verify OTP against database (proper OTP validation with attempt cap #31)
         const validOtp = await prisma.otpRequest.findFirst({
             where: {
                 phone,
@@ -61,19 +61,34 @@ export async function POST(request: NextRequest) {
             orderBy: { createdAt: 'desc' },
         });
 
-        if (!validOtp || validOtp.code !== hashOtp(otp)) {
-            // Increment OTP attempts if exists
-            if (validOtp) {
-                await prisma.otpRequest.update({
-                    where: { id: validOtp.id },
-                    data: { attempts: validOtp.attempts + 1 }
-                });
-            }
-
+        if (!validOtp) {
             return NextResponse.json(
                 { error: 'کد تأیید نامعتبر یا منقضی شده است' },
                 { status: 401 }
-            )
+            );
+        }
+
+        // Enforce attempt cap (#31)
+        const MAX_ADMIN_ATTEMPTS = 3;
+        if (validOtp.attempts >= MAX_ADMIN_ATTEMPTS) {
+            return NextResponse.json(
+                { error: 'تعداد تلاش‌های مجاز تمام شده است. لطفاً کد جدید دریافت کنید.' },
+                { status: 401 }
+            );
+        }
+
+        if (validOtp.code !== hashOtp(otp)) {
+            // Increment OTP attempts
+            await prisma.otpRequest.update({
+                where: { id: validOtp.id },
+                data: { attempts: validOtp.attempts + 1 }
+            });
+
+            const remaining = MAX_ADMIN_ATTEMPTS - validOtp.attempts - 1;
+            return NextResponse.json(
+                { error: remaining > 0 ? `کد تأیید اشتباه است (${remaining} تلاش باقی‌مانده)` : 'تعداد تلاش‌های مجاز تمام شده است' },
+                { status: 401 }
+            );
         }
 
         // Mark OTP as verified

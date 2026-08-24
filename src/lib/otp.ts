@@ -104,8 +104,8 @@ export async function verifyOtp(phone: string, code: string): Promise<VerifyOtpR
             return { valid: false, error: 'تعداد تلاش‌های مجاز تمام شده است' }
         }
 
-        // Check if code matches (hashed or raw for backward compatibility)
-        if (otpRequest.code !== hashedInput && otpRequest.code !== code) {
+        // Check if code matches hashed code (#31)
+        if (otpRequest.code !== hashedInput) {
             // Increment attempts within transaction
             await tx.otpRequest.update({
                 where: { id: otpRequest.id },
@@ -115,7 +115,9 @@ export async function verifyOtp(phone: string, code: string): Promise<VerifyOtpR
             const remainingAttempts = MAX_ATTEMPTS - otpRequest.attempts - 1
             return {
                 valid: false,
-                error: `کد تأیید اشتباه است. ${remainingAttempts} تلاش باقی‌مانده`
+                error: remainingAttempts > 0
+                    ? `کد تأیید اشتباه است. ${remainingAttempts} تلاش باقی‌مانده`
+                    : 'تعداد تلاش‌های مجاز تمام شده است'
             }
         }
 
@@ -125,7 +127,13 @@ export async function verifyOtp(phone: string, code: string): Promise<VerifyOtpR
             data: { verified: true },
         })
 
-        // Use upsert to prevent race condition on user creation
+        // Deterministically check if this is a new user before upsert (#31)
+        const existingUser = await tx.user.findUnique({
+            where: { phone },
+            select: { id: true },
+        })
+        const isNewUser = !existingUser
+
         const user = await tx.user.upsert({
             where: { phone },
             update: { isVerified: true },
@@ -134,10 +142,6 @@ export async function verifyOtp(phone: string, code: string): Promise<VerifyOtpR
                 isVerified: true
             },
         })
-
-        // Check if this was a new user by comparing createdAt with updatedAt
-        // If they're very close (within 1 second), it's a new user
-        const isNewUser = Math.abs(user.createdAt.getTime() - user.updatedAt.getTime()) < 1000
 
         return {
             valid: true,
