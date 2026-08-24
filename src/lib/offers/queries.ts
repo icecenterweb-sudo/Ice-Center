@@ -337,6 +337,52 @@ export async function updateProductOfferFlag(productId: number) {
 }
 
 /**
+ * Synchronize hasActiveOffer flags for a specific set of product IDs in batch
+ */
+export async function syncOfferFlagsForProductIds(
+    productIds: number[],
+    txClient?: {
+        offerProduct: { findMany: typeof prisma.offerProduct.findMany };
+        product: { updateMany: typeof prisma.product.updateMany };
+    }
+): Promise<void> {
+    if (productIds.length === 0) return;
+    const client = txClient || prisma;
+    const now = new Date();
+
+    const productsWithActiveOffers = await client.offerProduct.findMany({
+        where: {
+            productId: { in: productIds },
+            offer: {
+                isActive: true,
+                startDate: { lte: now },
+                endDate: { gt: now },
+            }
+        },
+        select: { productId: true },
+        distinct: ['productId'],
+    });
+
+    const activeProductIds = new Set(productsWithActiveOffers.map(p => p.productId));
+    const toTrue = productIds.filter(id => activeProductIds.has(id));
+    const toFalse = productIds.filter(id => !activeProductIds.has(id));
+
+    if (toTrue.length > 0) {
+        await client.product.updateMany({
+            where: { id: { in: toTrue } },
+            data: { hasActiveOffer: true }
+        });
+    }
+
+    if (toFalse.length > 0) {
+        await client.product.updateMany({
+            where: { id: { in: toFalse } },
+            data: { hasActiveOffer: false }
+        });
+    }
+}
+
+/**
  * Sync all offer flags (for cron job)
  * Uses batch updates instead of N+1 queries
  */

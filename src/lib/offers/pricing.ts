@@ -5,17 +5,19 @@
  * This is the single source of truth for all price calculations.
  */
 
-import { DiscountType } from '@prisma/client';
+import { DiscountType, Prisma } from '@prisma/client';
+
+export type DecimalLike = number | Prisma.Decimal | string;
 
 // Types for offer pricing
 export interface OfferDiscount {
     discountType: DiscountType;
-    discountValue: number;
-    maxDiscountCap?: number | null;
+    discountValue: DecimalLike;
+    maxDiscountCap?: DecimalLike | null;
 }
 
 export interface ProductPricing {
-    basePrice: number;       // Original price (Product.price or Product.listPrice)
+    basePrice: DecimalLike;       // Original selling price (Product.price)
     activeOffer?: OfferDiscount | null;
 }
 
@@ -34,7 +36,7 @@ export interface EffectivePricing {
  * Use it everywhere: carousel, product page, cart, checkout.
  */
 export function calculateEffectivePrice(product: ProductPricing): EffectivePricing {
-    const originalPrice = product.basePrice;
+    const originalPrice = Number(product.basePrice);
 
     // No active offer? Return base price
     if (!product.activeOffer) {
@@ -54,16 +56,20 @@ export function calculateEffectivePrice(product: ProductPricing): EffectivePrici
         // Clamp the percentage to [0, 100] defensively. Write-path validation should
         // already guarantee this, but clamping here keeps effectivePrice >= 0 for any
         // bad/legacy data reaching the price engine from any source.
-        const percent = Math.min(Math.max(offer.discountValue, 0), 100);
+        const discountVal = Number(offer.discountValue);
+        const percent = Math.min(Math.max(discountVal, 0), 100);
         discountAmount = originalPrice * (percent / 100);
 
-        // Apply cap if exists
-        if (offer.maxDiscountCap && discountAmount > offer.maxDiscountCap) {
-            discountAmount = offer.maxDiscountCap;
+        // Apply cap if exists (nullish check: a cap of 0 is legitimate and must clamp)
+        if (offer.maxDiscountCap != null) {
+            const cap = Number(offer.maxDiscountCap);
+            if (discountAmount > cap) {
+                discountAmount = cap;
+            }
         }
     } else {
         // Fixed amount discount
-        discountAmount = offer.discountValue;
+        discountAmount = Number(offer.discountValue);
     }
 
     // Ensure we don't go below zero
@@ -141,17 +147,19 @@ export function getEarliestEndDate(offers: Array<{ endDate: Date | string }>): D
 }
 
 export interface DbProductForPricing {
-    price: number;
-    listPrice: number | null;
+    price: DecimalLike;
+    listPrice?: DecimalLike | null;
     offerProducts?: Array<{
-        customDiscountValue?: number | null;
+        customDiscountValue?: DecimalLike | null;
         offer: {
             id?: number;
             name?: string;
             discountType: DiscountType;
-            discountValue: number;
-            maxDiscountCap?: number | null;
-            endDate?: Date;
+            discountValue: DecimalLike;
+            maxDiscountCap?: DecimalLike | null;
+            startDate?: Date | string;
+            endDate?: Date | string;
+            isActive?: boolean;
             badgeText?: string | null;
         };
     }>;
@@ -170,16 +178,28 @@ export interface CalculatedPricing {
     } | null;
 }
 
-export function getProductPricing(product: DbProductForPricing): CalculatedPricing {
-    const basePrice = product.listPrice || product.price;
+export function getProductPricing(product: DbProductForPricing, now: Date = new Date()): CalculatedPricing {
+    // Offers always discount the actual selling price (`price`).
+    // `listPrice` is display-only (strikethrough MSRP) and must never be
+    // used as the discount base — doing so can RAISE the effective price
+    // above the normal selling price when listPrice > price.
+    const basePrice = Number(product.price);
+    const listPrice = product.listPrice != null ? Number(product.listPrice) : null;
     const activeOfferProduct = product.offerProducts?.[0];
     const activeOffer = activeOfferProduct?.offer;
 
-    if (activeOffer) {
+    // Validate offer freshness at query/eval time (#23)
+    const isCurrentlyActive = activeOffer && (
+        (activeOffer.isActive === undefined || activeOffer.isActive) &&
+        (!activeOffer.startDate || now >= new Date(activeOffer.startDate)) &&
+        (!activeOffer.endDate || now < new Date(activeOffer.endDate))
+    );
+
+    if (isCurrentlyActive && activeOffer) {
         const offerDiscount: OfferDiscount = {
             discountType: activeOffer.discountType,
-            discountValue: Number(activeOfferProduct.customDiscountValue ?? activeOffer.discountValue),
-            maxDiscountCap: activeOffer.maxDiscountCap ? Number(activeOffer.maxDiscountCap) : null,
+            discountValue: activeOfferProduct.customDiscountValue ?? activeOffer.discountValue,
+            maxDiscountCap: activeOffer.maxDiscountCap != null ? activeOffer.maxDiscountCap : null,
         };
         const pricing = calculateEffectivePrice({ basePrice, activeOffer: offerDiscount });
         return {
@@ -190,27 +210,40 @@ export function getProductPricing(product: DbProductForPricing): CalculatedPrici
             activeOffer: {
                 id: activeOffer.id || null,
                 name: activeOffer.name || null,
-                endDate: activeOffer.endDate || null,
+                endDate: activeOffer.endDate ? new Date(activeOffer.endDate) : null,
                 badgeText: activeOffer.badgeText || null,
             }
         };
     }
 
-    if (product.listPrice && product.listPrice > product.price) {
+    if (listPrice !== null && listPrice > basePrice) {
         return {
-            effectivePrice: product.price,
-            originalPrice: product.listPrice,
-            discountPercent: Math.round(((product.listPrice - product.price) / product.listPrice) * 100),
+            effectivePrice: basePrice,
+            originalPrice: listPrice,
+            discountPercent: Math.round(((listPrice - basePrice) / listPrice) * 100),
             hasOffer: true,
             activeOffer: null
         };
     }
 
     return {
-        effectivePrice: product.price,
-        originalPrice: product.price,
+        effectivePrice: basePrice,
+        originalPrice: basePrice,
         discountPercent: 0,
         hasOffer: false,
         activeOffer: null
     };
+}
+
+/**
+ * Resolve the unit price for an order line from a fetched price-info row.
+ *
+ * Nullish-safe on purpose: a legitimate `effectivePrice === 0` (100% discount)
+ * must stay 0 — only a MISSING priceInfo row falls back to the product price.
+ */
+export function resolveUnitPrice(
+    priceInfo: { effectivePrice: number } | null | undefined,
+    fallbackPrice: DecimalLike
+): number {
+    return priceInfo?.effectivePrice ?? Number(fallbackPrice);
 }
