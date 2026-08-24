@@ -21,7 +21,7 @@ interface HeroCarouselProps {
   banners: BannerItem[];
 }
 
-function CategoryBannerCard({ banner }: { banner: BannerItem }) {
+function CategoryBannerCard({ banner, priority = false }: { banner: BannerItem; priority?: boolean }) {
   // Determine grid span based on whether it is a double-width card
   const cardClasses = banner.isDouble
     ? 'lg:col-span-2 md:col-span-2'
@@ -41,33 +41,33 @@ function CategoryBannerCard({ banner }: { banner: BannerItem }) {
           <div className="md:hidden relative w-full h-full">
             <Image
               src={mobileSrc}
-              alt={banner.alt || banner.title || 'بنر تبلیغاتی'}
+              alt={banner.alt || banner.title || 'بنر دسته‌بندی'}
               fill
               sizes="100vw"
               className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
-              priority
+              priority={priority}
             />
           </div>
           {/* Desktop Image */}
           <div className="hidden md:block relative w-full h-full">
             <Image
               src={imageSrc}
-              alt={banner.alt || banner.title || 'بنر تبلیغاتی'}
+              alt={banner.alt || banner.title || 'بنر دسته‌بندی'}
               fill
               sizes="(max-width: 1200px) 50vw, 33vw"
               className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
-              priority
+              priority={priority}
             />
           </div>
         </>
       ) : (
         <Image
           src={imageSrc}
-          alt={banner.alt || banner.title || 'بنر تبلیغاتی'}
+          alt={banner.alt || banner.title || 'بنر دسته‌بندی'}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
-          priority
+          priority={priority}
         />
       )}
     </Link>
@@ -85,7 +85,7 @@ export default function HeroCarousel({ banners }: HeroCarouselProps) {
       {/* ============================================================ */}
       <div className="hidden lg:grid grid-cols-4 gap-6">
         {banners.map((banner, index) => (
-          <CategoryBannerCard key={index} banner={banner} />
+          <CategoryBannerCard key={index} banner={banner} priority={index === 0} />
         ))}
       </div>
 
@@ -94,7 +94,7 @@ export default function HeroCarousel({ banners }: HeroCarouselProps) {
       {/* ============================================================ */}
       <div className="hidden md:grid lg:hidden grid-cols-2 gap-4">
         {banners.map((banner, index) => (
-          <CategoryBannerCard key={index} banner={banner} />
+          <CategoryBannerCard key={index} banner={banner} priority={index === 0} />
         ))}
       </div>
 

@@ -105,7 +105,11 @@ export default function SupportChatWidget() {
     useEffect(() => {
         if (chatState === 'chat' && room) {
             fetchMessages(room);
-            pollIntervalRef.current = setInterval(() => fetchMessages(room), 12000);
+            pollIntervalRef.current = setInterval(() => {
+                // Skip polling while the tab is hidden (#33)
+                if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+                fetchMessages(room);
+            }, 12000);
         } else {
             if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
         }

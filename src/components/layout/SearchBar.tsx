@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useClickOutside } from '@/hooks/useClickOutside';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -49,20 +50,40 @@ export default function SearchBar({
 
     const inputRef = useRef<HTMLInputElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const debounceRef = useRef<NodeJS.Timeout | null>(null);
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const abortControllerRef = useRef<AbortController | null>(null);
+    const searchSeqRef = useRef<number>(0);
 
-    // Debounced search
+    // Debounced search with AbortController and sequence protection (#20)
     const search = useCallback(async (searchQuery: string) => {
-        if (searchQuery.length < 2) {
+        // Abort previous in-flight request
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+
+        const trimmed = searchQuery.trim();
+        if (trimmed.length < 2) {
             setResults({ products: [], categories: [] });
             setIsOpen(false);
+            setIsLoading(false);
             return;
         }
 
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+        const currentSeq = ++searchSeqRef.current;
+
         setIsLoading(true);
         try {
-            const response = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}&limit=5`);
+            const response = await fetch(`/api/search?q=${encodeURIComponent(trimmed)}&limit=5`, {
+                signal: controller.signal,
+            });
             const data = await response.json();
+
+            // Guard against stale response if another search was triggered
+            if (currentSeq !== searchSeqRef.current) {
+                return;
+            }
 
             if (data.success) {
                 setResults({
@@ -72,10 +93,23 @@ export default function SearchBar({
                 setIsOpen(true);
             }
         } catch (error) {
+            if (error instanceof Error && error.name === 'AbortError') {
+                return;
+            }
             console.error('Search failed:', error);
         } finally {
-            setIsLoading(false);
+            if (currentSeq === searchSeqRef.current) {
+                setIsLoading(false);
+            }
         }
+    }, []);
+
+    // Clean up timeout and active fetch on unmount
+    useEffect(() => {
+        return () => {
+            if (debounceRef.current) clearTimeout(debounceRef.current);
+            if (abortControllerRef.current) abortControllerRef.current.abort();
+        };
     }, []);
 
     // Handle input change with debounce
@@ -135,20 +169,8 @@ export default function SearchBar({
     };
 
     // Click outside to close
-    useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            if (
-                dropdownRef.current &&
-                !dropdownRef.current.contains(e.target as Node) &&
-                !inputRef.current?.contains(e.target as Node)
-            ) {
-                setIsOpen(false);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+    // Close on outside click / Escape via shared hook (#33)
+    useClickOutside(dropdownRef, () => setIsOpen(false));
 
     // Cleanup debounce on unmount
     useEffect(() => {
@@ -162,7 +184,7 @@ export default function SearchBar({
     const hasResults = results.products.length > 0 || results.categories.length > 0;
 
     return (
-        <div className={`relative ${className}`}>
+        <div ref={dropdownRef} className={`relative ${className}`}>
             {/* Search Input */}
             <div className="relative rounded-full">
                 <input

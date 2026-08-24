@@ -11,7 +11,6 @@ import {
   Phone,
   User,
   ChevronDown,
-  ChevronLeft,
   ShieldCheck,
   Sparkles
 } from 'lucide-react';

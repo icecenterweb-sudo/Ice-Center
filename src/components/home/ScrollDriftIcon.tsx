@@ -28,7 +28,12 @@ export default function ScrollDriftIcon({
 }: ScrollDriftIconProps) {
   const ref = useRef<HTMLDivElement>(null);
   const frame = useRef<number | null>(null);
-  const [offset, setOffset] = useState(-distance);
+  const [offset, setOffset] = useState(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return 0;
+    }
+    return -distance;
+  });
 
   useEffect(() => {
     const el = ref.current;
@@ -36,7 +41,6 @@ export default function ScrollDriftIcon({
 
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduceMotion) {
-      setOffset(0);
       return;
     }
 

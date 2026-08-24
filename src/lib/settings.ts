@@ -4,6 +4,8 @@ import { connection } from 'next/server';
 
 export { type SiteSettings, DEFAULT_SITE_SETTINGS };
 
+// NOTE: per-instance cache. With a single server instance this is exact;
+// with multiple instances each holds its own copy for up to TTL (#34 note).
 let inMemoryCache: { data: SiteSettings; timestamp: number } | null = null;
 const CACHE_TTL_MS = 60 * 1000; // 1 minute in-memory cache
 

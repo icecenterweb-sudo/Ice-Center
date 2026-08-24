@@ -1,3 +1,6 @@
+import { tomanToIrr } from './currency';
+import { getAvailabilitySchema } from './availability';
+
 // ============================================
 // PRODUCT JSON-LD GENERATORS
 // ============================================
@@ -22,22 +25,6 @@ interface ProductJsonLdParams {
 interface BreadcrumbItem {
     name: string;
     url: string;
-}
-
-/**
- * Get Schema.org availability URL from inventory status
- */
-function getAvailabilitySchema(status: string): string {
-    switch (status) {
-        case 'IN_STOCK':
-            return 'https://schema.org/InStock';
-        case 'LOW_STOCK':
-            return 'https://schema.org/LimitedAvailability';
-        case 'OUT_OF_STOCK':
-            return 'https://schema.org/OutOfStock';
-        default:
-            return 'https://schema.org/InStock';
-    }
 }
 
 /**
@@ -74,7 +61,7 @@ export function generateProductSchemaJsonLd(product: ProductJsonLdParams) {
         },
         'offers': {
             '@type': 'Offer',
-            'price': product.price,
+            'price': tomanToIrr(product.price),
             'priceCurrency': 'IRR',
             'availability': getAvailabilitySchema(product.inventoryStatus),
             'seller': {

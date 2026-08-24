@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { toPersianDigits } from '@/lib/persian'
 import Link from 'next/link'
 import { User, LogOut, Package, MapPin, ChevronDown, ShieldCheck } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/hooks/useAuth'
+import { useClickOutside } from '@/hooks/useClickOutside'
 import toast from 'react-hot-toast'
 
 interface UserButtonProps {
@@ -18,16 +19,8 @@ export default function UserButton({ variant = 'dark', className = '' }: UserBut
     const [isOpen, setIsOpen] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
 
-    // Close dropdown when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setIsOpen(false)
-            }
-        }
-        document.addEventListener('mousedown', handleClickOutside)
-        return () => document.removeEventListener('mousedown', handleClickOutside)
-    }, [])
+    // Close dropdown when clicking outside / Escape (#33)
+    useClickOutside(dropdownRef, () => setIsOpen(false), isOpen)
 
     const handleLogout = async () => {
         setIsOpen(false)

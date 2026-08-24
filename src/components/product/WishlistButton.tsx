@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Heart, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useWishlist } from '@/context/WishlistContext';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -12,22 +13,24 @@ interface WishlistButtonProps {
 }
 
 export default function WishlistButton({ productId, className = '', size = 'md' }: WishlistButtonProps) {
-    const { isInWishlist, toggleWishlist, isLoading: contextLoading } = useWishlist();
-    const { isAuthenticated } = useAuth();
+    const { isInWishlist, toggleWishlist, isLoading: contextLoading, isHydrated } = useWishlist();
+    const { isAuthenticated, openAuthModal } = useAuth();
     const [toggling, setToggling] = useState(false);
-    const [hydrated, setHydrated] = useState(false);
 
-    useEffect(() => {
-        setHydrated(true);
-    }, []);
-
-    const isFav = hydrated && isInWishlist(productId);
+    const isFav = isHydrated && isInWishlist(productId);
 
     async function handleToggle(e: React.MouseEvent) {
         e.preventDefault();
         e.stopPropagation();
 
-        if (toggling || !isAuthenticated) return;
+        if (toggling || contextLoading) return;
+
+        // Guests get an actionable login prompt instead of a dead end (#10)
+        if (!isAuthenticated) {
+            toast('برای افزودن به علاقه‌مندی‌ها ابتدا وارد شوید', { icon: '❤️' });
+            openAuthModal();
+            return;
+        }
 
         setToggling(true);
         try {
@@ -52,7 +55,7 @@ export default function WishlistButton({ productId, className = '', size = 'md' 
     };
 
     // Don't render anything different during SSR to avoid hydration mismatch
-    if (!hydrated) {
+    if (!isHydrated) {
         return (
             <button
                 className={`${sizeClasses[size]} flex items-center justify-center rounded-full bg-white/90 backdrop-blur border border-gray-200 text-gray-400 ${className}`}
@@ -63,7 +66,7 @@ export default function WishlistButton({ productId, className = '', size = 'md' 
         );
     }
 
-    const isDisabled = !isAuthenticated || contextLoading || toggling;
+    const isDisabled = contextLoading || toggling;
 
     return (
         <button

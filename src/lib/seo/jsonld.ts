@@ -1,3 +1,6 @@
+import { tomanToIrr } from './currency';
+import { getAvailabilitySchema } from './availability';
+
 // ============================================
 // JSON-LD STRUCTURED DATA GENERATORS
 // ============================================
@@ -78,27 +81,11 @@ export function generateProductJsonLd(product: Product) {
         'image': product.thumbnail || undefined,
         'offers': {
             '@type': 'Offer',
-            'price': product.price,
+            'price': tomanToIrr(product.price),
             'priceCurrency': 'IRR',
             'availability': getAvailabilitySchema(product.inventoryStatus)
         }
     };
-}
-
-/**
- * Get Schema.org availability URL
- */
-function getAvailabilitySchema(status: string): string {
-    switch (status) {
-        case 'IN_STOCK':
-            return 'https://schema.org/InStock';
-        case 'LOW_STOCK':
-            return 'https://schema.org/LimitedAvailability';
-        case 'OUT_OF_STOCK':
-            return 'https://schema.org/OutOfStock';
-        default:
-            return 'https://schema.org/InStock';
-    }
 }
 
 /**

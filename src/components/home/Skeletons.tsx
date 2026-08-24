@@ -52,28 +52,6 @@ export function OfferSkeleton() {
     );
 }
 
-export function ProductCarouselSkeleton() {
-    return (
-        <div className="w-full max-w-[1600px] mx-auto my-8 px-4 lg:px-8">
-            <div className="border border-gray-200 rounded-2xl p-6">
-                <div className="flex justify-between items-center mb-6">
-                    <div className="w-40 h-5 skeleton-shimmer rounded" />
-                    <div className="w-20 h-4 skeleton-shimmer rounded" />
-                </div>
-                <div className="flex gap-4 overflow-hidden">
-                    {[...Array(5)].map((_, i) => (
-                        <div key={i} className="flex-shrink-0 w-48 animate-pulse">
-                            <div className="w-full h-36 skeleton-shimmer rounded-lg mb-3" />
-                            <div className="w-full h-3 skeleton-shimmer rounded mb-2" />
-                            <div className="w-2/3 h-4 skeleton-shimmer rounded" />
-                        </div>
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-}
-
 export function BannerSkeleton() {
     return (
         <div className="w-full max-w-[1600px] mx-auto my-6 px-4 lg:px-8">

@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 interface WishlistContextType {
     wishlistProductIds: Set<number>;
     isLoading: boolean;
+    isHydrated: boolean;
     toggleWishlist: (productId: number) => Promise<void>;
     isInWishlist: (productId: number) => boolean;
 }
@@ -16,6 +17,12 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     const { isAuthenticated, isLoading: authLoading } = useAuth();
     const [ids, setIds] = useState<Set<number>>(new Set());
     const [isLoading, setIsLoading] = useState(true);
+    // Single shared hydration flag instead of one effect per button (#33)
+    const [isHydrated, setIsHydrated] = useState(false);
+
+    useEffect(() => {
+        setIsHydrated(true);
+    }, []);
 
     const fetchWishlist = useCallback(async () => {
         try {
@@ -67,14 +74,22 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
         });
 
         try {
+            let ok = false;
             if (isCurrentlyIn) {
-                await fetch(`/api/wishlist?productId=${productId}`, { method: 'DELETE' });
+                const res = await fetch(`/api/wishlist?productId=${productId}`, { method: 'DELETE' });
+                ok = res.ok;
             } else {
-                await fetch('/api/wishlist', {
+                const res = await fetch('/api/wishlist', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ productId }),
                 });
+                ok = res.ok;
+            }
+
+            // HTTP-level failures don't throw — revert explicitly (#10)
+            if (!ok) {
+                throw new Error(`wishlist request failed for product ${productId}`);
             }
         } catch (error) {
             console.error('Wishlist toggle failed, reverting:', error);
@@ -92,7 +107,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     }, [ids, isAuthenticated]);
 
     return (
-        <WishlistContext.Provider value={{ wishlistProductIds: ids, isLoading, toggleWishlist, isInWishlist }}>
+        <WishlistContext.Provider value={{ wishlistProductIds: ids, isLoading, isHydrated, toggleWishlist, isInWishlist }}>
             {children}
         </WishlistContext.Provider>
     );
