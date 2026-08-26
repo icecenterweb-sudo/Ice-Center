@@ -27,7 +27,7 @@ export async function PATCH(
     { params }: RouteParams
 ) {
     try {
-        const auth = await requireRole(request, 'PRODUCTS');
+        const auth = await requireRole(request, 'COMMENTS');
         if (!auth.ok) return auth.response;
 
         const { id } = await params;
@@ -57,7 +57,7 @@ export async function PATCH(
 
         // Refresh cached product data (rating/reviewCount changed)
         revalidateTag(`product:${result.productSlug}`, CACHE_PROFILE);
-        revalidatePath('/admin/dashboard/reviews');
+        revalidatePath('/admin/dashboard/comments');
 
         // Non-critical: notify the author about the outcome
         const approved = validation.data.action === 'APPROVED';

@@ -61,7 +61,7 @@ async function BlogContent() {
                 </div>
                 <div className="flex items-center gap-3">
                     <Link
-                        href="/admin/dashboard/blog/comments"
+                        href="/admin/dashboard/comments"
                         className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-xl hover:bg-gray-50 transition-colors relative"
                     >
                         <MessageCircle className="w-5 h-5" />
