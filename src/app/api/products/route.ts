@@ -146,10 +146,17 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
   } catch (error: unknown) {
     console.error('خطا در ساخت محصول:', error);
-    const message = error instanceof Error ? error.message : 'خطا در ساخت محصول';
+    // B3: never leak internal error details; surface actionable Prisma
+    // unique-constraint conflicts as a user-safe message instead.
+    if (typeof error === 'object' && error !== null && 'code' in error && (error as { code?: unknown }).code === 'P2002') {
+      return NextResponse.json({
+        success: false,
+        message: 'اسلاگ یا کد محصول تکراری است'
+      }, { status: 409 });
+    }
     return NextResponse.json({
       success: false,
-      message
-    }, { status: 400 });
+      message: 'خطا در ساخت محصول'
+    }, { status: 500 });
   }
 }

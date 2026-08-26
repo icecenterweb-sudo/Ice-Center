@@ -7,6 +7,7 @@ import { getCartItemPrices } from '@/lib/offers/queries';
 import { resolveUnitPrice } from '@/lib/offers/pricing';
 import { calculateShippingCost } from '@/lib/shipping';
 import { validateCouponRules } from '@/lib/coupons';
+import { logSystemError } from '@/lib/error-logger';
 
 /**
  * Thrown for user-facing order failures (e.g. insufficient stock).
@@ -15,9 +16,9 @@ import { validateCouponRules } from '@/lib/coupons';
 class OrderError extends Error {}
 
 /**
- * GET /api/orders - Get user's order history
+ * GET /api/orders?page=1&limit=20 - Get user's order history (paginated, B4)
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
         const cookieStore = await cookies();
         const token = cookieStore.get('user_token')?.value;
@@ -31,18 +32,41 @@ export async function GET() {
             return NextResponse.json({ error: 'توکن نامعتبر است' }, { status: 401 });
         }
 
-        const orders = await prisma.order.findMany({
-            where: { userId: payload.userId },
-            orderBy: { createdAt: 'desc' },
-            include: {
-                items: true,
-                _count: { select: { items: true } },
+        // B4: bound the query. Defaults keep the existing UI working
+        // (it only reads `data.orders`); clients may pass page/limit.
+        const { searchParams } = new URL(request.url);
+        let page = parseInt(searchParams.get('page') || '1', 10);
+        let limit = parseInt(searchParams.get('limit') || '20', 10);
+        if (isNaN(page) || page < 1) page = 1;
+        if (isNaN(limit) || limit < 1) limit = 20;
+        if (limit > 100) limit = 100;
+
+        const [orders, total] = await Promise.all([
+            prisma.order.findMany({
+                where: { userId: payload.userId },
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    items: true,
+                    _count: { select: { items: true } },
+                },
+                skip: (page - 1) * limit,
+                take: limit,
+            }),
+            prisma.order.count({ where: { userId: payload.userId } }),
+        ]);
+
+        return NextResponse.json({
+            orders,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.max(1, Math.ceil(total / limit)),
             },
         });
-
-        return NextResponse.json({ orders });
     } catch (error) {
         console.error('Error fetching orders:', error);
+        await logSystemError(error, '/api/orders [GET]', 'ERROR');
         return NextResponse.json({ error: 'خطا در دریافت سفارش‌ها' }, { status: 500 });
     }
 }
@@ -320,6 +344,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: error.message }, { status: 409 });
         }
         console.error('Error creating order:', error);
+        await logSystemError(error, '/api/orders [POST]', 'CRITICAL');
         return NextResponse.json({ error: 'خطا در ثبت سفارش' }, { status: 500 });
     }
 }
