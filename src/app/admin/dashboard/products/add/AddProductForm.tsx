@@ -33,9 +33,6 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
     const [selectedCategory, setSelectedCategory] = useState<string>('');
     const [nameLength, setNameLength] = useState(0);
     const [descLength, setDescLength] = useState(0);
-    const [imageUrls, setImageUrls] = useState<string[]>([]);
-    const [features, setFeatures] = useState<string[]>([]);
-    const [specifications, setSpecifications] = useState<Record<string, string>>({});
 
     const clearFieldError = (name: string) => {
         setFieldErrors((prev) => {
@@ -229,7 +226,6 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
                         </div>
 
                         <MultiImageUpload
-                            onImagesChange={setImageUrls}
                             folder="products"
                         />
                     </div>
@@ -239,8 +235,8 @@ export default function AddProductForm({ subcategories }: AddProductFormProps) {
                         <h2 className="text-lg font-bold text-gray-800 border-b border-gray-100 pb-4">ویژگی‌ها و مشخصات فنی</h2>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <FeaturesManager onChange={setFeatures} />
-                            <SpecificationsManager onChange={setSpecifications} />
+                            <FeaturesManager />
+                            <SpecificationsManager />
                         </div>
                     </div>
                 </div>

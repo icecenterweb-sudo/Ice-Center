@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { Plus, X, Check, GripVertical } from 'lucide-react';
 import {
     DndContext,
@@ -24,7 +24,7 @@ import { CSS } from '@dnd-kit/utilities';
 
 interface FeaturesManagerProps {
     initialFeatures?: string[];
-    onChange: (features: string[]) => void;
+    onChange?: (features: string[]) => void;
 }
 
 interface FeatureItem {
@@ -122,13 +122,27 @@ function DragOverlayItem({ item, index }: { item: FeatureItem; index: number }) 
 export default function FeaturesManager({ initialFeatures = [], onChange }: FeaturesManagerProps) {
     const [items, setItems] = useState<FeatureItem[]>(() =>
         initialFeatures.map((text, idx) => ({
-            id: `feat-${idx}-${text.slice(0, 10)}-${Math.random().toString(36).slice(2, 6)}`,
+            id: `feat-${idx}-${text}`,
             text,
         }))
     );
     const [activeId, setActiveId] = useState<string | null>(null);
     const [newFeature, setNewFeature] = useState('');
-    const prevInitialFeaturesRef = useRef<string[]>(initialFeatures);
+    const [prevInitialFeatures, setPrevInitialFeatures] = useState<string[]>(initialFeatures);
+
+    // Keep in sync when initialFeatures changes externally (recommended React pattern)
+    if (
+        prevInitialFeatures.length !== initialFeatures.length ||
+        !prevInitialFeatures.every((val, idx) => val === initialFeatures[idx])
+    ) {
+        setPrevInitialFeatures(initialFeatures);
+        setItems(
+            initialFeatures.map((text, idx) => ({
+                id: `feat-${idx}-${text}`,
+                text,
+            }))
+        );
+    }
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -141,24 +155,6 @@ export default function FeaturesManager({ initialFeatures = [], onChange }: Feat
         })
     );
 
-    // Keep in sync when initialFeatures changes externally (e.g. form reset or product data load)
-    useEffect(() => {
-        const prev = prevInitialFeaturesRef.current;
-        const isSame =
-            prev.length === initialFeatures.length &&
-            prev.every((val, idx) => val === initialFeatures[idx]);
-
-        if (!isSame) {
-            prevInitialFeaturesRef.current = initialFeatures;
-            setItems(
-                initialFeatures.map((text, idx) => ({
-                    id: `feat-${idx}-${text.slice(0, 10)}-${Math.random().toString(36).slice(2, 6)}`,
-                    text,
-                }))
-            );
-        }
-    }, [initialFeatures]);
-
     const addFeature = () => {
         const trimmed = newFeature.trim();
         if (trimmed && !items.some((it) => it.text === trimmed)) {
@@ -168,7 +164,7 @@ export default function FeaturesManager({ initialFeatures = [], onChange }: Feat
             };
             const updated = [...items, newItem];
             setItems(updated);
-            onChange(updated.map((it) => it.text));
+            onChange?.(updated.map((it) => it.text));
             setNewFeature('');
         }
     };
@@ -176,7 +172,7 @@ export default function FeaturesManager({ initialFeatures = [], onChange }: Feat
     const removeFeature = (id: string) => {
         const updated = items.filter((it) => it.id !== id);
         setItems(updated);
-        onChange(updated.map((it) => it.text));
+        onChange?.(updated.map((it) => it.text));
     };
 
     const handleDragStart = (event: DragStartEvent) => {
@@ -193,7 +189,7 @@ export default function FeaturesManager({ initialFeatures = [], onChange }: Feat
                 const newIndex = currentItems.findIndex((it) => it.id === over.id);
                 if (oldIndex !== -1 && newIndex !== -1) {
                     const reordered = arrayMove(currentItems, oldIndex, newIndex);
-                    onChange(reordered.map((it) => it.text));
+                    onChange?.(reordered.map((it) => it.text));
                     return reordered;
                 }
                 return currentItems;

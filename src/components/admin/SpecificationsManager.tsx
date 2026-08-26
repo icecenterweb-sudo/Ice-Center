@@ -5,7 +5,7 @@ import { Plus, X } from 'lucide-react';
 
 interface SpecificationsManagerProps {
     initialSpecs?: Record<string, string>;
-    onChange: (specs: Record<string, string>) => void;
+    onChange?: (specs: Record<string, string>) => void;
 }
 
 export default function SpecificationsManager({ initialSpecs = {}, onChange }: SpecificationsManagerProps) {
@@ -17,7 +17,7 @@ export default function SpecificationsManager({ initialSpecs = {}, onChange }: S
         if (newKey.trim() && newValue.trim()) {
             const updated = { ...specs, [newKey.trim()]: newValue.trim() };
             setSpecs(updated);
-            onChange(updated);
+            onChange?.(updated);
             setNewKey('');
             setNewValue('');
         }
@@ -27,7 +27,7 @@ export default function SpecificationsManager({ initialSpecs = {}, onChange }: S
         const updated = { ...specs };
         delete updated[key];
         setSpecs(updated);
-        onChange(updated);
+        onChange?.(updated);
     };
 
     return (

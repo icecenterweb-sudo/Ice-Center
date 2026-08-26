@@ -224,7 +224,7 @@ const AmazingOfferCarousel = ({ offers }: AmazingOfferCarouselProps) => {
                       {/* Image */}
                       <div className="relative w-full aspect-square mb-2">
                         <Image
-                          src={product.image || '/images/placeholder-product.png'}
+                          src={product.image || '/no-image.svg'}
                           alt={product.title}
                           fill
                           draggable="false"
@@ -337,7 +337,7 @@ const AmazingOfferCarousel = ({ offers }: AmazingOfferCarouselProps) => {
                       {/* Image */}
                       <div className="relative w-full h-[140px] mb-3">
                         <Image
-                          src={product.image || '/images/placeholder-product.png'}
+                          src={product.image || '/no-image.svg'}
                           alt={product.title}
                           fill
                           className="object-contain group-hover:scale-105 transition-transform duration-300"

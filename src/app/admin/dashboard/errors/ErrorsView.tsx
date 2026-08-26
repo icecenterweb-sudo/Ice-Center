@@ -37,10 +37,10 @@ interface ErrorsViewProps {
 }
 
 const severityConfig: Record<string, { label: string; color: string; cardBg: string; text: string; icon: React.ComponentType<{ className?: string }> }> = {
-    CRITICAL: { label: 'بحرانی', color: 'bg-red-50 text-red-700 border-red-150', cardBg: 'bg-red-50/50', text: 'text-red-600', icon: AlertOctagon },
-    ERROR: { label: 'خطا', color: 'bg-orange-50 text-orange-700 border-orange-150', cardBg: 'bg-orange-50/50', text: 'text-orange-600', icon: AlertOctagon },
-    WARNING: { label: 'هشدار', color: 'bg-yellow-50 text-yellow-700 border-yellow-150', cardBg: 'bg-yellow-50/50', text: 'text-yellow-600', icon: AlertTriangle },
-    INFO: { label: 'اطلاعات', color: 'bg-blue-50 text-blue-700 border-blue-150', cardBg: 'bg-blue-50/50', text: 'text-blue-600', icon: Info },
+    CRITICAL: { label: 'بحرانی', color: 'bg-red-50 text-red-700 border-red-200', cardBg: 'bg-red-50/50', text: 'text-red-600', icon: AlertOctagon },
+    ERROR: { label: 'خطا', color: 'bg-orange-50 text-orange-700 border-orange-200', cardBg: 'bg-orange-50/50', text: 'text-orange-600', icon: AlertOctagon },
+    WARNING: { label: 'هشدار', color: 'bg-yellow-50 text-yellow-700 border-yellow-200', cardBg: 'bg-yellow-50/50', text: 'text-yellow-600', icon: AlertTriangle },
+    INFO: { label: 'اطلاعات', color: 'bg-blue-50 text-blue-700 border-blue-200', cardBg: 'bg-blue-50/50', text: 'text-blue-600', icon: Info },
 };
 
 export default function ErrorsView({ initialLogs }: ErrorsViewProps) {
@@ -212,7 +212,7 @@ export default function ErrorsView({ initialLogs }: ErrorsViewProps) {
                     <button
                         onClick={() => setPendingAction({ type: 'clear' })}
                         disabled={isPending}
-                        className="flex items-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 px-5 py-3 rounded-2xl font-bold text-xs transition-all border border-red-150"
+                        className="flex items-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 px-5 py-3 rounded-2xl font-bold text-xs transition-all border border-red-200"
                     >
                         <Trash className="w-4.5 h-4.5" />
                         پاک‌سازی کل خطاها (Clear All)
@@ -444,7 +444,7 @@ export default function ErrorsView({ initialLogs }: ErrorsViewProps) {
                             className="relative w-full max-w-3xl bg-white rounded-3xl p-6 shadow-2xl border border-gray-100 flex flex-col max-h-[85vh] text-right"
                         >
                             {/* Modal Header */}
-                            <div className="flex justify-between items-center pb-4 border-b border-gray-150 mb-4 shrink-0">
+                            <div className="flex justify-between items-center pb-4 border-b border-gray-200 mb-4 shrink-0">
                                 <div className="flex items-center gap-2.5">
                                     <StatusBadge
                                         label={severityConfig[selectedLogForDetail.severity]?.label || 'خطا'}
@@ -507,14 +507,14 @@ export default function ErrorsView({ initialLogs }: ErrorsViewProps) {
                             </div>
 
                             {/* Modal Footer */}
-                            <div className="flex justify-end gap-3 pt-4 border-t border-gray-150 mt-4 shrink-0">
+                            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-4 shrink-0">
                                 <button
                                     onClick={() => {
                                         const id = selectedLogForDetail.id;
                                         setSelectedLogForDetail(null);
                                         setPendingAction({ type: 'single', id });
                                     }}
-                                    className="bg-red-50 hover:bg-red-100 text-red-600 px-5 py-3 rounded-2xl font-bold text-xs transition-colors border border-red-150 flex items-center gap-1.5"
+                                    className="bg-red-50 hover:bg-red-100 text-red-600 px-5 py-3 rounded-2xl font-bold text-xs transition-colors border border-red-200 flex items-center gap-1.5"
                                 >
                                     <Trash2 className="w-4.5 h-4.5" />
                                     حذف این لاگ

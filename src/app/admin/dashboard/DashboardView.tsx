@@ -20,6 +20,8 @@ import { useRouter } from 'next/navigation';
 import { toPersianNumber, formatPersianNumber } from '@/lib/persian';
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { ORDER_STATUS_META } from '@/lib/order-status';
+import type { OrderStatus } from '@prisma/client';
 
 type AuditLog = {
     id: number
@@ -59,15 +61,6 @@ const auditActionLabels: Record<string, string> = {
     ORDER_STATUS_UPDATE: 'تغییر وضعیت سفارش',
     ORDER_NOTES_UPDATE: 'به‌روزرسانی یادداشت سفارش',
     ADMIN_UPDATE: 'تغییر نقش‌های مدیر',
-}
-
-const statusLabels: Record<string, string> = {
-    PENDING: 'در انتظار پرداخت',
-    PAID: 'پرداخت شده',
-    PROCESSING: 'در حال پردازش',
-    SHIPPED: 'ارسال شده',
-    DELIVERED: 'تحویل داده شده',
-    CANCELLED: 'لغو شده',
 }
 
 export default function DashboardView({
@@ -458,7 +451,7 @@ export default function DashboardView({
                             initial={{ y: -20, opacity: 0 }} 
                             animate={{ y: 0, opacity: 1 }} 
                             exit={{ y: -20, opacity: 0 }}
-                            className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-gray-150 overflow-hidden"
+                            className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-gray-200 overflow-hidden"
                         >
                             {/* Search bar header */}
                             <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-100 bg-gray-50/50">
@@ -501,7 +494,7 @@ export default function DashboardView({
                                     <div className="space-y-5">
                                         {/* Products */}
                                         {searchResults.products.length > 0 && (
-                                            <SearchCategorySection title="محصولات">
+                                             <SearchCategorySection title="محصولات">
                                                 {searchResults.products.map(p => (
                                                     <div key={p.id} className="flex justify-between items-center hover:bg-gray-50 p-2.5 rounded-xl border border-transparent hover:border-gray-100 cursor-pointer" onClick={() => {
                                                         router.push(`/admin/dashboard/products`)
@@ -524,7 +517,7 @@ export default function DashboardView({
                                                     }}>
                                                         <span className="text-sm font-bold text-gray-800 font-mono">{o.orderNumber} ({o.customerName})</span>
                                                         <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold ${o.status === 'PAID' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
-                                                            {statusLabels[o.status] || o.status}
+                                                            {ORDER_STATUS_META[o.status as OrderStatus]?.label || o.status}
                                                         </span>
                                                     </div>
                                                 ))}
@@ -594,7 +587,7 @@ function ExportOption({ title, desc, onClick, loading }: {
         <button
             onClick={onClick}
             disabled={loading}
-            className="w-full flex items-center gap-4 p-4 hover:bg-gray-50 rounded-2xl border border-gray-150 transition-all text-right group disabled:opacity-50"
+            className="w-full flex items-center gap-4 p-4 hover:bg-gray-50 rounded-2xl border border-gray-200 transition-all text-right group disabled:opacity-50"
         >
             <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100 group-hover:scale-105 transition-transform">
                 {loading ? <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" /> : <FileSpreadsheet className="w-5 h-5" />}

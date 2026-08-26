@@ -393,7 +393,7 @@ export default function AnalyticsDashboard({
                         <p className="text-xs text-gray-500 mb-4">آمار استفاده و نرخ تبدیل خرید بر اساس مرورگرها</p>
                         <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                             {deviceBrowserMetrics.browsers.map(b => (
-                                <div key={b.name} className="bg-gray-50 border border-gray-150 p-4 rounded-xl flex items-center justify-between">
+                                <div key={b.name} className="bg-gray-50 border border-gray-200 p-4 rounded-xl flex items-center justify-between">
                                     <div>
                                         <span className="text-xs text-gray-400 font-semibold uppercase tracking-wider block">مرورگر</span>
                                         <span className="text-sm font-bold text-gray-800">{b.name}</span>
@@ -638,7 +638,7 @@ function FunnelStep({ label, value, max, color }: { index: number; label: string
 
 function FunnelStatRow({ label, desc, value }: { label: string; desc: string; value: string }) {
     return (
-        <div className="bg-white rounded-xl p-3 border border-gray-150 shadow-sm flex flex-col justify-between">
+        <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm flex flex-col justify-between">
             <span className="text-xs text-gray-400 font-medium">{label}</span>
             <span className="text-base font-extrabold text-gray-800 my-1">{toPersianDigits(value)}</span>
             <span className="text-[10px] text-gray-400 italic">{desc}</span>

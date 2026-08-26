@@ -2,7 +2,6 @@ import { suite, it } from './runner';
 import assert from 'node:assert/strict';
 import { tomanToIrr } from '../src/lib/seo/currency';
 import { generateProductSchemaJsonLd } from '../src/lib/seo/product-jsonld';
-import { generateProductJsonLd } from '../src/lib/seo/jsonld';
 
 suite('Batch 2 B1 — JSON-LD IRR Currency Conversion', () => {
     it('tomanToIrr multiplies Toman by 10 to get Rials', () => {
@@ -32,12 +31,20 @@ suite('Batch 2 B1 — JSON-LD IRR Currency Conversion', () => {
         assert.equal(offers.price, 500000000); // 500 million Rials
     });
 
-    it('generateProductJsonLd (collection item) emits price in IRR', () => {
-        const schema = generateProductJsonLd({
+    it('generateProductSchemaJsonLd handles collection item price in IRR', () => {
+        const schema = generateProductSchemaJsonLd({
             name: 'یخچال صنعتی',
             slug: 'industrial-fridge',
+            description: 'یخچال صنعتی دو درب',
             price: 25000000, // 25 million Toman
+            images: ['/uploads/fridge.jpg'],
+            brand: 'Ice Master',
+            warranty: '12 ماه گارانتی',
+            rating: 4.5,
+            reviewCount: 8,
             inventoryStatus: 'IN_STOCK',
+            categoryName: 'تجهیزات برودتی',
+            subcategoryName: 'یخچال صنعتی',
         });
 
         const offers = schema.offers as { price: number; priceCurrency: string };

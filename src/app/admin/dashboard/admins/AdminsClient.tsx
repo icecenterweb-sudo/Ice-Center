@@ -52,13 +52,13 @@ interface AdminsClientProps {
 }
 
 const roleConfigs: Record<AdminRole, { label: string; bg: string; text: string; desc: string }> = {
-    SUPER_ADMIN: { label: 'سوپر ادمین', bg: 'bg-red-50 text-red-700 border-red-150', text: 'text-red-700', desc: 'دسترسی کامل و تام به تمامی منابع و تنظیمات سیستم' },
-    GENERAL_MANAGER: { label: 'مدیر کل', bg: 'bg-purple-50 text-purple-700 border-purple-150', text: 'text-purple-700', desc: 'مدیریت کل سیستم، فروشگاه، گزارشات و تخصیص نقش‌ها' },
-    BLOG_WRITER: { label: 'نویسنده وبلاگ', bg: 'bg-emerald-50 text-emerald-700 border-emerald-150', text: 'text-emerald-700', desc: 'تولید محتوا، ویرایش مقالات مجله خبری و مدیریت دسته‌بندی‌های بلاگ' },
-    SUPPORT_ADMIN: { label: 'ادمین پشتیبانی', bg: 'bg-blue-50 text-blue-700 border-blue-150', text: 'text-blue-700', desc: 'پاسخ‌گویی به چت‌های پشتیبانی آنلاین مشتریان' },
-    INVENTORY_MANAGER: { label: 'انباردار', bg: 'bg-amber-50 text-amber-700 border-amber-150', text: 'text-amber-700', desc: 'ویرایش موجودی انبار محصولات و بررسی سفارشات ارسالی' },
-    ADMIN: { label: 'مدیر معمولی', bg: 'bg-gray-50 text-gray-700 border-gray-150', text: 'text-gray-700', desc: 'مدیر عمومی سیستم با دسترسی‌های استاندارد' },
-    EDITOR: { label: 'ویرایشگر', bg: 'bg-cyan-50 text-cyan-700 border-cyan-150', text: 'text-cyan-700', desc: 'ویرایش و به‌روزرسانی مشخصات و قیمت‌های کالاها' },
+    SUPER_ADMIN: { label: 'سوپر ادمین', bg: 'bg-red-50 text-red-700 border-red-200', text: 'text-red-700', desc: 'دسترسی کامل و تام به تمامی منابع و تنظیمات سیستم' },
+    GENERAL_MANAGER: { label: 'مدیر کل', bg: 'bg-purple-50 text-purple-700 border-purple-200', text: 'text-purple-700', desc: 'مدیریت کل سیستم، فروشگاه، گزارشات و تخصیص نقش‌ها' },
+    BLOG_WRITER: { label: 'نویسنده وبلاگ', bg: 'bg-emerald-50 text-emerald-700 border-emerald-200', text: 'text-emerald-700', desc: 'تولید محتوا، ویرایش مقالات مجله خبری و مدیریت دسته‌بندی‌های بلاگ' },
+    SUPPORT_ADMIN: { label: 'ادمین پشتیبانی', bg: 'bg-blue-50 text-blue-700 border-blue-200', text: 'text-blue-700', desc: 'پاسخ‌گویی به چت‌های پشتیبانی آنلاین مشتریان' },
+    INVENTORY_MANAGER: { label: 'انباردار', bg: 'bg-amber-50 text-amber-700 border-amber-200', text: 'text-amber-700', desc: 'ویرایش موجودی انبار محصولات و بررسی سفارشات ارسالی' },
+    ADMIN: { label: 'مدیر معمولی', bg: 'bg-gray-50 text-gray-700 border-gray-200', text: 'text-gray-700', desc: 'مدیر عمومی سیستم با دسترسی‌های استاندارد' },
+    EDITOR: { label: 'ویرایشگر', bg: 'bg-cyan-50 text-cyan-700 border-cyan-200', text: 'text-cyan-700', desc: 'ویرایش و به‌روزرسانی مشخصات و قیمت‌های کالاها' },
 };
 
 export default function AdminsClient({ admins, currentAdminPhone, currentAdminRoles }: AdminsClientProps) {
@@ -343,7 +343,7 @@ export default function AdminsClient({ admins, currentAdminPhone, currentAdminRo
                                             className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 select-none ${
                                                 isChecked 
                                                     ? 'border-blue-500 bg-blue-50/30 shadow-sm'
-                                                    : 'border-gray-150 hover:border-blue-200 bg-white'
+                                                    : 'border-gray-200 hover:border-blue-200 bg-white'
                                             }`}
                                         >
                                             <div className="mt-0.5">
@@ -460,7 +460,7 @@ export default function AdminsClient({ admins, currentAdminPhone, currentAdminRo
                                                     ? 'border-gray-100 bg-gray-50 opacity-60 cursor-not-allowed'
                                                     : selectedPhone === u.phone
                                                     ? 'border-blue-500 bg-blue-50/30 cursor-pointer'
-                                                    : 'border-gray-150 hover:border-blue-200 cursor-pointer'
+                                                    : 'border-gray-200 hover:border-blue-200 cursor-pointer'
                                             }`}
                                         >
                                             <div className="w-9 h-9 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">

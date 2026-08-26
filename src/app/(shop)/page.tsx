@@ -729,7 +729,7 @@ function BlogSection({ posts }: BlogSectionProps) {
             <Link
               key={post.id}
               href={`/blog/${post.slug}`}
-              className="group flex gap-4 p-3 rounded-2xl bg-white border border-gray-150 hover:border-sky-breeze shadow-xs hover:shadow-md transition-all select-none items-center"
+              className="group flex gap-4 p-3 rounded-2xl bg-white border border-gray-200 hover:border-sky-breeze shadow-xs hover:shadow-md transition-all select-none items-center"
             >
               <div className="relative w-24 sm:w-32 md:w-36 h-20 sm:h-24 rounded-xl overflow-hidden shrink-0 bg-gray-100">
                 <Image
