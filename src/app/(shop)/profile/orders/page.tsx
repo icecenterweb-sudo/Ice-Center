@@ -3,8 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowRight, ShoppingBag, Package, Clock, CheckCircle, Truck, XCircle, Loader2 } from 'lucide-react';
+import { ArrowRight, ShoppingBag, Package, Loader2 } from 'lucide-react';
 import Image from 'next/image';
+import StatusBadge from '@/components/ui/StatusBadge';
+import { getOrderStatusMeta } from '@/lib/order-status';
 
 interface OrderItem {
     id: number;
@@ -24,15 +26,6 @@ interface Order {
     items: OrderItem[];
     _count: { items: number };
 }
-
-const statusConfig: Record<string, { label: string; color: string; icon: React.ComponentType<{ className?: string }> }> = {
-    PENDING: { label: 'در انتظار پرداخت', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
-    PAID: { label: 'پرداخت شده', color: 'bg-blue-100 text-blue-700', icon: CheckCircle },
-    PROCESSING: { label: 'در حال پردازش', color: 'bg-purple-100 text-purple-700', icon: Package },
-    SHIPPED: { label: 'ارسال شده', color: 'bg-indigo-100 text-indigo-700', icon: Truck },
-    DELIVERED: { label: 'تحویل داده شده', color: 'bg-green-100 text-green-700', icon: CheckCircle },
-    CANCELLED: { label: 'لغو شده', color: 'bg-red-100 text-red-700', icon: XCircle },
-};
 
 export default function OrdersPage() {
     const router = useRouter();
@@ -123,8 +116,7 @@ export default function OrdersPage() {
             {!loading && orders.length > 0 && (
                 <div className="space-y-4">
                     {orders.map((order) => {
-                        const status = statusConfig[order.status] || statusConfig.PENDING;
-                        const StatusIcon = status.icon;
+                        const status = getOrderStatusMeta(order.status);
                         return (
                             <Link
                                 key={order.id}
@@ -137,10 +129,11 @@ export default function OrdersPage() {
                                         <span className="text-sm font-bold text-gray-800">
                                             #{order.orderNumber}
                                         </span>
-                                        <span className={`px-2 py-1 rounded-lg text-xs font-medium flex items-center gap-1 ${status.color}`}>
-                                            <StatusIcon className="w-3 h-3" />
-                                            {status.label}
-                                        </span>
+                                        <StatusBadge
+                                            label={status.label}
+                                            tone={status.tone}
+                                            icon={status.icon}
+                                        />
                                     </div>
                                     <span className="text-xs text-gray-500">
                                         {formatDate(order.createdAt)}

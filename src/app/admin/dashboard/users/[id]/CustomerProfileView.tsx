@@ -10,6 +10,8 @@ import {
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
 import { faIR } from 'date-fns/locale';
+import StatusBadge from '@/components/ui/StatusBadge';
+import { getOrderStatusMeta } from '@/lib/order-status';
 
 interface Order {
     id: number;
@@ -84,15 +86,6 @@ interface CustomerData {
 }
 
 type TabKey = 'orders' | 'cart' | 'wishlist' | 'support' | 'analytics' | 'notifications';
-
-const statusLabels: Record<string, { label: string; color: string }> = {
-    PENDING: { label: 'در انتظار پرداخت', color: 'bg-yellow-100 text-yellow-700' },
-    PAID: { label: 'پرداخت شده', color: 'bg-blue-100 text-blue-700' },
-    PROCESSING: { label: 'در حال پردازش', color: 'bg-purple-100 text-purple-700' },
-    SHIPPED: { label: 'ارسال شده', color: 'bg-cyan-100 text-cyan-700' },
-    DELIVERED: { label: 'تحویل داده شده', color: 'bg-green-100 text-green-700' },
-    CANCELLED: { label: 'لغو شده', color: 'bg-red-100 text-red-700' },
-};
 
 function formatTime(dateInput: string | Date) {
     try {
@@ -226,7 +219,7 @@ export default function CustomerProfileView({ data }: { data: CustomerData }) {
                         <div className="space-y-3">
                             {orders.length === 0 && <p className="text-center text-gray-400 py-6 text-sm">هیچ سفارشی یافت نشد</p>}
                             {orders.map((order) => {
-                                const statusInfo = statusLabels[order.status] || { label: order.status, color: 'bg-gray-100 text-gray-600' };
+                                const statusInfo = getOrderStatusMeta(order.status);
                                 return (
                                     <div key={order.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl gap-3">
                                         <div className="flex items-center gap-3">
@@ -239,9 +232,11 @@ export default function CustomerProfileView({ data }: { data: CustomerData }) {
                                             </div>
                                         </div>
                                         <div className="text-left">
-                                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusInfo.color}`}>
-                                                {statusInfo.label}
-                                            </span>
+                                            <StatusBadge
+                                                label={statusInfo.label}
+                                                tone={statusInfo.tone}
+                                                icon={statusInfo.icon}
+                                            />
                                             <p className="text-xs text-gray-500 mt-1 text-left">
                                                 {order.total.toLocaleString('fa-IR')} تومان
                                             </p>

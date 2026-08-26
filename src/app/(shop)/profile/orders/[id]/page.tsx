@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowRight, Package, Clock, CheckCircle, Truck, XCircle, Loader2, MapPin, Phone, User } from 'lucide-react';
+import { ArrowRight, Package, XCircle, Loader2, MapPin, Phone, User } from 'lucide-react';
 import Image from 'next/image';
+import StatusBadge from '@/components/ui/StatusBadge';
+import { getOrderStatusMeta } from '@/lib/order-status';
 
 interface OrderItem {
     id: number;
@@ -36,15 +38,6 @@ interface Order {
     deliveredAt: string | null;
     items: OrderItem[];
 }
-
-const statusConfig: Record<string, { label: string; color: string; icon: React.ComponentType<{ className?: string }> }> = {
-    PENDING: { label: 'در انتظار پرداخت', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
-    PAID: { label: 'پرداخت شده', color: 'bg-blue-100 text-blue-700', icon: CheckCircle },
-    PROCESSING: { label: 'در حال پردازش', color: 'bg-purple-100 text-purple-700', icon: Package },
-    SHIPPED: { label: 'ارسال شده', color: 'bg-indigo-100 text-indigo-700', icon: Truck },
-    DELIVERED: { label: 'تحویل داده شده', color: 'bg-green-100 text-green-700', icon: CheckCircle },
-    CANCELLED: { label: 'لغو شده', color: 'bg-red-100 text-red-700', icon: XCircle },
-};
 
 export default function OrderDetailPage() {
     const router = useRouter();
@@ -116,8 +109,7 @@ export default function OrderDetailPage() {
         );
     }
 
-    const status = statusConfig[order.status] || statusConfig.PENDING;
-    const StatusIcon = status.icon;
+    const status = getOrderStatusMeta(order.status);
 
     return (
         <div className="pb-20 lg:pb-0 space-y-4">
@@ -136,10 +128,11 @@ export default function OrderDetailPage() {
                         </h1>
                         <p className="text-xs text-gray-500">{formatDate(order.createdAt)}</p>
                     </div>
-                    <span className={`px-3 py-1 rounded-lg text-xs font-medium flex items-center gap-1 ${status.color}`}>
-                        <StatusIcon className="w-3 h-3" />
-                        {status.label}
-                    </span>
+                    <StatusBadge
+                        label={status.label}
+                        tone={status.tone}
+                        icon={status.icon}
+                    />
                 </div>
             </div>
 

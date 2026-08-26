@@ -16,6 +16,8 @@ import {
     RefreshCw
 } from 'lucide-react';
 import { OrderStatus } from '@prisma/client';
+import StatusBadge from '@/components/ui/StatusBadge';
+import { ORDER_STATUS_META } from '@/lib/order-status';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -40,21 +42,6 @@ interface OrdersClientProps {
     totalPages: number;
     currentPage: number;
 }
-
-const statusMap: Record<OrderStatus, { label: string; color: string }> = {
-    PENDING: { label: 'در انتظار پرداخت', color: 'bg-yellow-50 text-yellow-700 border border-yellow-100' },
-    AWAITING_CONFIRMATION: { label: 'تأیید کارشناس', color: 'bg-cyan-50 text-cyan-700 border border-cyan-100' },
-    PAID: { label: 'پرداخت شده', color: 'bg-emerald-50 text-emerald-700 border border-emerald-100' },
-    PROCESSING: { label: 'در حال پردازش', color: 'bg-indigo-50 text-indigo-700 border border-indigo-100' },
-    PREPARING: { label: 'آماده‌سازی', color: 'bg-blue-50 text-blue-700 border border-blue-100' },
-    READY_FOR_DELIVERY: { label: 'آماده تحویل', color: 'bg-sky-50 text-sky-700 border border-sky-100' },
-    SHIPPED: { label: 'ارسال شده', color: 'bg-purple-50 text-purple-700 border border-purple-100' },
-    HANDED_TO_CARRIER: { label: 'تحویل باربری', color: 'bg-violet-50 text-violet-700 border border-violet-100' },
-    DELIVERED: { label: 'تحویل شده', color: 'bg-green-50 text-green-700 border border-green-100' },
-    RETURNED: { label: 'برگشت خورده', color: 'bg-rose-50 text-rose-700 border border-rose-100' },
-    CANCELLED: { label: 'لغو شده', color: 'bg-red-50 text-red-700 border border-red-100' },
-    NEEDS_CONTACT: { label: 'نیازمند تماس', color: 'bg-orange-50 text-orange-700 border border-orange-100' },
-};
 
 export default function OrdersClient({ initialOrders, totalPages, currentPage }: OrdersClientProps) {
     const router = useRouter();
@@ -123,7 +110,7 @@ export default function OrdersClient({ initialOrders, totalPages, currentPage }:
                 setSelectedIds([]);
                 router.refresh();
             } else {
-                toast.error(res.error || 'خطایی رخ داد.', { id: loadingToast });
+                toast.error(res.error || 'خطایی رخ داد. لطفاً دوباره تلاش کنید', { id: loadingToast });
             }
         });
     };
@@ -154,7 +141,7 @@ export default function OrdersClient({ initialOrders, totalPages, currentPage }:
                     >
                         همه
                     </button>
-                    {Object.entries(statusMap).map(([key, { label }]) => (
+                    {Object.entries(ORDER_STATUS_META).map(([key, { label }]) => (
                         <button
                             key={key}
                             onClick={() => handleStatusFilter(key)}
@@ -245,9 +232,11 @@ export default function OrdersClient({ initialOrders, totalPages, currentPage }:
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold ${statusMap[order.status].color}`}>
-                                                    {statusMap[order.status].label}
-                                                </span>
+                                                <StatusBadge
+                                                    label={ORDER_STATUS_META[order.status as OrderStatus].label}
+                                                    tone={ORDER_STATUS_META[order.status as OrderStatus].tone}
+                                                    icon={ORDER_STATUS_META[order.status as OrderStatus].icon}
+                                                />
                                             </td>
                                             <td className="px-6 py-4 text-gray-500">
                                                 <div className="flex items-center gap-1.5 text-xs font-medium">
@@ -268,6 +257,7 @@ export default function OrdersClient({ initialOrders, totalPages, currentPage }:
                                                         href={`/admin/dashboard/orders/${order.id}`}
                                                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
                                                         title="مشاهده جزئیات"
+                aria-label="مشاهده جزئیات"
                                                     >
                                                         <Eye className="w-5 h-5" />
                                                     </Link>
@@ -340,6 +330,7 @@ export default function OrdersClient({ initialOrders, totalPages, currentPage }:
                                     onClick={() => setSelectedIds([])}
                                     className="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
                                     title="لغو انتخاب"
+                aria-label="لغو انتخاب"
                                 >
                                     <X className="w-4 h-4" />
                                 </button>
@@ -361,7 +352,7 @@ export default function OrdersClient({ initialOrders, totalPages, currentPage }:
                                     className="bg-slate-800 border border-slate-700 text-white rounded-2xl px-4 py-2 text-xs font-bold outline-none cursor-pointer hover:bg-slate-750 transition-colors flex-1 md:flex-none"
                                 >
                                     <option value="" disabled selected>انتخاب وضعیت جدید...</option>
-                                    {Object.entries(statusMap).map(([key, { label }]) => (
+                                    {Object.entries(ORDER_STATUS_META).map(([key, { label }]) => (
                                         <option key={key} value={key} className="bg-slate-900 text-white">{label}</option>
                                     ))}
                                 </select>

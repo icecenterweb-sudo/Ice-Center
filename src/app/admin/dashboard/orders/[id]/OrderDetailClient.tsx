@@ -12,6 +12,8 @@ import { updateOrderStatus, updateAdminNotes } from '../actions';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
+import StatusBadge from '@/components/ui/StatusBadge';
+import { ORDER_STATUS_META, getOrderStatusMeta } from '@/lib/order-status';
 
 interface OrderDetailClientProps {
     order: Prisma.OrderGetPayload<{
@@ -24,20 +26,10 @@ interface OrderDetailClientProps {
     }>;
 }
 
-const statusOptions: { value: OrderStatus; label: string; color: string }[] = [
-    { value: 'PENDING', label: 'در انتظار پرداخت', color: 'bg-yellow-100 text-yellow-800' },
-    { value: 'AWAITING_CONFIRMATION', label: 'در انتظار تأیید', color: 'bg-orange-100 text-orange-800' },
-    { value: 'PAID', label: 'پرداخت شده', color: 'bg-blue-100 text-blue-800' },
-    { value: 'PROCESSING', label: 'در حال پردازش', color: 'bg-indigo-100 text-indigo-800' },
-    { value: 'PREPARING', label: 'آماده‌سازی', color: 'bg-violet-100 text-violet-800' },
-    { value: 'READY_FOR_DELIVERY', label: 'آماده تحویل', color: 'bg-teal-100 text-teal-800' },
-    { value: 'SHIPPED', label: 'ارسال شده', color: 'bg-purple-100 text-purple-800' },
-    { value: 'HANDED_TO_CARRIER', label: 'تحویل به باربری', color: 'bg-cyan-100 text-cyan-800' },
-    { value: 'DELIVERED', label: 'تحویل شده', color: 'bg-green-100 text-green-800' },
-    { value: 'RETURNED', label: 'برگشت خورده', color: 'bg-rose-100 text-rose-800' },
-    { value: 'CANCELLED', label: 'لغو شده', color: 'bg-red-100 text-red-800' },
-    { value: 'NEEDS_CONTACT', label: 'نیازمند تماس', color: 'bg-amber-100 text-amber-800' },
-];
+const statusOptions: { value: OrderStatus; label: string }[] =
+    (Object.entries(ORDER_STATUS_META) as [OrderStatus, { label: string }][]).map(
+        ([value, meta]) => ({ value, label: meta.label })
+    );
 
 export default function OrderDetailClient({ order }: OrderDetailClientProps) {
     const [isLoading, setIsLoading] = useState(false);
@@ -93,9 +85,11 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
                             سفارش #{order.orderNumber}
-                            <span className={`text-sm px-3 py-1 rounded-full ${statusOptions.find(s => s.value === order.status)?.color}`}>
-                                {statusOptions.find(s => s.value === order.status)?.label}
-                            </span>
+                               <StatusBadge
+                                   label={getOrderStatusMeta(order.status).label}
+                                   tone={getOrderStatusMeta(order.status).tone}
+                                   icon={getOrderStatusMeta(order.status).icon}
+                               />
                         </h1>
                         <p className="text-gray-500 text-sm mt-1">
                             ثبت شده در {new Date(order.createdAt).toLocaleDateString('fa-IR')} ساعت {new Date(order.createdAt).toLocaleTimeString('fa-IR')}
@@ -297,10 +291,10 @@ export default function OrderDetailClient({ order }: OrderDetailClientProps) {
                 open={pendingStatus !== null}
                 title="تغییر وضعیت سفارش"
                 message={
-                    <>
-                        وضعیت این سفارش به «{statusOptions.find(s => s.value === pendingStatus)?.label}» تغییر خواهد کرد. ادامه می‌دهید؟
-                    </>
-                }
+                               <>
+                                   وضعیت سفارش به «{getOrderStatusMeta(pendingStatus as string).label}» تغییر خواهد کرد. این عملیات قابل بازگشت است.
+                               </>
+                           }
                 confirmText="تغییر وضعیت"
                 variant="primary"
                 isPending={isLoading}
