@@ -28,7 +28,7 @@ export default function ReviewActions({ reviewId, currentStatus }: ReviewActions
                 router.refresh();
             } else {
                 const data = await response.json();
-                toast.error(data.error || 'خطا در بروزرسانی');
+                toast.error(data.error || 'خطا در به‌روزرسانی');
             }
         } catch {
             toast.error('خطا در اتصال به سرور');
@@ -45,6 +45,7 @@ export default function ReviewActions({ reviewId, currentStatus }: ReviewActions
                     disabled={loading}
                     className="p-2 text-gray-500 hover:text-green-600 transition-colors disabled:opacity-50"
                     title="تایید"
+                aria-label="تایید"
                 >
                     <CheckCircle className="w-4 h-4" />
                 </button>
@@ -55,6 +56,7 @@ export default function ReviewActions({ reviewId, currentStatus }: ReviewActions
                     disabled={loading}
                     className="p-2 text-gray-500 hover:text-red-500 transition-colors disabled:opacity-50"
                     title="رد کردن"
+                aria-label="رد کردن"
                 >
                     <XCircle className="w-4 h-4" />
                 </button>

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Search, Image as ImageIcon, Check, Loader2, RefreshCw, Sparkles } from 'lucide-react';
 import Image from 'next/image';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 interface MediaItem {
     url: string;
@@ -37,6 +38,7 @@ export default function MediaGalleryModal({
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedFolder, setSelectedFolder] = useState<string>('all');
+    useBodyScrollLock(isOpen);
     const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
     const [imageDimensions, setImageDimensions] = useState<Record<string, { width: number; height: number }>>({});
 
@@ -94,7 +96,13 @@ export default function MediaGalleryModal({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" dir="rtl">
+        <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="media-gallery-title"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+            dir="rtl"
+        >
             <div className="bg-white rounded-3xl border border-gray-100 shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden">
                 {/* Modal Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
@@ -103,7 +111,7 @@ export default function MediaGalleryModal({
                             <ImageIcon className="w-5 h-5" />
                         </div>
                         <div>
-                            <h2 className="text-lg font-bold text-gray-800">{title}</h2>
+                            <h2 id="media-gallery-title" className="text-lg font-bold text-gray-800">{title}</h2>
                             <p className="text-xs text-gray-500">
                                 {filteredMedia.length} تصویر یافت شد
                                 {targetSize && (
@@ -118,7 +126,7 @@ export default function MediaGalleryModal({
                         <button
                             onClick={loadMedia}
                             className="p-2 text-gray-400 hover:text-gray-600 rounded-xl hover:bg-gray-100 transition-colors"
-                            title="بروزرسانی لیست"
+                            title="به‌روزرسانی لیست"
                         >
                             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
                         </button>

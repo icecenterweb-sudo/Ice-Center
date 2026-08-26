@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Sparkles, Clock, CheckCircle2, Phone, CreditCard } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 interface InstallmentModalProps {
     isOpen: boolean;
@@ -13,6 +14,7 @@ interface InstallmentModalProps {
 export default function InstallmentModal({ isOpen, onClose }: InstallmentModalProps) {
     const [phone, setPhone] = useState('');
     const [submitted, setSubmitted] = useState(false);
+    useBodyScrollLock(isOpen);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -53,7 +55,12 @@ export default function InstallmentModal({ isOpen, onClose }: InstallmentModalPr
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="installment-modal-title"
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                >
                     {/* Backdrop */}
                     <motion.div
                         initial={{ opacity: 0 }}
@@ -89,7 +96,7 @@ export default function InstallmentModal({ isOpen, onClose }: InstallmentModalPr
                                 <span>به‌زودی...</span>
                             </span>
 
-                            <h3 className="text-xl font-black text-white">خرید اقساطی آیس سنتر</h3>
+                            <h3 id="installment-modal-title" className="text-xl font-black text-white">خرید اقساطی آیس سنتر</h3>
                         </div>
 
                         {/* Content Body */}

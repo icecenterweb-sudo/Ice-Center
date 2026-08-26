@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 interface ConfirmDialogProps {
     /** Whether the dialog is visible */
@@ -52,6 +53,15 @@ export default function ConfirmDialog({
         return () => window.removeEventListener('keydown', onKey);
     }, [open, isPending, onClose]);
 
+    // NEW-2: lock background scroll while the dialog is open
+    useBodyScrollLock(open);
+
+    // A11Y1: move focus into the dialog when it opens
+    const cancelButtonRef = useRef<HTMLButtonElement>(null);
+    useEffect(() => {
+        if (open) cancelButtonRef.current?.focus();
+    }, [open]);
+
     if (!open) return null;
 
     const confirmClasses =
@@ -63,6 +73,9 @@ export default function ConfirmDialog({
 
     return (
         <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-dialog-title"
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fadeIn"
             dir="rtl"
             onClick={(e) => {
@@ -76,7 +89,7 @@ export default function ConfirmDialog({
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${iconClasses}`}>
                             <AlertTriangle className="w-5 h-5" />
                         </div>
-                        <h3 className="text-lg font-bold text-gray-800">{title}</h3>
+                        <h3 id="confirm-dialog-title" className="text-lg font-bold text-gray-800">{title}</h3>
                     </div>
                     <button
                         type="button"
@@ -94,6 +107,7 @@ export default function ConfirmDialog({
                 <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
                     <button
                         type="button"
+                        ref={cancelButtonRef}
                         onClick={onClose}
                         disabled={isPending}
                         className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-bold transition-colors cursor-pointer disabled:opacity-50"

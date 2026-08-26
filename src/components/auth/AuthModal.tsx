@@ -101,7 +101,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
             const data = await response.json()
 
             if (!response.ok) {
-                setError(data.error || 'مشکلی پیش آمد')
+                setError(data.error || 'خطایی رخ داد. لطفاً دوباره تلاش کنید')
                 if (data.waitSeconds) {
                     setCooldown(data.waitSeconds)
                 }
@@ -173,7 +173,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="auth-modal-title"
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                >
                     {/* Backdrop */}
                     <motion.div
                         initial={{ opacity: 0 }}
@@ -193,7 +198,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between p-4 border-b border-gray-100">
-                            <h2 className="text-lg font-bold text-gray-800">
+                            <h2 id="auth-modal-title" className="text-lg font-bold text-gray-800">
                                 {step === 'phone' ? 'ورود به حساب' : 'تأیید کد'}
                             </h2>
                             <button
