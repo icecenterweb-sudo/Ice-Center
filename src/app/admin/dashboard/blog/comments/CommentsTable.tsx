@@ -4,6 +4,14 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Eye, X, MessageCircle, User, Calendar, FileText } from 'lucide-react';
 import CommentActions from './CommentActions';
+import StatusBadge from '@/components/ui/StatusBadge';
+import type { StatusTone } from '@/components/ui/StatusBadge';
+
+const COMMENT_TONE: Record<string, StatusTone> = {
+    APPROVED: 'green',
+    PENDING: 'yellow',
+    REJECTED: 'red',
+};
 
 interface Comment {
     id: number;
@@ -20,19 +28,7 @@ interface CommentsTableProps {
     comments: Comment[];
 }
 
-// Helper functions
-const getStatusBadge = (status: string) => {
-    switch (status) {
-        case 'APPROVED':
-            return 'bg-green-100 text-green-800';
-        case 'PENDING':
-            return 'bg-yellow-100 text-yellow-800';
-        case 'REJECTED':
-            return 'bg-red-100 text-red-800';
-        default:
-            return 'bg-gray-100 text-gray-800';
-    }
-};
+
 
 const getStatusLabel = (status: string) => {
     switch (status) {
@@ -126,13 +122,10 @@ export default function CommentsTable({ comments }: CommentsTableProps) {
                                             </Link>
                                         </td>
                                         <td className="px-4 py-3">
-                                            <span
-                                                className={`px-2 py-1 rounded-lg text-xs font-medium ${getStatusBadge(
-                                                    comment.status
-                                                )}`}
-                                            >
-                                                {getStatusLabel(comment.status)}
-                                            </span>
+                                            <StatusBadge
+                                                label={getStatusLabel(comment.status)}
+                                                tone={COMMENT_TONE[comment.status] ?? 'gray'}
+                                            />
                                         </td>
                                         <td className="px-4 py-3 text-sm text-gray-600">
                                             {new Date(comment.createdAt).toLocaleDateString('fa-IR')}
@@ -143,6 +136,7 @@ export default function CommentsTable({ comments }: CommentsTableProps) {
                                                     onClick={() => setSelectedComment(comment)}
                                                     className="p-2 text-gray-500 hover:text-ocean transition-colors"
                                                     title="مشاهده کامل"
+                aria-label="مشاهده کامل"
                                                 >
                                                     <Eye className="w-4 h-4" />
                                                 </button>
@@ -215,13 +209,10 @@ export default function CommentsTable({ comments }: CommentsTableProps) {
                             {/* Status */}
                             <div className="flex items-center gap-2">
                                 <span className="text-sm text-gray-600">وضعیت:</span>
-                                <span
-                                    className={`px-2 py-1 rounded-lg text-xs font-medium ${getStatusBadge(
-                                        selectedComment.status
-                                    )}`}
-                                >
-                                    {getStatusLabel(selectedComment.status)}
-                                </span>
+                                <StatusBadge
+                                    label={getStatusLabel(selectedComment.status)}
+                                    tone={COMMENT_TONE[selectedComment.status] ?? 'gray'}
+                                />
                             </div>
 
                             {/* Post Link */}

@@ -4,6 +4,14 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Eye, X, Star, User, Calendar, Package } from 'lucide-react';
 import ReviewActions from './ReviewActions';
+import StatusBadge from '@/components/ui/StatusBadge';
+import type { StatusTone } from '@/components/ui/StatusBadge';
+
+const REVIEW_TONE: Record<string, StatusTone> = {
+    APPROVED: 'green',
+    PENDING: 'yellow',
+    REJECTED: 'red',
+};
 
 interface ProductReview {
     id: number;
@@ -21,18 +29,7 @@ interface ReviewsTableProps {
     reviews: ProductReview[];
 }
 
-const getStatusBadge = (status: string) => {
-    switch (status) {
-        case 'APPROVED':
-            return 'bg-green-100 text-green-800';
-        case 'PENDING':
-            return 'bg-yellow-100 text-yellow-800';
-        case 'REJECTED':
-            return 'bg-red-100 text-red-800';
-        default:
-            return 'bg-gray-100 text-gray-800';
-    }
-};
+
 
 const getStatusLabel = (status: string) => {
     switch (status) {
@@ -141,13 +138,10 @@ export default function ReviewsTable({ reviews }: ReviewsTableProps) {
                                             </Link>
                                         </td>
                                         <td className="px-4 py-3">
-                                            <span
-                                                className={`px-2 py-1 rounded-lg text-xs font-medium ${getStatusBadge(
-                                                    review.status
-                                                )}`}
-                                            >
-                                                {getStatusLabel(review.status)}
-                                            </span>
+                                            <StatusBadge
+                                                label={getStatusLabel(review.status)}
+                                                tone={REVIEW_TONE[review.status] ?? 'gray'}
+                                            />
                                         </td>
                                         <td className="px-4 py-3 text-sm text-gray-600">
                                             {new Date(review.createdAt).toLocaleDateString('fa-IR')}
@@ -158,6 +152,7 @@ export default function ReviewsTable({ reviews }: ReviewsTableProps) {
                                                     onClick={() => setSelectedReview(review)}
                                                     className="p-2 text-gray-500 hover:text-ocean transition-colors"
                                                     title="مشاهده کامل"
+                aria-label="مشاهده کامل"
                                                 >
                                                     <Eye className="w-4 h-4" />
                                                 </button>
@@ -230,13 +225,10 @@ export default function ReviewsTable({ reviews }: ReviewsTableProps) {
                             {/* Rating + Status */}
                             <div className="flex items-center gap-4">
                                 <StarRating rating={selectedReview.rating} />
-                                <span
-                                    className={`px-2 py-1 rounded-lg text-xs font-medium ${getStatusBadge(
-                                        selectedReview.status
-                                    )}`}
-                                >
-                                    {getStatusLabel(selectedReview.status)}
-                                </span>
+                                <StatusBadge
+                                    label={getStatusLabel(selectedReview.status)}
+                                    tone={REVIEW_TONE[selectedReview.status] ?? 'gray'}
+                                />
                             </div>
 
                             {/* Product Link */}

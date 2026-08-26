@@ -25,6 +25,7 @@ import toast from 'react-hot-toast';
 import { formatPersianNumber, toPersianNumber } from '@/lib/persian';
 import { bulkUpdateProductsAction } from '@/app/actions/products';
 import DeleteProductButton from './DeleteProductButton';
+import StatusBadge from '@/components/ui/StatusBadge';
 
 interface Variant {
     id: number;
@@ -158,7 +159,7 @@ export default function ProductsTableClient({ initialProducts, categories }: Pro
                 }
             } catch (err: unknown) {
                 const message = err instanceof Error ? err.message : String(err);
-                toast.error(message || 'خطایی رخ داد.', { id: loadingToast });
+                toast.error(message || 'خطایی رخ داد. لطفاً دوباره تلاش کنید', { id: loadingToast });
             }
         });
     };
@@ -306,13 +307,10 @@ export default function ProductsTableClient({ initialProducts, categories }: Pro
                                                 {formatPersianNumber(product.price)}
                                             </td>
                                             <td className="px-3 py-3">
-                                                <span className={`px-2 py-1 rounded-lg text-xs font-bold ${
-                                                    product.stock > 5 ? 'bg-green-50 text-green-700 border border-green-100' :
-                                                    product.stock > 0 ? 'bg-orange-50 text-orange-700 border border-orange-100' :
-                                                    'bg-red-50 text-red-700 border border-red-100'
-                                                }`}>
-                                                    {toPersianNumber(product.stock)} عدد
-                                                </span>
+                                                <StatusBadge
+                                                    label={`${toPersianNumber(product.stock)} عدد`}
+                                                    tone={product.stock > 5 ? 'green' : product.stock > 0 ? 'orange' : 'red'}
+                                                />
                                             </td>
                                             <td className="px-3 py-3">
                                                 {product.variants.length > 0 ? (
@@ -339,6 +337,7 @@ export default function ProductsTableClient({ initialProducts, categories }: Pro
                                                         href={`/admin/dashboard/products/${product.id}`}
                                                         className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                                         title="مشاهده جزئیات"
+                aria-label="مشاهده جزئیات"
                                                     >
                                                         <Eye className="w-4.5 h-4.5" />
                                                     </Link>
@@ -346,6 +345,7 @@ export default function ProductsTableClient({ initialProducts, categories }: Pro
                                                         href={`/admin/dashboard/products/${product.id}/edit`}
                                                         className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
                                                         title="ویرایش محصول"
+                aria-label="ویرایش محصول"
                                                     >
                                                         <Edit className="w-4.5 h-4.5" />
                                                     </Link>
@@ -383,6 +383,7 @@ export default function ProductsTableClient({ initialProducts, categories }: Pro
                                     onClick={() => setSelectedIds([])}
                                     className="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
                                     title="لغو انتخاب"
+                aria-label="لغو انتخاب"
                                 >
                                     <X className="w-4 h-4" />
                                 </button>

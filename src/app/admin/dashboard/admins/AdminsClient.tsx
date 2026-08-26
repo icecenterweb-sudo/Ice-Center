@@ -22,6 +22,19 @@ import { AdminRole } from '@prisma/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { updateAdminRolesAction, promoteUserToAdminAction, searchUsersAction } from './actions';
+import StatusBadge from '@/components/ui/StatusBadge';
+import type { StatusTone } from '@/components/ui/StatusBadge';
+
+/** Role → badge tone (DS3). Colors stay distinct across the 7 roles. */
+const ROLE_TONE: Record<AdminRole, StatusTone> = {
+    SUPER_ADMIN: 'red',
+    GENERAL_MANAGER: 'purple',
+    BLOG_WRITER: 'emerald',
+    SUPPORT_ADMIN: 'blue',
+    INVENTORY_MANAGER: 'amber',
+    ADMIN: 'gray',
+    EDITOR: 'cyan',
+};
 
 interface AdminUser {
     id: number;
@@ -107,7 +120,7 @@ export default function AdminsClient({ admins, currentAdminPhone, currentAdminRo
                 setEditingAdmin(null);
                 router.refresh();
             } else {
-                toast.error(res.error || 'خطایی رخ داد.', { id: loadingToast });
+                toast.error(res.error || 'خطایی رخ داد. لطفاً دوباره تلاش کنید', { id: loadingToast });
             }
         });
     };
@@ -236,14 +249,11 @@ export default function AdminsClient({ admins, currentAdminPhone, currentAdminRo
                                         <td className="px-6 py-4">
                                             <div className="flex flex-wrap gap-1.5 max-w-sm">
                                                 {admin.roles.map((role) => (
-                                                    <span 
+                                                    <StatusBadge
                                                         key={role}
-                                                        className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
-                                                            roleConfigs[role]?.bg || 'bg-gray-50 text-gray-700'
-                                                        }`}
-                                                    >
-                                                        {roleConfigs[role]?.label || role}
-                                                    </span>
+                                                        label={roleConfigs[role]?.label || role}
+                                                        tone={ROLE_TONE[role] ?? 'gray'}
+                                                    />
                                                 ))}
                                             </div>
                                         </td>

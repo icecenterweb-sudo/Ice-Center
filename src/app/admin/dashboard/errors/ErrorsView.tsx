@@ -20,6 +20,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { toPersianNumber } from '@/lib/persian';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
+import StatusBadge from '@/components/ui/StatusBadge';
 import { deleteErrorLogAction, bulkDeleteErrorLogsAction, clearAllErrorLogsAction } from './actions';
 
 interface ErrorLog {
@@ -315,7 +316,6 @@ export default function ErrorsView({ initialLogs }: ErrorsViewProps) {
                                 filteredLogs.map((log) => {
                                     const isRowSelected = selectedIds.includes(log.id);
                                     const cfg = severityConfig[log.severity] || severityConfig.ERROR;
-                                    const SeverityIcon = cfg.icon;
                                     return (
                                         <tr 
                                             key={log.id} 
@@ -337,10 +337,14 @@ export default function ErrorsView({ initialLogs }: ErrorsViewProps) {
                                                 </button>
                                             </td>
                                             <td className="px-4 py-3">
-                                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold ${cfg.color}`}>
-                                                    <SeverityIcon className="w-3.5 h-3.5" />
-                                                    {cfg.label}
-                                                </span>
+                                                <StatusBadge
+                                                    label={cfg.label}
+                                                    tone={log.severity === 'CRITICAL' ? 'red'
+                                                        : log.severity === 'ERROR' ? 'orange'
+                                                        : log.severity === 'WARNING' ? 'yellow'
+                                                        : 'blue'}
+                                                    icon={cfg.icon}
+                                                />
                                             </td>
                                             <td className="px-4 py-3 font-mono text-xs text-gray-600 max-w-[200px] truncate" title={log.path || 'سمت سرور / سراسری'}>
                                                 {log.path || '---'}
@@ -442,11 +446,13 @@ export default function ErrorsView({ initialLogs }: ErrorsViewProps) {
                             {/* Modal Header */}
                             <div className="flex justify-between items-center pb-4 border-b border-gray-150 mb-4 shrink-0">
                                 <div className="flex items-center gap-2.5">
-                                    <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-extrabold ${
-                                        severityConfig[selectedLogForDetail.severity]?.color || 'bg-red-50 text-red-700'
-                                    }`}>
-                                        {severityConfig[selectedLogForDetail.severity]?.label || 'خطا'}
-                                    </span>
+                                    <StatusBadge
+                                        label={severityConfig[selectedLogForDetail.severity]?.label || 'خطا'}
+                                        tone={selectedLogForDetail.severity === 'CRITICAL' ? 'red'
+                                            : selectedLogForDetail.severity === 'ERROR' ? 'orange'
+                                            : selectedLogForDetail.severity === 'WARNING' ? 'yellow'
+                                            : 'blue'}
+                                    />
                                     <h3 className="text-lg font-bold text-gray-900">جزئیات کامل لاگ خطا</h3>
                                 </div>
                                 <button 
