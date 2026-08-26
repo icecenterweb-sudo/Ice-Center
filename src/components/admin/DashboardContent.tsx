@@ -6,7 +6,7 @@ export default function DashboardContent({ children }: { children: React.ReactNo
     const { isCollapsed } = useAdminSidebar();
 
     return (
-        <div className={`flex-1 ${isCollapsed ? 'lg:mr-20' : 'lg:mr-72'} w-full transition-all duration-300`}>
+        <div className={`flex-1 min-w-0 flex flex-col ${isCollapsed ? 'lg:mr-20' : 'lg:mr-72'} transition-all duration-300`}>
             {children}
         </div>
     );
