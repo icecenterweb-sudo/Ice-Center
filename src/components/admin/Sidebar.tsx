@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -13,7 +14,7 @@ import {
     ShoppingCart,
     FileText,
     LogOut,
-    ChevronRight,
+    ChevronDown,
     X,
     Tag,
     Palette,
@@ -22,14 +23,18 @@ import {
     Terminal,
     Shield,
     Settings,
-    Star
+    Compass,
+    ShoppingBag,
+    BookOpen,
+    Sparkles,
+    Sliders
 } from 'lucide-react';
 import { canAccessSection, AdminSection } from '@/lib/admin-roles';
 
 const menuItems: { icon: React.ComponentType<{ className?: string }>; label: string; href: string; section: AdminSection }[] = [
     { icon: LayoutDashboard, label: 'داشبورد', href: '/admin/dashboard', section: 'DASHBOARD' },
     { icon: Package, label: 'محصولات', href: '/admin/dashboard/products', section: 'PRODUCTS' },
-    { icon: Star, label: 'نظرات محصولات', href: '/admin/dashboard/reviews', section: 'PRODUCTS' },
+    { icon: MessageSquare, label: 'مدیریت نظرات', href: '/admin/dashboard/comments', section: 'COMMENTS' },
     { icon: Tag, label: 'پیشنهادها', href: '/admin/dashboard/offers', section: 'OFFERS' },
     { icon: FolderTree, label: 'دسته‌بندی‌ها', href: '/admin/dashboard/categories', section: 'CATEGORIES' },
     { icon: FileText, label: 'بلاگ', href: '/admin/dashboard/blog', section: 'BLOG' },
@@ -43,13 +48,14 @@ const menuItems: { icon: React.ComponentType<{ className?: string }>; label: str
     { icon: Shield, label: 'مدیریت دسترسی‌ها', href: '/admin/dashboard/admins', section: 'ADMIN_MANAGEMENT' },
 ];
 
-// Grouped navigation (IA1) — heading style mirrors MobileMenu.tsx's labeled
-// sections (text-xs font-bold, small padding), recolored for the dark sidebar.
-// Ordering follows operational-first principle (IA2): daily ops → store → content
-// → marketing/appearance → system/config.
-const MENU_GROUPS: { title: string; items: typeof menuItems }[] = [
+const MENU_GROUPS: {
+    title: string;
+    icon: React.ComponentType<{ className?: string }>;
+    items: typeof menuItems;
+}[] = [
     {
         title: 'عملیات روزمره',
+        icon: Compass,
         items: [
             menuItems[0], // Dashboard
             menuItems[10], // Orders
@@ -59,23 +65,29 @@ const MENU_GROUPS: { title: string; items: typeof menuItems }[] = [
     },
     {
         title: 'فروشگاه',
+        icon: ShoppingBag,
         items: [
             menuItems[1], // Products
-            menuItems[2], // Product Reviews
             menuItems[3], // Offers
             menuItems[4], // Categories
         ],
     },
     {
         title: 'محتوا',
-        items: [menuItems[5]], // Blog
+        icon: BookOpen,
+        items: [
+            menuItems[5], // Blog
+            menuItems[2], // Comments Management
+        ],
     },
     {
         title: 'بازاریابی و ظاهر',
+        icon: Sparkles,
         items: [menuItems[7]], // Appearance
     },
     {
         title: 'سیستم',
+        icon: Sliders,
         items: [
             menuItems[6], // Analytics
             menuItems[8], // Settings
@@ -85,24 +97,57 @@ const MENU_GROUPS: { title: string; items: typeof menuItems }[] = [
     },
 ];
 
-// Items whose section owns real nested/dynamic sub-routes — they stay active
-// while an admin is inside a child page (e.g. /orders/123). Everything else,
-// including Dashboard (/admin/dashboard, which is a prefix of EVERY admin
-// route), must match exactly so only one item — and therefore only one
-// framer-motion layoutId="activeTab" pill — is ever active.
 const PREFIX_ACTIVE_HREFS = new Set([
     '/admin/dashboard/products',    // add / [id] / [id]/edit
+    '/admin/dashboard/comments',    // unified comments hub
     '/admin/dashboard/orders',      // [id]
     '/admin/dashboard/users',       // [id]
     '/admin/dashboard/offers',      // add / [id] / [id]/edit
     '/admin/dashboard/categories',  // add / edit/[id] / subcategories/**
-    '/admin/dashboard/blog',        // comments / new / [id] / [id]/edit
+    '/admin/dashboard/blog',        // new / [id] / [id]/edit
     '/admin/dashboard/appearance',  // banners/** / slides/**
 ]);
 
 export default function Sidebar({ adminRoles = [] }: { adminRoles?: string[] }) {
     const pathname = usePathname();
     const { isCollapsed, isMobileOpen, setIsMobileOpen } = useAdminSidebar();
+
+    // Helper to check if a specific item is active
+    const isItemActive = (href: string) => {
+        return pathname === href || (PREFIX_ACTIVE_HREFS.has(href) && pathname.startsWith(href + '/'));
+    };
+
+    // Find which group currently contains the active route
+    const activeGroupTitle = useMemo(() => {
+        for (const group of MENU_GROUPS) {
+            if (group.items.some(item => isItemActive(item.href))) {
+                return group.title;
+            }
+        }
+        return MENU_GROUPS[0].title;
+    }, [pathname]);
+
+    // Keep track of which groups are expanded (default: active group is open)
+    const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => ({
+        [activeGroupTitle]: true,
+    }));
+
+    // Auto-open active group when route changes
+    useEffect(() => {
+        if (activeGroupTitle) {
+            setOpenGroups((prev) => ({
+                ...prev,
+                [activeGroupTitle]: true,
+            }));
+        }
+    }, [activeGroupTitle]);
+
+    const toggleGroup = (title: string) => {
+        setOpenGroups((prev) => ({
+            ...prev,
+            [title]: !prev[title],
+        }));
+    };
 
     const handleLogout = async () => {
         await fetch('/api/admin/auth/logout', { method: 'POST' });
@@ -142,7 +187,7 @@ export default function Sidebar({ adminRoles = [] }: { adminRoles?: string[] }) 
                 </div>
 
                 {/* Header / Brand */}
-                <div className="relative p-8 mb-4">
+                <div className="relative p-8 mb-2">
                     <motion.div
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -166,62 +211,93 @@ export default function Sidebar({ adminRoles = [] }: { adminRoles?: string[] }) 
                     </motion.div>
                 </div>
 
-                {/* Navigation — grouped (IA1); role filtering unchanged */}
-                <nav className="relative flex-1 px-4 space-y-4 overflow-y-auto custom-scrollbar">
+                {/* Navigation — collapsible topic dropdowns */}
+                <nav className="relative flex-1 px-3 space-y-3 overflow-y-auto custom-scrollbar">
                     {MENU_GROUPS.map((group) => {
                         const visibleItems = group.items.filter(item => canAccessSection(adminRoles, item.section));
                         if (visibleItems.length === 0) return null;
 
+                        const GroupIcon = group.icon;
+                        const hasActiveChild = visibleItems.some(item => isItemActive(item.href));
+                        const isOpen = isCollapsed ? true : !!openGroups[group.title];
+
                         return (
-                            <div key={group.title}>
+                            <div key={group.title} className="rounded-2xl transition-colors">
                                 {!isCollapsed && (
-                                    <h4 className="text-xs font-bold text-slate-500 mb-2 px-2">{group.title}</h4>
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleGroup(group.title)}
+                                        className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-all select-none group/header cursor-pointer"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <GroupIcon className={`w-4 h-4 transition-colors ${hasActiveChild ? 'text-sky-400' : 'text-slate-500 group-hover/header:text-slate-300'}`} />
+                                            <span className={hasActiveChild ? 'text-white' : ''}>{group.title}</span>
+                                            {hasActiveChild && !isOpen && (
+                                                <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
+                                            )}
+                                        </div>
+                                        <motion.div
+                                            animate={{ rotate: isOpen ? 180 : 0 }}
+                                            transition={{ duration: 0.2 }}
+                                            className="text-slate-500 group-hover/header:text-slate-300"
+                                        >
+                                            <ChevronDown className="w-3.5 h-3.5" />
+                                        </motion.div>
+                                    </button>
                                 )}
-                                <div className="space-y-2">
-                                    {visibleItems.map((item, index) => {
-                                        const Icon = item.icon;
-                                        const isActive = pathname === item.href
-                                            || (PREFIX_ACTIVE_HREFS.has(item.href) && pathname.startsWith(item.href + '/'));
 
-                                        return (
-                                            <Link key={item.href} href={item.href} onClick={() => setIsMobileOpen(false)}>
-                                                <motion.div
-                                                    initial={{ opacity: 0, x: -20 }}
-                                                    animate={{ opacity: 1, x: 0 }}
-                                                    transition={{ delay: index * 0.05 }}
-                                                    className={`relative group flex items-center ${isCollapsed ? 'justify-center' : 'gap-4'} px-4 py-3.5 rounded-xl transition-all duration-300 ${isActive
-                                                        ? 'bg-slate-700/50 text-white'
-                                                        : 'text-slate-400 hover:text-white hover:bg-white/5'
-                                                        }`}
-                                                    title={isCollapsed ? item.label : undefined}
-                                                >
-                                                    {/* Active Indicator & Glow */}
-                                                    {isActive && (
-                                                        <motion.div
-                                                            layoutId="activeTab"
-                                                            className="absolute inset-0 bg-slate-600 rounded-xl shadow-lg"
-                                                            initial={false}
-                                                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                                                        />
-                                                    )}
+                                <AnimatePresence initial={false}>
+                                    {isOpen && (
+                                        <motion.div
+                                            key={`content-${group.title}`}
+                                            initial={isCollapsed ? false : { height: 0, opacity: 0 }}
+                                            animate={{ height: 'auto', opacity: 1 }}
+                                            exit={isCollapsed ? undefined : { height: 0, opacity: 0 }}
+                                            transition={{ duration: 0.25, ease: 'easeInOut' }}
+                                            className="overflow-hidden"
+                                        >
+                                            <div className={`space-y-1.5 ${isCollapsed ? 'pt-2' : 'pt-1.5 pr-1'}`}>
+                                                {visibleItems.map((item, index) => {
+                                                    const Icon = item.icon;
+                                                    const isActive = isItemActive(item.href);
 
-                                                    {/* Content */}
-                                                    <div className={`relative z-10 flex items-center ${isCollapsed ? '' : 'gap-4 w-full'}`}>
-                                                        <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-white transition-colors'}`} />
-                                                        {!isCollapsed && (
-                                                            <>
-                                                                <span className="font-medium">{item.label}</span>
+                                                    return (
+                                                        <Link key={item.href} href={item.href} onClick={() => setIsMobileOpen(false)}>
+                                                            <motion.div
+                                                                initial={{ opacity: 0, x: -10 }}
+                                                                animate={{ opacity: 1, x: 0 }}
+                                                                transition={{ delay: index * 0.03 }}
+                                                                className={`relative group flex items-center ${isCollapsed ? 'justify-center' : 'gap-3.5'} px-3.5 py-3 rounded-xl transition-all duration-200 ${isActive
+                                                                    ? 'bg-slate-700/60 text-white'
+                                                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                                                    }`}
+                                                                title={isCollapsed ? item.label : undefined}
+                                                            >
+                                                                {/* Active Indicator & Glow */}
                                                                 {isActive && (
-                                                                    <ChevronRight className="w-4 h-4 ml-auto opacity-70" />
+                                                                    <motion.div
+                                                                        layoutId="activeTab"
+                                                                        className="absolute inset-0 bg-slate-600 rounded-xl shadow-md"
+                                                                        initial={false}
+                                                                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                                                    />
                                                                 )}
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </motion.div>
-                                            </Link>
-                                        );
-                                    })}
-                                </div>
+
+                                                                {/* Content */}
+                                                                <div className={`relative z-10 flex items-center ${isCollapsed ? '' : 'gap-3.5 w-full'}`}>
+                                                                    <Icon className={`w-4.5 h-4.5 flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-white transition-colors'}`} />
+                                                                    {!isCollapsed && (
+                                                                        <span className="font-medium text-xs sm:text-sm">{item.label}</span>
+                                                                    )}
+                                                                </div>
+                                                            </motion.div>
+                                                        </Link>
+                                                    );
+                                                })}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
                         );
                     })}
