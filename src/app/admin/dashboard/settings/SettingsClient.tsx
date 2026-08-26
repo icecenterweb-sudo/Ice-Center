@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { SETTINGS_FIELD_CLASS } from '@/lib/form-classes';
 import { motion } from 'framer-motion';
 import {
     Settings as SettingsIcon,
@@ -194,7 +195,7 @@ export default function SettingsClient() {
                                     value={settings.siteTitle}
                                     onChange={(e) => handleChange('siteTitle', e.target.value)}
                                     placeholder="مثال: آیس سنتر"
-                                    className="w-full px-4 py-3 rounded-2xl bg-gray-50 border border-gray-200 text-sm font-medium text-slate-800 focus:outline-none focus:border-blue-600 focus:bg-white transition-all"
+                                    className={`w-full ${SETTINGS_FIELD_CLASS}`}
                                 />
                             </div>
 
@@ -206,7 +207,7 @@ export default function SettingsClient() {
                                     value={settings.siteSlogan}
                                     onChange={(e) => handleChange('siteSlogan', e.target.value)}
                                     placeholder="مثال: با آیس سنتر، همیشه تخصصی بخر"
-                                    className="w-full px-4 py-3 rounded-2xl bg-gray-50 border border-gray-200 text-sm font-medium text-slate-800 focus:outline-none focus:border-blue-600 focus:bg-white transition-all"
+                                    className={`w-full ${SETTINGS_FIELD_CLASS}`}
                                 />
                             </div>
                         </div>
@@ -221,7 +222,7 @@ export default function SettingsClient() {
                                         value={settings.siteLogo}
                                         onChange={(e) => handleChange('siteLogo', e.target.value)}
                                         placeholder="مثال: /images/logo.png"
-                                        className="flex-1 px-4 py-3 rounded-2xl bg-gray-50 border border-gray-200 text-sm font-medium text-slate-800 focus:outline-none focus:border-blue-600 focus:bg-white transition-all dir-ltr"
+                                        className={`flex-1 ${SETTINGS_FIELD_CLASS} dir-ltr`}
                                     />
                                     <button
                                         type="button"
@@ -244,7 +245,7 @@ export default function SettingsClient() {
                                         value={settings.faviconUrl}
                                         onChange={(e) => handleChange('faviconUrl', e.target.value)}
                                         placeholder="مثال: /favicon.ico"
-                                        className="flex-1 px-4 py-3 rounded-2xl bg-gray-50 border border-gray-200 text-sm font-medium text-slate-800 focus:outline-none focus:border-blue-600 focus:bg-white transition-all dir-ltr"
+                                        className={`flex-1 ${SETTINGS_FIELD_CLASS} dir-ltr`}
                                     />
                                     <button
                                         type="button"
@@ -282,7 +283,7 @@ export default function SettingsClient() {
                                     value={settings.phone}
                                     onChange={(e) => handleChange('phone', e.target.value)}
                                     placeholder="مثال: 09122248917"
-                                    className="w-full px-4 py-3 rounded-2xl bg-gray-50 border border-gray-200 text-sm font-medium text-slate-800 focus:outline-none focus:border-blue-600 focus:bg-white transition-all text-right dir-ltr"
+                                    className={`w-full ${SETTINGS_FIELD_CLASS} text-right dir-ltr`}
                                 />
                             </div>
 
@@ -294,7 +295,7 @@ export default function SettingsClient() {
                                     value={settings.phoneFormatted}
                                     onChange={(e) => handleChange('phoneFormatted', e.target.value)}
                                     placeholder="مثال: ۰۹۱۲-۲۲۴-۸۹۱۷"
-                                    className="w-full px-4 py-3 rounded-2xl bg-gray-50 border border-gray-200 text-sm font-medium text-slate-800 focus:outline-none focus:border-blue-600 focus:bg-white transition-all text-right"
+                                    className={`w-full ${SETTINGS_FIELD_CLASS} text-right`}
                                 />
                             </div>
 
@@ -306,7 +307,7 @@ export default function SettingsClient() {
                                     value={settings.email}
                                     onChange={(e) => handleChange('email', e.target.value)}
                                     placeholder="مثال: icecenter.web@gmail.com"
-                                    className="w-full px-4 py-3 rounded-2xl bg-gray-50 border border-gray-200 text-sm font-medium text-slate-800 focus:outline-none focus:border-blue-600 focus:bg-white transition-all dir-ltr"
+                                    className={`w-full ${SETTINGS_FIELD_CLASS} dir-ltr`}
                                 />
                             </div>
                         </div>
@@ -320,7 +321,7 @@ export default function SettingsClient() {
                                     value={settings.address}
                                     onChange={(e) => handleChange('address', e.target.value)}
                                     placeholder="مثال: تهران، چهاردانگه، ماهر ۲۱"
-                                    className="w-full px-4 py-3 rounded-2xl bg-gray-50 border border-gray-200 text-sm font-medium text-slate-800 focus:outline-none focus:border-blue-600 focus:bg-white transition-all text-right"
+                                    className={`w-full ${SETTINGS_FIELD_CLASS} text-right`}
                                 />
                             </div>
 
@@ -332,7 +333,7 @@ export default function SettingsClient() {
                                     value={settings.workingHours}
                                     onChange={(e) => handleChange('workingHours', e.target.value)}
                                     placeholder="مثال: شنبه تا چهارشنبه ۹ الی ۱۸ | پنجشنبه ۹ الی ۱۴"
-                                    className="w-full px-4 py-3 rounded-2xl bg-gray-50 border border-gray-200 text-sm font-medium text-slate-800 focus:outline-none focus:border-blue-600 focus:bg-white transition-all text-right"
+                                    className={`w-full ${SETTINGS_FIELD_CLASS} text-right`}
                                 />
                             </div>
                         </div>
@@ -345,7 +346,7 @@ export default function SettingsClient() {
                                 value={settings.aboutText}
                                 onChange={(e) => handleChange('aboutText', e.target.value)}
                                 placeholder="معرفی کوتاه برند آیس سنتر در فوتر..."
-                                className="w-full px-4 py-3 rounded-2xl bg-gray-50 border border-gray-200 text-sm font-medium text-slate-800 focus:outline-none focus:border-blue-600 focus:bg-white transition-all resize-none text-right"
+                                className={`w-full ${SETTINGS_FIELD_CLASS} resize-none text-right`}
                             />
                         </div>
                     </motion.div>
@@ -372,7 +373,7 @@ export default function SettingsClient() {
                                     value={settings.instagramUrl}
                                     onChange={(e) => handleChange('instagramUrl', e.target.value)}
                                     placeholder="مثال: https://instagram.com/icecenter"
-                                    className="w-full px-4 py-3 rounded-2xl bg-gray-50 border border-gray-200 text-sm font-medium text-slate-800 focus:outline-none focus:border-blue-600 focus:bg-white transition-all dir-ltr"
+                                    className={`w-full ${SETTINGS_FIELD_CLASS} dir-ltr`}
                                 />
                             </div>
 
@@ -384,7 +385,7 @@ export default function SettingsClient() {
                                     value={settings.telegramUrl}
                                     onChange={(e) => handleChange('telegramUrl', e.target.value)}
                                     placeholder="مثال: https://t.me/icecenter"
-                                    className="w-full px-4 py-3 rounded-2xl bg-gray-50 border border-gray-200 text-sm font-medium text-slate-800 focus:outline-none focus:border-blue-600 focus:bg-white transition-all dir-ltr"
+                                    className={`w-full ${SETTINGS_FIELD_CLASS} dir-ltr`}
                                 />
                             </div>
                         </div>
@@ -400,7 +401,7 @@ export default function SettingsClient() {
                                 value={settings.announcementText}
                                 onChange={(e) => handleChange('announcementText', e.target.value)}
                                 placeholder="مثال: ارسال رایگان خریدهای بالای ۱۰ میلیون تومان به سراسر کشور"
-                                className="w-full px-4 py-3 rounded-2xl bg-gray-50 border border-gray-200 text-sm font-medium text-slate-800 focus:outline-none focus:border-blue-600 focus:bg-white transition-all text-right"
+                                className={`w-full ${SETTINGS_FIELD_CLASS} text-right`}
                             />
                             <p className="text-[11px] text-gray-400 mt-1.5">اگر پر شود، به صورت نوار اطلاع‌رسانی برجسته در بالاطرین بخش هدر سایت نمایش داده می‌شود.</p>
                         </div>
