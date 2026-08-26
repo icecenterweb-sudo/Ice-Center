@@ -257,7 +257,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
                     ))
                 }
             } catch {
-                toast.error('خطا در بروزرسانی')
+                toast.error('خطا در به‌روزرسانی')
             }
         } else {
             // Pure updater with stock capping (#8, #21)

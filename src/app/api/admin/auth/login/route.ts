@@ -4,6 +4,7 @@ import { ADMIN_TOKEN_COOKIE, generateAdminToken, getAdminTokenCookieOptionsForRe
 import { recordAnalyticsEvent } from '@/lib/analytics'
 import { checkRateLimit, getClientIp, RATE_LIMITS } from '@/lib/rate-limiter'
 import { hashOtp } from '@/lib/otp'
+import { logSystemError } from '@/lib/error-logger'
 
 export async function POST(request: NextRequest) {
     try {
@@ -143,6 +144,7 @@ export async function POST(request: NextRequest) {
         return response
     } catch (error) {
         console.error('Login error:', error)
+        await logSystemError(error, '/api/admin/auth/login', 'ERROR')
         return NextResponse.json(
             { error: 'خطای داخلی سرور در پردازش ورود ادمین' },
             { status: 500 }

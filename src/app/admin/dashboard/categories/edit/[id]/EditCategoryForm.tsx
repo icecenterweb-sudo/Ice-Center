@@ -53,12 +53,12 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
         setFieldErrors({});
         const formData = new FormData(e.currentTarget);
         setIsSubmitting(true);
-        const t = toast.loading('در حال بروزرسانی دسته‌بندی...');
+        const t = toast.loading('در حال به‌روزرسانی دسته‌بندی...');
 
         try {
             const res = await updateCategory(category.id, formData);
             if (res.success) {
-                toast.success('دسته‌بندی با موفقیت بروزرسانی شد', { id: t });
+                toast.success('دسته‌بندی با موفقیت به‌روزرسانی شد', { id: t });
                 router.push('/admin/dashboard/categories');
                 router.refresh();
             } else {

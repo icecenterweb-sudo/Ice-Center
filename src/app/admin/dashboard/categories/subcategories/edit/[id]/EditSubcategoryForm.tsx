@@ -58,12 +58,12 @@ export default function EditSubcategoryForm({ subcategory, categories }: EditSub
         setFieldErrors({});
         const formData = new FormData(e.currentTarget);
         setIsSubmitting(true);
-        const t = toast.loading('در حال بروزرسانی زیردسته...');
+        const t = toast.loading('در حال به‌روزرسانی زیردسته...');
 
         try {
             const res = await updateSubcategory(subcategory.id, formData);
             if (res.success) {
-                toast.success('زیردسته با موفقیت بروزرسانی شد', { id: t });
+                toast.success('زیردسته با موفقیت به‌روزرسانی شد', { id: t });
                 router.push('/admin/dashboard/categories');
                 router.refresh();
             } else {

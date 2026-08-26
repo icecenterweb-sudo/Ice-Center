@@ -256,7 +256,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     } catch (error) {
         console.error('Failed to update offer:', error);
         return NextResponse.json(
-            { success: false, error: 'خطا در بروزرسانی پیشنهاد' },
+            { success: false, error: 'خطا در به‌روزرسانی پیشنهاد' },
             { status: 500 }
         );
     }

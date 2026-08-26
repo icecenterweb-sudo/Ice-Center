@@ -137,7 +137,7 @@ export default function EditPostForm({ post, categories, tags }: EditPostFormPro
 
             if (!response.ok) {
                 const result = await response.json();
-                throw new Error(result.error || 'خطا در بروزرسانی پست');
+                throw new Error(result.error || 'خطا در به‌روزرسانی پست');
             }
 
             router.push('/admin/dashboard/blog');
