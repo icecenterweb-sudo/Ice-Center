@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Edit, Trash2, X, Save, AlertTriangle } from 'lucide-react';
+import { Plus, Edit, Trash2, X, Save } from 'lucide-react';
 import { createProductVariant, updateProductVariant, deleteProductVariant } from '@/app/actions/products';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { fieldClass } from '@/lib/form-classes';
+import ConfirmDialog from '@/components/admin/ConfirmDialog';
 
 interface Variant {
     id: number;
@@ -117,7 +118,7 @@ export default function VariantManager({ productId, variants: propVariants, init
         try {
             const res = await updateProductVariant(variantId, formData);
             if (res.success) {
-                toast.success('واریانت با موفقیت بروزرسانی شد', { id: t });
+                toast.success('واریانت با موفقیت به‌روزرسانی شد', { id: t });
                 setEditingId(null);
                 router.refresh();
             } else {
@@ -490,52 +491,17 @@ export default function VariantManager({ productId, variants: propVariants, init
                 )}
             </div>
 
-            {/* Custom RTL Confirmation Modal for variant deletion */}
-            {deletingVariant && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fadeIn" dir="rtl">
-                    <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 space-y-5 animate-scaleUp">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center text-red-500">
-                                    <AlertTriangle className="w-5 h-5" />
-                                </div>
-                                <h3 className="text-lg font-bold text-gray-800">حذف واریانت</h3>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setDeletingVariant(null)}
-                                disabled={isDeleting}
-                                className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        <p className="text-sm text-gray-600 leading-relaxed">
-                            آیا از حذف واریانت «{deletingVariant.name}» اطمینان دارید؟ این عملیات قابل بازگشت نیست.
-                        </p>
-
-                        <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
-                            <button
-                                type="button"
-                                onClick={() => setDeletingVariant(null)}
-                                disabled={isDeleting}
-                                className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-bold transition-colors cursor-pointer disabled:opacity-50"
-                            >
-                                انصراف
-                            </button>
-                            <button
-                                type="button"
-                                onClick={performDelete}
-                                disabled={isDeleting}
-                                className="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-red-500/20 transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-2"
-                            >
-                                {isDeleting ? 'در حال حذف...' : 'حذف واریانت'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Shared confirmation dialog (DS6) */}
+            <ConfirmDialog
+                open={deletingVariant !== null}
+                title="حذف واریانت"
+                message={`آیا از حذف واریانت «${deletingVariant?.name ?? ''}» اطمینان دارید؟ این عملیات قابل بازگشت نیست.`}
+                confirmText="حذف واریانت"
+                variant="danger"
+                isPending={isDeleting}
+                onConfirm={performDelete}
+                onClose={() => setDeletingVariant(null)}
+            />
         </div>
     );
 }
