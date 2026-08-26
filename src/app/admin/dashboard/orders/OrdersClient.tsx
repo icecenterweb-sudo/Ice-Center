@@ -130,7 +130,7 @@ export default function OrdersClient({ initialOrders, totalPages, currentPage }:
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 </form>
 
-                <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-none min-w-0">
+                <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-2.5 pt-0.5 scrollbar-apple min-w-0">
                     <Filter className="w-4 h-4 text-gray-400 ml-1 shrink-0" />
                     <button
                         onClick={() => handleStatusFilter('')}

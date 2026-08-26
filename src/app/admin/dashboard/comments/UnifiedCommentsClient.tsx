@@ -333,7 +333,7 @@ export default function UnifiedCommentsClient({
                 </div>
 
                 {/* Bottom Section: Status Pills */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none min-w-0 pt-1 border-t border-gray-100">
+                <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-apple min-w-0 pt-1.5 border-t border-gray-100">
                     <Filter className="w-3.5 h-3.5 text-gray-400 ml-1 shrink-0" />
                     <button
                         type="button"

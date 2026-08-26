@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -112,40 +112,29 @@ export default function Sidebar({ adminRoles = [] }: { adminRoles?: string[] }) 
     const pathname = usePathname();
     const { isCollapsed, isMobileOpen, setIsMobileOpen } = useAdminSidebar();
 
+    // Track explicit user toggle overrides
+    const [toggledGroups, setToggledGroups] = useState<Record<string, boolean>>({});
+
     // Helper to check if a specific item is active
     const isItemActive = (href: string) => {
         return pathname === href || (PREFIX_ACTIVE_HREFS.has(href) && pathname.startsWith(href + '/'));
     };
 
-    // Find which group currently contains the active route
-    const activeGroupTitle = useMemo(() => {
-        for (const group of MENU_GROUPS) {
-            if (group.items.some(item => isItemActive(item.href))) {
-                return group.title;
-            }
+    // Check if group should be expanded
+    const isGroupOpen = (group: typeof MENU_GROUPS[number]) => {
+        if (isCollapsed) return true;
+        if (toggledGroups[group.title] !== undefined) {
+            return toggledGroups[group.title];
         }
-        return MENU_GROUPS[0].title;
-    }, [pathname]);
+        // Default: Open the group that contains the active route or the first group
+        const hasActive = group.items.some(item => isItemActive(item.href));
+        return hasActive || group.title === MENU_GROUPS[0].title;
+    };
 
-    // Keep track of which groups are expanded (default: active group is open)
-    const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => ({
-        [activeGroupTitle]: true,
-    }));
-
-    // Auto-open active group when route changes
-    useEffect(() => {
-        if (activeGroupTitle) {
-            setOpenGroups((prev) => ({
-                ...prev,
-                [activeGroupTitle]: true,
-            }));
-        }
-    }, [activeGroupTitle]);
-
-    const toggleGroup = (title: string) => {
-        setOpenGroups((prev) => ({
+    const toggleGroup = (title: string, currentlyOpen: boolean) => {
+        setToggledGroups((prev) => ({
             ...prev,
-            [title]: !prev[title],
+            [title]: !currentlyOpen,
         }));
     };
 
@@ -219,14 +208,14 @@ export default function Sidebar({ adminRoles = [] }: { adminRoles?: string[] }) 
 
                         const GroupIcon = group.icon;
                         const hasActiveChild = visibleItems.some(item => isItemActive(item.href));
-                        const isOpen = isCollapsed ? true : !!openGroups[group.title];
+                        const isOpen = isGroupOpen(group);
 
                         return (
                             <div key={group.title} className="rounded-2xl transition-colors">
                                 {!isCollapsed && (
                                     <button
                                         type="button"
-                                        onClick={() => toggleGroup(group.title)}
+                                        onClick={() => toggleGroup(group.title, isOpen)}
                                         className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-all select-none group/header cursor-pointer"
                                     >
                                         <div className="flex items-center gap-2">

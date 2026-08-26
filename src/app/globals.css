@@ -155,65 +155,104 @@ div.ProseMirror blockquote,
   font-style: italic !important;
 }
 
-/* Hide scrollbar but allow scrolling */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  /* IE and Edge */
-  scrollbar-width: none;
-  /* Firefox */
-}
-
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-  /* Chrome, Safari, Opera */
-}
-
 /* ==========================================
-   SCROLLBAR MODELS (SCROLL STYLES)
+   APPLE-STYLE MINIMALIST SCROLLBAR (GLOBAL)
    ========================================== */
 
-/* Modern scrollbar support: standard properties only for Firefox (where webkit is not supported) */
-@supports not selector(::-webkit-scrollbar) {
-  .scrollbar-sleek {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(156, 163, 175, 0.4) transparent;
-  }
-  .scrollbar-oceanic {
-    scrollbar-width: thin;
-    scrollbar-color: #2E79BA rgba(8, 31, 55, 0.05);
-  }
-  .scrollbar-cyberpunk {
-    scrollbar-width: thin;
-    scrollbar-color: #f43f5e #0b0f19;
-  }
-  .scrollbar-glass {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.2) rgba(0, 0, 0, 0.02);
-  }
-  .scrollbar-luxury {
-    scrollbar-width: thin;
-    scrollbar-color: #d97706 #171717;
-  }
-  .custom-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
-  }
+/* Universal Scrollbar for WebKit Browsers (Chrome, Edge, Safari, Opera) */
+*::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
 }
 
-/* Chrome, Edge, Safari, Opera (Webkit) pseudo-element styling */
-.scrollbar-sleek::-webkit-scrollbar {
-  width: 6px !important;
-  height: 6px !important;
-}
-.scrollbar-sleek::-webkit-scrollbar-track {
+*::-webkit-scrollbar-track {
   background: transparent !important;
 }
-.scrollbar-sleek::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.3) !important;
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s ease;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.55);
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background: rgba(71, 85, 105, 0.75);
+}
+
+/* Remove default OS / Windows arrow buttons completely */
+*::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Transparent corner */
+*::-webkit-scrollbar-corner {
+  background: transparent !important;
+}
+
+/* Standard properties for Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
+}
+
+/* Hide scrollbar completely while keeping scrollability */
+.scrollbar-hide,
+.scrollbar-none,
+.no-scrollbar {
+  -ms-overflow-style: none !important; /* IE and Edge */
+  scrollbar-width: none !important;    /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;            /* Chrome, Safari, Opera */
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Apple Sleek Minimal Scrollbar (5px) */
+.scrollbar-apple,
+.scrollbar-sleek,
+.scrollbar-thin {
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(100, 116, 139, 0.4) transparent !important;
+}
+
+.scrollbar-apple::-webkit-scrollbar,
+.scrollbar-sleek::-webkit-scrollbar,
+.scrollbar-thin::-webkit-scrollbar {
+  width: 5px !important;
+  height: 5px !important;
+}
+
+.scrollbar-apple::-webkit-scrollbar-track,
+.scrollbar-sleek::-webkit-scrollbar-track,
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.04) !important;
   border-radius: 9999px !important;
 }
-.scrollbar-sleek::-webkit-scrollbar-thumb:hover {
-  background: rgba(156, 163, 175, 0.6) !important;
+
+.scrollbar-apple::-webkit-scrollbar-thumb,
+.scrollbar-sleek::-webkit-scrollbar-thumb,
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.4) !important;
+  border-radius: 9999px !important;
+  transition: background 0.2s ease !important;
+}
+
+.scrollbar-apple::-webkit-scrollbar-thumb:hover,
+.scrollbar-sleek::-webkit-scrollbar-thumb:hover,
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(71, 85, 105, 0.7) !important;
 }
 
 /* Oceanic Ice */
