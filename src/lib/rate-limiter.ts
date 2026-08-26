@@ -134,21 +134,33 @@ export async function checkRateLimit(
 }
 
 /**
- * Get client IP from request
+ * Get client IP from request safely.
+ * When behind reverse proxies (Vercel, Nginx, Cloudflare), intermediate proxies append
+ * the connecting client's IP to the right of `x-forwarded-for`. The leftmost value can
+ * be easily forged/spoofed by client headers.
+ * 
+ * We evaluate trusted proxy hops from the right of `x-forwarded-for` (default: 1 hop)
+ * or fall back to `x-real-ip` (which is typically set directly by the reverse proxy).
  */
 export function getClientIp(request: Request): string {
-    // Try various headers
-    const forwarded = request.headers.get('x-forwarded-for');
-    if (forwarded) {
-        return forwarded.split(',')[0].trim();
-    }
-
     const realIp = request.headers.get('x-real-ip');
-    if (realIp) {
-        return realIp;
+    const forwarded = request.headers.get('x-forwarded-for');
+
+    if (forwarded) {
+        const ips = forwarded.split(',').map(ip => ip.trim()).filter(Boolean);
+        if (ips.length > 0) {
+            const rawHops = process.env.TRUSTED_PROXY_HOPS;
+            const hops = rawHops ? Math.max(1, parseInt(rawHops, 10) || 1) : 1;
+            // Select IP from the right based on trusted proxy count
+            const index = Math.max(0, ips.length - hops);
+            return ips[index];
+        }
     }
 
-    // Fallback
+    if (realIp) {
+        return realIp.trim();
+    }
+
     return 'unknown';
 }
 

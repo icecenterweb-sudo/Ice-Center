@@ -7,6 +7,7 @@ import { NextRequest, NextResponse, connection } from 'next/server';
 import { prisma } from '@/lib/db';
 import { checkRateLimit, getClientIp, RATE_LIMITS } from '@/lib/rate-limiter';
 import { recordAnalyticsEvent } from '@/lib/analytics';
+import { logSystemError } from '@/lib/error-logger';
 
 // Search limits
 const MAX_SEARCH_RESULTS = 20;
@@ -123,6 +124,7 @@ export async function GET(request: NextRequest) {
 
     } catch (error) {
         console.error('Search error:', error);
+        await logSystemError(error, '/api/search', 'ERROR');
         return NextResponse.json(
             { success: false, error: 'خطا در جستجو' },
             { status: 500 }

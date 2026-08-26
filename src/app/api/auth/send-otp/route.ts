@@ -3,6 +3,7 @@ import { sendOtp } from '@/lib/sms'
 import { isValidIranianMobile, normalizePhone } from '@/lib/sms'
 import { canSendOtp, storeOtp } from '@/lib/otp'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
+import { logSystemError } from '@/lib/error-logger'
 
 export async function POST(request: NextRequest) {
     try {
@@ -56,6 +57,7 @@ export async function POST(request: NextRequest) {
 
         if (!smsResult.success || !smsResult.code) {
             console.error('SMS send failed:', smsResult.error)
+            await logSystemError(smsResult.error || 'SMS send failed', '/api/auth/send-otp [SMS]', 'WARNING')
             return NextResponse.json(
                 { error: 'خطا در ارسال پیامک. لطفاً دوباره تلاش کنید' },
                 { status: 500 }
@@ -73,6 +75,7 @@ export async function POST(request: NextRequest) {
 
     } catch (error) {
         console.error('Send OTP error:', error)
+        await logSystemError(error, '/api/auth/send-otp', 'ERROR')
         return NextResponse.json(
             { error: 'خطای سرور. لطفاً دوباره تلاش کنید' },
             { status: 500 }

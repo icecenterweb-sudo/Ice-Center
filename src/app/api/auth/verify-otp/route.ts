@@ -13,6 +13,7 @@ import {
 import { recordAnalyticsEvent } from '@/lib/analytics'
 import { toEnglishDigits } from '@/lib/persian'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
+import { logSystemError } from '@/lib/error-logger'
 
 export async function POST(request: NextRequest) {
     try {
@@ -159,6 +160,7 @@ export async function POST(request: NextRequest) {
 
     } catch (error) {
         console.error('Verify OTP error:', error)
+        await logSystemError(error, '/api/auth/verify-otp', 'ERROR')
         return NextResponse.json(
             { error: 'خطای سرور. لطفاً دوباره تلاش کنید' },
             { status: 500 }

@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse, connection } from 'next/server';
 import { cleanupExpiredOtps } from '@/lib/otp';
+import { logSystemError } from '@/lib/error-logger';
 
 export async function GET(request: NextRequest) {
     await connection();
@@ -38,6 +39,7 @@ export async function GET(request: NextRequest) {
 
     } catch (error) {
         console.error('[Cron] OTP cleanup failed:', error);
+        await logSystemError(error, '/api/cron/cleanup-otps', 'ERROR');
         return NextResponse.json(
             { success: false, error: 'Cleanup failed' },
             { status: 500 }

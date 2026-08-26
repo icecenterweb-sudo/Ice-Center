@@ -4,6 +4,7 @@ import path from 'path';
 import crypto from 'crypto';
 import { requireAdmin } from '@/lib/admin-auth';
 import { getUploadStorageRoot, sanitizeUploadFolder } from '@/lib/uploads';
+import { logSystemError } from '@/lib/error-logger';
 
 const MAX_UPLOAD_SIZE = 5 * 1024 * 1024;
 const MIME_TO_EXTENSION: Record<string, string> = {
@@ -104,9 +105,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: unknown) {
     console.error('خطا در آپلود:', error);
-    const message = error instanceof Error ? error.message : 'Upload failed';
+    await logSystemError(error, '/api/upload', 'ERROR');
     return NextResponse.json(
-      { success: false, message },
+      { success: false, message: 'خطا در آپلود فایل. لطفاً دوباره تلاش کنید.' },
       { status: 500 }
     );
   }

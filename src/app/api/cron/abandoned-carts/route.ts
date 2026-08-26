@@ -8,6 +8,7 @@
 
 import { NextRequest, NextResponse, connection } from 'next/server';
 import { prisma } from '@/lib/db';
+import { logSystemError } from '@/lib/error-logger';
 
 export async function GET(request: NextRequest) {
     await connection();
@@ -95,6 +96,7 @@ export async function GET(request: NextRequest) {
         });
     } catch (error) {
         console.error('[Cron] Abandoned cart cron failed:', error);
+        await logSystemError(error, '/api/cron/abandoned-carts', 'ERROR');
         return NextResponse.json({ success: false, error: 'Cron failed' }, { status: 500 });
     }
 }

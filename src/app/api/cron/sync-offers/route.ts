@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse, connection } from 'next/server';
 import { syncOfferFlags } from '@/lib/offers';
+import { logSystemError } from '@/lib/error-logger';
 
 export async function GET(request: NextRequest) {
     await connection(); // Required for request.headers with cacheComponents
@@ -42,6 +43,7 @@ export async function GET(request: NextRequest) {
 
     } catch (error) {
         console.error('[Cron] Offer sync failed:', error);
+        await logSystemError(error, '/api/cron/sync-offers', 'ERROR');
         return NextResponse.json(
             { success: false, error: 'Sync failed' },
             { status: 500 }
