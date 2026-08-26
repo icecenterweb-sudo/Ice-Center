@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import EditCategoryForm from './EditCategoryForm';
 import { connection } from 'next/server';
 import { Suspense } from 'react';
+import { requireRolePage } from '@/lib/admin-auth';
 
 interface EditCategoryPageProps {
     params: Promise<{ id: string }>;
@@ -10,6 +11,7 @@ interface EditCategoryPageProps {
 
 async function EditCategoryContent({ params }: EditCategoryPageProps) {
     await connection();
+    await requireRolePage('CATEGORIES');
     const { id } = await params;
     const categoryId = parseInt(id);
 

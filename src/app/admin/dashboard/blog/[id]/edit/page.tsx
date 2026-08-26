@@ -4,6 +4,7 @@ import { getBlogCategories, getBlogTags } from '@/lib/blog/queries';
 import EditPostForm from './EditPostForm';
 import { connection } from 'next/server';
 import { Suspense } from 'react';
+import { requireRolePage } from '@/lib/admin-auth';
 
 interface Props {
     params: Promise<{ id: string }>;
@@ -20,6 +21,7 @@ async function getPost(id: number) {
 
 async function EditPostContent({ params }: Props) {
     await connection();
+    await requireRolePage('BLOG');
     const { id } = await params;
     const postId = parseInt(id, 10);
 

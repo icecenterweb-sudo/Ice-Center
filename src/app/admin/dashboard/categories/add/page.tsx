@@ -1,9 +1,11 @@
 import CategoryForm from './CategoryForm';
 import { connection } from 'next/server';
 import { Suspense } from 'react';
+import { requireRolePage } from '@/lib/admin-auth';
 
 async function AddCategoryContent() {
     await connection();
+    await requireRolePage('CATEGORIES');
     return <CategoryForm />;
 }
 

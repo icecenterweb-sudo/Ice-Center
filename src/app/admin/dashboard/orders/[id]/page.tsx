@@ -1,8 +1,10 @@
 import { notFound } from 'next/navigation';
 import { getOrderDetails } from '../actions';
 import OrderDetailClient from './OrderDetailClient';
+import { requireRolePage } from '@/lib/admin-auth';
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
+    await requireRolePage('ORDERS');
     const { id } = await params;
 
     // Parse ID safely

@@ -2,9 +2,11 @@ import { getBlogCategories, getBlogTags } from '@/lib/blog/queries';
 import NewPostForm from './NewPostForm';
 import { connection } from 'next/server';
 import { Suspense } from 'react';
+import { requireRolePage } from '@/lib/admin-auth';
 
 async function NewPostContent() {
     await connection();
+    await requireRolePage('BLOG');
     const [categories, tags] = await Promise.all([
         getBlogCategories(),
         getBlogTags(),

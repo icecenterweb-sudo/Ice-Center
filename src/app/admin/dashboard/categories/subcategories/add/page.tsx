@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db';
 import SubcategoryForm from './SubcategoryForm';
 import { connection } from 'next/server';
 import { Suspense } from 'react';
+import { requireRolePage } from '@/lib/admin-auth';
 
 async function AddSubcategoryContent({
     searchParams
@@ -9,6 +10,7 @@ async function AddSubcategoryContent({
     searchParams: Promise<{ categoryId?: string }>
 }) {
     await connection();
+    await requireRolePage('CATEGORIES');
     const params = await searchParams;
     const categoryId = params.categoryId ? parseInt(params.categoryId) : null;
 
