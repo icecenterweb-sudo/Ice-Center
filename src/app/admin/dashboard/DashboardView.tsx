@@ -57,7 +57,7 @@ const auditActionLabels: Record<string, string> = {
     PRODUCT_DELETE: 'حذف محصول',
     PRODUCT_TOGGLE: 'تغییر وضعیت کالا',
     ORDER_STATUS_UPDATE: 'تغییر وضعیت سفارش',
-    ORDER_NOTES_UPDATE: 'بروزرسانی یادداشت سفارش',
+    ORDER_NOTES_UPDATE: 'به‌روزرسانی یادداشت سفارش',
     ADMIN_UPDATE: 'تغییر نقش‌های مدیر',
 }
 

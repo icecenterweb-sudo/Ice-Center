@@ -193,7 +193,7 @@ export async function updateAdminNotes(orderId: number, notes: string) {
         });
 
         // Record Audit log
-        await recordAudit(admin.adminId, "ORDER_NOTES_UPDATE", "Order", order.id, `بروزرسانی یادداشت ادمین برای سفارش ${order.orderNumber}`);
+        await recordAudit(admin.adminId, "ORDER_NOTES_UPDATE", "Order", order.id, `به‌روزرسانی یادداشت ادمین برای سفارش ${order.orderNumber}`);
 
         revalidatePath(`/admin/dashboard/orders/${orderId}`);
         return { success: true };

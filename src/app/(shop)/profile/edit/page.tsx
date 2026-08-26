@@ -65,11 +65,11 @@ export default function ProfileEditPage() {
             const result = await response.json();
 
             if (response.ok) {
-                toast.success('پروفایل با موفقیت بروزرسانی شد');
+                toast.success('پروفایل با موفقیت به‌روزرسانی شد');
                 await refreshUser();
                 router.push('/profile');
             } else {
-                toast.error(result.error || 'خطا در بروزرسانی پروفایل');
+                toast.error(result.error || 'خطا در به‌روزرسانی پروفایل');
             }
         } catch {
             toast.error('خطا در برقراری ارتباط');

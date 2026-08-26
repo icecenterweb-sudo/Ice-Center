@@ -68,9 +68,9 @@ export async function PATCH(
 
         return NextResponse.json({ success: true, comment });
     } catch (error) {
-        console.error('خطا در بروزرسانی نظر:', error);
+        console.error('خطا در به‌روزرسانی نظر:', error);
         return NextResponse.json(
-            { error: 'خطا در بروزرسانی نظر' },
+            { error: 'خطا در به‌روزرسانی نظر' },
             { status: 500 }
         );
     }

@@ -249,7 +249,7 @@ export async function updateProduct(id: number, formData: FormData): Promise<Act
         });
 
         // Record Audit log
-        await recordAudit(admin.adminId, "PRODUCT_UPDATE", "Product", product.id, `بروزرسانی مشخصات محصول "${product.name}" (موجودی: ${product.stock}، قیمت: ${product.price})`);
+        await recordAudit(admin.adminId, "PRODUCT_UPDATE", "Product", product.id, `به‌روزرسانی مشخصات محصول "${product.name}" (موجودی: ${product.stock}، قیمت: ${product.price})`);
 
         // Non-blocking wishlist notifications
         const wasOutOfStock = currentProduct.stock === 0 || currentProduct.inventoryStatus === 'OUT_OF_STOCK';

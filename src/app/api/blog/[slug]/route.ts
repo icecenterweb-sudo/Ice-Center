@@ -120,7 +120,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     } catch (error) {
         console.error('Error updating blog post:', error);
         return NextResponse.json(
-            { error: 'خطا در بروزرسانی پست' },
+            { error: 'خطا در به‌روزرسانی پست' },
             { status: 500 }
         );
     }

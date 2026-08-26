@@ -82,6 +82,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ item: formattedItem })
     } catch (error) {
         console.error('Cart update error:', error)
-        return NextResponse.json({ error: 'خطا در بروزرسانی سبد خرید' }, { status: 500 })
+        return NextResponse.json({ error: 'خطا در به‌روزرسانی سبد خرید' }, { status: 500 })
     }
 }

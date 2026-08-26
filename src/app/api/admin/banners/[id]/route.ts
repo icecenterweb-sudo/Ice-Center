@@ -141,7 +141,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     } catch (error) {
         console.error('Failed to update banner:', error);
         return NextResponse.json(
-            { success: false, error: 'خطا در بروزرسانی بنر' },
+            { success: false, error: 'خطا در به‌روزرسانی بنر' },
             { status: 500 }
         );
     }

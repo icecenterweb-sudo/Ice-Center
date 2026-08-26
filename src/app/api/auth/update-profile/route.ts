@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
             success: true,
             user,
-            message: 'پروفایل با موفقیت بروزرسانی شد',
+            message: 'پروفایل با موفقیت به‌روزرسانی شد',
         })
 
     } catch (error) {

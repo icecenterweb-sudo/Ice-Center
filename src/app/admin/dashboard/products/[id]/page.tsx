@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ArrowRight, Edit } from 'lucide-react';
 import { connection } from 'next/server';
 import { Suspense } from 'react';
+import { requireRolePage } from '@/lib/admin-auth';
 
 const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fa-IR').format(amount);
@@ -11,6 +12,7 @@ const formatCurrency = (amount: number) => {
 
 async function ProductDetailContent({ params }: { params: Promise<{ id: string }> }) {
     await connection();
+    await requireRolePage('PRODUCTS');
     const { id } = await params;
     const productId = parseInt(id);
 
@@ -156,7 +158,7 @@ async function ProductDetailContent({ params }: { params: Promise<{ id: string }
                                 </span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-gray-500">آخرین بروزرسانی</span>
+                                <span className="text-gray-500">آخرین به‌روزرسانی</span>
                                 <span className="font-bold text-gray-800">
                                     {new Date(product.updatedAt).toLocaleDateString('fa-IR')}
                                 </span>

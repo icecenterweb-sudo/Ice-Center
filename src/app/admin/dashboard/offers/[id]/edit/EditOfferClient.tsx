@@ -233,11 +233,11 @@ export default function EditOfferClient({ id }: { id: string }) {
                     }
                     setFieldErrors(flat);
                 }
-                setError(data.error || 'خطا در بروزرسانی پیشنهاد');
+                setError(data.error || 'خطا در به‌روزرسانی پیشنهاد');
             }
         } catch (err) {
             console.error('Submit error:', err);
-            setError('خطا در بروزرسانی پیشنهاد');
+            setError('خطا در به‌روزرسانی پیشنهاد');
         } finally {
             setIsSubmitting(false);
         }

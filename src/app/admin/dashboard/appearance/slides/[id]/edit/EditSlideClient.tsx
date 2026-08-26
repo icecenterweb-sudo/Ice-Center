@@ -236,11 +236,11 @@ export default function EditSlideClient({ id }: { id: string }) {
                     }
                     setFieldErrors(flat);
                 }
-                setError(data.error || 'خطا در بروزرسانی اسلاید');
+                setError(data.error || 'خطا در به‌روزرسانی اسلاید');
             }
         } catch (err) {
             console.error('Submit error:', err);
-            setError('خطا در بروزرسانی اسلاید');
+            setError('خطا در به‌روزرسانی اسلاید');
         } finally {
             setIsSubmitting(false);
         }

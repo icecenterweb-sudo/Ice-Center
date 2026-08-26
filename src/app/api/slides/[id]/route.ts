@@ -152,7 +152,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     } catch (error) {
         console.error('Failed to update slide:', error);
         return NextResponse.json(
-            { success: false, error: 'خطا در بروزرسانی اسلاید' },
+            { success: false, error: 'خطا در به‌روزرسانی اسلاید' },
             { status: 500 }
         );
     }

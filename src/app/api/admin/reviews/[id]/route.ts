@@ -95,7 +95,7 @@ export async function PATCH(
         }
         console.error('خطا در بررسی نقد:', error);
         return NextResponse.json(
-            { error: 'خطا در بروزرسانی وضعیت نقد' },
+            { error: 'خطا در به‌روزرسانی وضعیت نقد' },
             { status: 500 }
         );
     }

@@ -181,7 +181,7 @@ export default function SupportClient() {
                         <button
                             onClick={fetchRooms}
                             className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-600 transition-colors"
-                            title="بروزرسانی"
+                            title="به‌روزرسانی"
                         >
                             <RefreshCw className="w-4 h-4" />
                         </button>
