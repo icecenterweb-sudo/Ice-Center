@@ -7,7 +7,7 @@
 export default function LoadingSpinner() {
     return (
         <div
-            className="fixed inset-0 z-[100] flex items-center justify-center backdrop-blur-sm bg-[#FCFEFF]/35"
+            className="fixed inset-0 z-[100] flex items-center justify-center backdrop-blur-sm bg-ice-white/35"
         >
             <div className="bg-midnight rounded-2xl px-8 py-6 shadow-xl flex flex-col items-center gap-3">
                 {/* Spinner stacked properly */}

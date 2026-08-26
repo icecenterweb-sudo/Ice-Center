@@ -24,6 +24,11 @@ html {
   --color-frost: #F2F8FF;
   --color-steel: #0A1424;
   --color-ice-white: #FCFEFF;
+
+  /* Admin accent (DS8 decision): intentional split from the shop's `ocean`.
+     Use for primary admin action buttons instead of raw orange-* classes. */
+  --color-admin-accent: #f97316;
+  --color-admin-accent-dark: #ea580c;
 }
 
 /* Global brand focus ring for accessibility (WCAG 2.4.7 Focus Visible) */
@@ -31,6 +36,15 @@ html {
   outline: 2px solid var(--color-ocean);
   outline-offset: 2px;
 }
+
+/* ============================================================
+   Design conventions (NEW-7 / NEW-8) — keep new work aligned:
+   Radius roles:  inputs/rows = rounded-lg · cards/panels = rounded-2xl ·
+                  pills/badges/avatars = rounded-full
+   Z-index ladder (no arbitrary z-* for new code):
+                  base content = auto · sticky header/sidebar = 40 ·
+                  dropdowns = 40 · overlays/modals = 50
+   ============================================================ */
 
 body {
   background: var(--color-ice-white);
@@ -40,6 +54,15 @@ body {
 
 .font-yekan {
   font-family: var(--font-yekan), sans-serif;
+}
+
+/* LTR helper for phone/number inputs and numeric display inside RTL layout.
+   Used across auth/checkout/contact/settings forms (NEW-1 fix: the class was
+   applied in 11 files but never defined). */
+.dir-ltr {
+  direction: ltr;
+  text-align: left;
+  unicode-bidi: isolate;
 }
 
 /* ============================================================
