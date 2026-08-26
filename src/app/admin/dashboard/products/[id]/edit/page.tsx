@@ -6,9 +6,11 @@ import VariantManager from './VariantManager';
 import EditProductForm from './EditProductForm';
 import { connection } from 'next/server';
 import { Suspense } from 'react';
+import { requireRolePage } from '@/lib/admin-auth';
 
 async function EditProductContent({ params }: { params: Promise<{ id: string }> }) {
     await connection();
+    await requireRolePage('PRODUCTS');
     const { id } = await params;
     const productId = parseInt(id);
 

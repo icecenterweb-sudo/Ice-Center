@@ -2,9 +2,11 @@ import { prisma } from '@/lib/db';
 import DashboardView from './DashboardView';
 import { connection } from 'next/server';
 import { Suspense } from 'react';
+import { requireRolePage } from '@/lib/admin-auth';
 
 async function DashboardContent() {
     await connection(); // Required for dynamic data access with cacheComponents
+    await requireRolePage('DASHBOARD');
     const now = new Date();
     const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 

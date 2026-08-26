@@ -2,9 +2,11 @@ import { prisma } from '@/lib/db';
 import AddProductForm from './AddProductForm';
 import { connection } from 'next/server';
 import { Suspense } from 'react';
+import { requireRolePage } from '@/lib/admin-auth';
 
 async function AddProductContent() {
     await connection();
+    await requireRolePage('PRODUCTS');
     // Fetch subcategories with their categories
     const subcategories = await prisma.subcategory.findMany({
         include: {
