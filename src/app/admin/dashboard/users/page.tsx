@@ -1,3 +1,7 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'کاربران' };
+
 import { prisma } from '@/lib/db';
 import { connection } from 'next/server';
 import { Suspense } from 'react';

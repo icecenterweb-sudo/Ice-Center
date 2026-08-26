@@ -1,5 +1,10 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'نظرات محصولات' };
+
 import { prisma } from '@/lib/db';
-import { Star, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Star, CheckCircle, XCircle, Clock, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 import ReviewsTable from './ReviewsTable';
 import { connection } from 'next/server';
 import { Suspense } from 'react';
@@ -36,6 +41,13 @@ async function AdminReviewsContent() {
             {/* Header */}
             <div className="mb-6">
                 <div className="flex items-center gap-3">
+                    <Link
+                        href="/admin/dashboard/products"
+                        className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-500 transition-colors"
+                        aria-label="بازگشت به محصولات"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                    </Link>
                     <div>
                         <h1 className="text-2xl font-bold text-gray-800">نظرات محصولات</h1>
                         <p className="text-gray-500 text-sm mt-1">تایید، رد و مدیریت نقدهای کاربران</p>

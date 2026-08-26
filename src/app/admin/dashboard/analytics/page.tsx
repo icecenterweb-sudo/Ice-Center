@@ -1,3 +1,7 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'سئو و آنالیتیکس' };
+
 import { connection } from 'next/server'
 import { prisma } from '@/lib/db'
 import AnalyticsDashboard from './AnalyticsDashboard'

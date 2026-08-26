@@ -1,3 +1,7 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'محصولات' };
+
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { prisma } from '@/lib/db';

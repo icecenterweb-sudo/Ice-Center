@@ -1,3 +1,7 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'پیشنهادها' };
+
 import Link from 'next/link';
 import Image from 'next/image';
 import { Tag, Plus, Clock, Calendar, CheckCircle, XCircle, AlertCircle } from 'lucide-react';

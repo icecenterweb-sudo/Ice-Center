@@ -1,3 +1,7 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'ظاهر سایت' };
+
 import { connection } from 'next/server';
 import AppearanceClient from './AppearanceClient';
 import { Suspense } from 'react';

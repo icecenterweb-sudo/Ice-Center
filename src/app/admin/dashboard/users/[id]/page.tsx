@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/db';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 import CustomerProfileView from './CustomerProfileView';
 import { connection } from 'next/server';
 import { Loader2 } from 'lucide-react';
@@ -188,6 +190,14 @@ export default async function CustomerDetailPage({
 
     return (
         <div className="p-6">
+            {/* Back to users list (NEW-3: consistent detail-page navigation) */}
+            <Link
+                href="/admin/dashboard/users"
+                className="inline-flex items-center gap-2 mb-4 text-sm text-gray-500 hover:text-ocean transition-colors"
+            >
+                <ArrowLeft className="w-4 h-4" />
+                بازگشت به کاربران
+            </Link>
             <Suspense
                 fallback={
                     <div className="flex items-center justify-center min-h-[400px]">

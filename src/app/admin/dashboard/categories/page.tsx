@@ -1,3 +1,7 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'دسته‌بندی‌ها' };
+
 import { prisma } from '@/lib/db';
 import { FolderTree, Plus, Edit, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';

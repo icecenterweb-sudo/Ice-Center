@@ -1,3 +1,7 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'بلاگ' };
+
 import Link from 'next/link';
 import { Plus, Edit, Eye, MessageCircle } from 'lucide-react';
 import { prisma } from '@/lib/db';
@@ -5,6 +9,14 @@ import { connection } from 'next/server';
 import { Suspense } from 'react';
 import { requireRolePage } from '@/lib/admin-auth';
 import DeletePostButton from './DeletePostButton';
+import StatusBadge from '@/components/ui/StatusBadge';
+import type { StatusTone } from '@/components/ui/StatusBadge';
+
+const POST_TONE: Record<string, StatusTone> = {
+    PUBLISHED: 'green',
+    DRAFT: 'gray',
+    SCHEDULED: 'blue',
+};
 
 async function getBlogPosts() {
     await connection();
@@ -25,19 +37,6 @@ async function getPendingCommentsCount() {
 async function BlogContent() {
     await requireRolePage('BLOG');
     const [posts, pendingComments] = await Promise.all([getBlogPosts(), getPendingCommentsCount()]);
-
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'PUBLISHED':
-                return 'bg-green-100 text-green-800';
-            case 'DRAFT':
-                return 'bg-gray-100 text-gray-800';
-            case 'SCHEDULED':
-                return 'bg-blue-100 text-blue-800';
-            default:
-                return 'bg-gray-100 text-gray-800';
-        }
-    };
 
     const getStatusLabel = (status: string) => {
         switch (status) {
@@ -151,13 +150,10 @@ async function BlogContent() {
                                             </span>
                                         </td>
                                         <td className="px-4 py-3">
-                                            <span
-                                                className={`px-2 py-1 rounded-lg text-xs font-medium ${getStatusBadge(
-                                                    post.status
-                                                )}`}
-                                            >
-                                                {getStatusLabel(post.status)}
-                                            </span>
+                                            <StatusBadge
+                                                label={getStatusLabel(post.status)}
+                                                tone={POST_TONE[post.status] ?? 'gray'}
+                                            />
                                         </td>
                                         <td className="px-4 py-3 text-sm text-gray-600">
                                             {new Date(post.createdAt).toLocaleDateString('fa-IR')}

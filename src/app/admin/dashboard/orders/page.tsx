@@ -1,3 +1,7 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'سفارشات' };
+
 import { Suspense } from 'react';
 import { getOrders } from './actions';
 import OrdersClient from './OrdersClient';

@@ -1,3 +1,7 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'مدیریت دسترسی‌ها' };
+
 import { prisma } from '@/lib/db';
 import { connection } from 'next/server';
 import { requireRolePage } from '@/lib/admin-auth';

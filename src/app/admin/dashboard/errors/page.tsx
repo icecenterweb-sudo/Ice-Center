@@ -1,3 +1,7 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'مدیریت خطاها' };
+
 import { prisma } from '@/lib/db';
 import { connection } from 'next/server';
 import { Suspense } from 'react';

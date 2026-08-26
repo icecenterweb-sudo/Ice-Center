@@ -43,11 +43,66 @@ const menuItems: { icon: React.ComponentType<{ className?: string }>; label: str
     { icon: Shield, label: 'مدیریت دسترسی‌ها', href: '/admin/dashboard/admins', section: 'ADMIN_MANAGEMENT' },
 ];
 
+// Grouped navigation (IA1) — heading style mirrors MobileMenu.tsx's labeled
+// sections (text-xs font-bold, small padding), recolored for the dark sidebar.
+// Ordering follows operational-first principle (IA2): daily ops → store → content
+// → marketing/appearance → system/config.
+const MENU_GROUPS: { title: string; items: typeof menuItems }[] = [
+    {
+        title: 'عملیات روزمره',
+        items: [
+            menuItems[0], // Dashboard
+            menuItems[10], // Orders
+            menuItems[9], // Users
+            menuItems[11], // Support
+        ],
+    },
+    {
+        title: 'فروشگاه',
+        items: [
+            menuItems[1], // Products
+            menuItems[2], // Product Reviews
+            menuItems[3], // Offers
+            menuItems[4], // Categories
+        ],
+    },
+    {
+        title: 'محتوا',
+        items: [menuItems[5]], // Blog
+    },
+    {
+        title: 'بازاریابی و ظاهر',
+        items: [menuItems[7]], // Appearance
+    },
+    {
+        title: 'سیستم',
+        items: [
+            menuItems[6], // Analytics
+            menuItems[8], // Settings
+            menuItems[12], // Errors
+            menuItems[13], // Admin Management
+        ],
+    },
+];
+
+// Items whose section owns real nested/dynamic sub-routes — they stay active
+// while an admin is inside a child page (e.g. /orders/123). Everything else,
+// including Dashboard (/admin/dashboard, which is a prefix of EVERY admin
+// route), must match exactly so only one item — and therefore only one
+// framer-motion layoutId="activeTab" pill — is ever active.
+const PREFIX_ACTIVE_HREFS = new Set([
+    '/admin/dashboard/products',    // add / [id] / [id]/edit
+    '/admin/dashboard/orders',      // [id]
+    '/admin/dashboard/users',       // [id]
+    '/admin/dashboard/offers',      // add / [id] / [id]/edit
+    '/admin/dashboard/categories',  // add / edit/[id] / subcategories/**
+    '/admin/dashboard/blog',        // comments / new / [id] / [id]/edit
+    '/admin/dashboard/appearance',  // banners/** / slides/**
+]);
+
 export default function Sidebar({ adminRoles = [] }: { adminRoles?: string[] }) {
     const pathname = usePathname();
     const { isCollapsed, isMobileOpen, setIsMobileOpen } = useAdminSidebar();
-
-    const visibleMenuItems = menuItems.filter(item => canAccessSection(adminRoles, item.section));
 
     const handleLogout = async () => {
         await fetch('/api/admin/auth/logout', { method: 'POST' });
@@ -111,48 +166,63 @@ export default function Sidebar({ adminRoles = [] }: { adminRoles?: string[] }) 
                     </motion.div>
                 </div>
 
-                {/* Navigation */}
-                <nav className="relative flex-1 px-4 space-y-2 overflow-y-auto custom-scrollbar">
-                    {visibleMenuItems.map((item, index) => {
-                        const Icon = item.icon;
-                        const isActive = pathname === item.href;
+                {/* Navigation — grouped (IA1); role filtering unchanged */}
+                <nav className="relative flex-1 px-4 space-y-4 overflow-y-auto custom-scrollbar">
+                    {MENU_GROUPS.map((group) => {
+                        const visibleItems = group.items.filter(item => canAccessSection(adminRoles, item.section));
+                        if (visibleItems.length === 0) return null;
 
                         return (
-                            <Link key={item.href} href={item.href} onClick={() => setIsMobileOpen(false)}>
-                                <motion.div
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: index * 0.05 }}
-                                    className={`relative group flex items-center ${isCollapsed ? 'justify-center' : 'gap-4'} px-4 py-3.5 rounded-xl transition-all duration-300 ${isActive
-                                        ? 'bg-slate-700/50 text-white'
-                                        : 'text-slate-400 hover:text-white hover:bg-white/5'
-                                        }`}
-                                    title={isCollapsed ? item.label : undefined}
-                                >
-                                    {/* Active Indicator & Glow */}
-                                    {isActive && (
-                                        <motion.div
-                                            layoutId="activeTab"
-                                            className="absolute inset-0 bg-slate-600 rounded-xl shadow-lg"
-                                            initial={false}
-                                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                                        />
-                                    )}
+                            <div key={group.title}>
+                                {!isCollapsed && (
+                                    <h4 className="text-xs font-bold text-slate-500 mb-2 px-2">{group.title}</h4>
+                                )}
+                                <div className="space-y-2">
+                                    {visibleItems.map((item, index) => {
+                                        const Icon = item.icon;
+                                        const isActive = pathname === item.href
+                                            || (PREFIX_ACTIVE_HREFS.has(item.href) && pathname.startsWith(item.href + '/'));
 
-                                    {/* Content */}
-                                    <div className={`relative z-10 flex items-center ${isCollapsed ? '' : 'gap-4 w-full'}`}>
-                                        <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-white transition-colors'}`} />
-                                        {!isCollapsed && (
-                                            <>
-                                                <span className="font-medium">{item.label}</span>
-                                                {isActive && (
-                                                    <ChevronRight className="w-4 h-4 ml-auto opacity-70" />
-                                                )}
-                                            </>
-                                        )}
-                                    </div>
-                                </motion.div>
-                            </Link>
+                                        return (
+                                            <Link key={item.href} href={item.href} onClick={() => setIsMobileOpen(false)}>
+                                                <motion.div
+                                                    initial={{ opacity: 0, x: -20 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    transition={{ delay: index * 0.05 }}
+                                                    className={`relative group flex items-center ${isCollapsed ? 'justify-center' : 'gap-4'} px-4 py-3.5 rounded-xl transition-all duration-300 ${isActive
+                                                        ? 'bg-slate-700/50 text-white'
+                                                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                                        }`}
+                                                    title={isCollapsed ? item.label : undefined}
+                                                >
+                                                    {/* Active Indicator & Glow */}
+                                                    {isActive && (
+                                                        <motion.div
+                                                            layoutId="activeTab"
+                                                            className="absolute inset-0 bg-slate-600 rounded-xl shadow-lg"
+                                                            initial={false}
+                                                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                                        />
+                                                    )}
+
+                                                    {/* Content */}
+                                                    <div className={`relative z-10 flex items-center ${isCollapsed ? '' : 'gap-4 w-full'}`}>
+                                                        <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-white transition-colors'}`} />
+                                                        {!isCollapsed && (
+                                                            <>
+                                                                <span className="font-medium">{item.label}</span>
+                                                                {isActive && (
+                                                                    <ChevronRight className="w-4 h-4 ml-auto opacity-70" />
+                                                                )}
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </motion.div>
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+                            </div>
                         );
                     })}
                 </nav>

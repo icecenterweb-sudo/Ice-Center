@@ -1,14 +1,19 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: { default: 'پنل مدیریت آیس سنتر', template: '%s | پنل مدیریت آیس سنتر' },
+};
+
 import { Suspense } from 'react';
 import Sidebar from '@/components/admin/Sidebar';
 import Header from '@/components/admin/Header';
 import DashboardContent from '@/components/admin/DashboardContent';
-import { cookies } from 'next/headers';
-import { verifyAdminToken } from '@/lib/jwt';
 import { redirect } from 'next/navigation';
 import { connection } from 'next/server';
 import { Loader2 } from 'lucide-react';
 import { AuthProvider } from '@/hooks/useAuth';
 import { AdminSidebarProvider } from '@/context/AdminSidebarContext';
+import { requireAdminAction } from '@/lib/admin-auth';
 
 function LoadingFallback() {
     return (
@@ -24,17 +29,14 @@ function HeaderFallback() {
 
 async function DynamicHeader() {
     await connection();
-    const cookieStore = await cookies();
-    const token = cookieStore.get('admin_token')?.value;
-
     let adminName = undefined;
     let adminRoles: string[] = [];
-    if (token) {
-        const payload = await verifyAdminToken(token);
-        if (payload) {
-            adminName = payload.phone;
-            adminRoles = payload.roles || [];
-        }
+    try {
+        const payload = await requireAdminAction();
+        adminName = payload.phone;
+        adminRoles = payload.roles || [];
+    } catch {
+        // Fallback for unauthenticated or DB error state handled by AuthGuard
     }
 
     return <Header adminName={adminName} adminRoles={adminRoles} />;
@@ -42,15 +44,12 @@ async function DynamicHeader() {
 
 async function DynamicSidebar() {
     await connection();
-    const cookieStore = await cookies();
-    const token = cookieStore.get('admin_token')?.value;
-
     let adminRoles: string[] = [];
-    if (token) {
-        const payload = await verifyAdminToken(token);
-        if (payload) {
-            adminRoles = payload.roles || [];
-        }
+    try {
+        const payload = await requireAdminAction();
+        adminRoles = payload.roles || [];
+    } catch {
+        // Fallback for unauthenticated or DB error state handled by AuthGuard
     }
 
     return <Sidebar adminRoles={adminRoles} />;
@@ -58,15 +57,9 @@ async function DynamicSidebar() {
 
 async function AuthGuard({ children }: { children: React.ReactNode }) {
     await connection();
-    const cookieStore = await cookies();
-    const token = cookieStore.get('admin_token')?.value;
-
-    if (!token) {
-        redirect('/admin/login');
-    }
-
-    const payload = await verifyAdminToken(token);
-    if (!payload) {
+    try {
+        await requireAdminAction();
+    } catch {
         redirect('/admin/login');
     }
 
