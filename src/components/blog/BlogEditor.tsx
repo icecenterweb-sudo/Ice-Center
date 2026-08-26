@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import './editor.css'; // Direct CSS import for editor styles
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -30,6 +30,15 @@ import {
     ShoppingBag,
 } from 'lucide-react';
 import { ProductBlock } from './extensions/ProductExtension';
+import TextPromptModal from './TextPromptModal';
+
+interface TextPromptRequest {
+    title: string;
+    placeholder?: string;
+    initialValue?: string;
+    confirmText?: string;
+    onSubmit: (value: string) => void;
+}
 
 interface BlogEditorProps {
     content?: object;
@@ -42,6 +51,10 @@ export default function BlogEditor({
     onChange,
     placeholder = 'محتوای پست خود را اینجا بنویسید...',
 }: BlogEditorProps) {
+    // Single in-app prompt replaces all window.prompt calls (DS7)
+    const [promptState, setPromptState] = useState<TextPromptRequest | null>(null);
+    const openPrompt = (req: TextPromptRequest) => setPromptState(req);
+
     const editor = useEditor({
         immediatelyRender: false,
         extensions: [
@@ -90,64 +103,75 @@ export default function BlogEditor({
         );
     }
 
+    // Single in-app prompt replaces all window.prompt calls (DS7)
     const addImage = () => {
-        const url = window.prompt('آدرس تصویر را وارد کنید:');
-        if (url) {
-            editor.chain().focus().setImage({ src: url }).run();
-        }
+        openPrompt({
+            title: 'آدرس تصویر را وارد کنید',
+            placeholder: 'https://example.com/image.png',
+            onSubmit: (url) => {
+                if (url) editor.chain().focus().setImage({ src: url }).run();
+            },
+        });
     };
 
     const addLink = () => {
-        const url = window.prompt('آدرس لینک را وارد کنید:');
-        if (url) {
-            editor.chain().focus().setLink({ href: url }).run();
-        }
+        openPrompt({
+            title: 'آدرس لینک را وارد کنید',
+            placeholder: 'https://example.com',
+            onSubmit: (url) => {
+                if (url) editor.chain().focus().setLink({ href: url }).run();
+            },
+        });
     };
 
-    const addProduct = async () => {
-        const slug = window.prompt('اسلاگ محصول را وارد کنید (مثال: bar-seft-kon):');
-        if (!slug) return;
+    const insertProductBlock = (
+        slug: string,
+        productName: string,
+        productImage: string,
+        productPrice: number,
+    ) => {
+        editor.chain().focus().insertContent({
+            type: 'productBlock',
+            attrs: { productSlug: slug, productName, productImage, productPrice },
+        }).run();
+    };
 
-        try {
-            // Fetch product data from API by slug
-            const response = await fetch(`/api/products/slug/${slug}`);
-            if (response.ok) {
-                const product = await response.json();
-                editor.chain().focus().insertContent({
-                    type: 'productBlock',
-                    attrs: {
-                        productSlug: slug,
-                        productName: product.name || 'محصول',
-                        productImage: product.thumbnail || product.images?.[0] || '',
-                        productPrice: product.price || 0,
-                    },
-                }).run();
-            } else {
-                // Product not found, use manual entry
-                const name = window.prompt('محصول یافت نشد. نام محصول را وارد کنید:') || 'محصول';
-                editor.chain().focus().insertContent({
-                    type: 'productBlock',
-                    attrs: {
-                        productSlug: slug,
-                        productName: name,
-                        productImage: '',
-                        productPrice: 0,
-                    },
-                }).run();
-            }
-        } catch {
-            // Fallback to manual entry on error
-            const name = window.prompt('خطا در دریافت اطلاعات محصول. نام محصول را وارد کنید:') || 'محصول';
-            editor.chain().focus().insertContent({
-                type: 'productBlock',
-                attrs: {
-                    productSlug: slug,
-                    productName: name,
-                    productImage: '',
-                    productPrice: 0,
-                },
-            }).run();
-        }
+    const addProduct = () => {
+        openPrompt({
+            title: 'اسلاگ محصول را وارد کنید',
+            placeholder: 'bar-seft-kon',
+            confirmText: 'افزودن',
+            onSubmit: async (slug) => {
+                if (!slug) return;
+                try {
+                    const response = await fetch(`/api/products/slug/${slug}`);
+                    if (response.ok) {
+                        const product = await response.json();
+                        insertProductBlock(
+                            slug,
+                            product.name || 'محصول',
+                            product.thumbnail || product.images?.[0] || '',
+                            product.price || 0,
+                        );
+                    } else {
+                        // Product not found — ask for a manual name (same fallback as before)
+                        openPrompt({
+                            title: 'محصول یافت نشد. نام محصول را وارد کنید',
+                            initialValue: 'محصول',
+                            confirmText: 'افزودن',
+                            onSubmit: (name) => insertProductBlock(slug, name || 'محصول', '', 0),
+                        });
+                    }
+                } catch {
+                    openPrompt({
+                        title: 'خطا در دریافت اطلاعات محصول. نام محصول را وارد کنید',
+                        initialValue: 'محصول',
+                        confirmText: 'افزودن',
+                        onSubmit: (name) => insertProductBlock(slug, name || 'محصول', '', 0),
+                    });
+                }
+            },
+        });
     };
 
     return (
@@ -301,6 +325,22 @@ export default function BlogEditor({
 
             {/* Editor Content */}
             <EditorContent editor={editor} className="min-h-[400px]" />
+
+            {/* In-app text prompt (replaces window.prompt) — mount-on-demand */}
+            {promptState && (
+                <TextPromptModal
+                    title={promptState.title}
+                    placeholder={promptState.placeholder}
+                    initialValue={promptState.initialValue}
+                    confirmText={promptState.confirmText}
+                    onClose={() => setPromptState(null)}
+                    onSubmit={(value) => {
+                        const req = promptState;
+                        setPromptState(null);
+                        req.onSubmit(value);
+                    }}
+                />
+            )}
         </div>
     );
 }
