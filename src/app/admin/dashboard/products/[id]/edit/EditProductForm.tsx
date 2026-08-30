@@ -348,7 +348,7 @@ export default function EditProductForm({ product, subcategories }: EditProductF
                 <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    className="px-6 py-3 bg-ocean hover:bg-royal text-white rounded-xl font-bold shadow-lg shadow-ocean/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                     {isSubmitting ? 'در حال ذخیره...' : 'ذخیره تغییرات'}
                 </button>

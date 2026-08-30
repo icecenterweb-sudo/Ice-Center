@@ -74,7 +74,7 @@ async function BlogContent() {
                     </Link>
                     <Link
                         href="/admin/dashboard/blog/new"
-                        className="flex items-center gap-2 bg-gradient-to-l from-ocean to-sky-breeze text-white px-4 py-2 rounded-xl hover:opacity-90 transition-opacity"
+                        className="flex items-center gap-2 bg-ocean hover:bg-royal text-white px-4 py-2 rounded-xl transition-colors"
                     >
                         <Plus className="w-5 h-5" />
                         پست جدید

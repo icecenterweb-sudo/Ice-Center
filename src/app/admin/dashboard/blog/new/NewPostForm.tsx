@@ -168,7 +168,7 @@ export default function NewPostForm({ categories, tags }: NewPostFormProps) {
                     <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="flex items-center gap-2 bg-gradient-to-l from-ocean to-sky-breeze text-white px-4 py-2 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
+                        className="flex items-center gap-2 bg-ocean hover:bg-royal text-white px-4 py-2 rounded-xl transition-colors disabled:opacity-50"
                     >
                         {isSubmitting ? (
                             <Loader2 className="w-4 h-4 animate-spin" />

@@ -220,7 +220,7 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
                 <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full bg-gradient-to-l from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold py-4 rounded-xl shadow-lg transition-all disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full bg-ocean hover:bg-royal text-white font-bold py-4 rounded-xl shadow-lg shadow-ocean/20 transition-all disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                     {isSubmitting ? (
                         <span>در حال ذخیره...</span>

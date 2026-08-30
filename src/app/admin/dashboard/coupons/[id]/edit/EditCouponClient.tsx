@@ -493,7 +493,7 @@ export default function EditCouponClient({ id }: { id: string }) {
                     <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="w-full bg-gradient-to-r from-ocean to-sky-breeze hover:from-royal hover:to-ocean text-white px-6 py-4 rounded-xl font-bold shadow-lg shadow-ocean/20 transition-all transform hover:scale-105 disabled:opacity-50 disabled:transform-none"
+                        className="w-full bg-ocean hover:bg-royal text-white px-6 py-4 rounded-xl font-bold shadow-lg shadow-ocean/20 transition-all transform hover:scale-105 disabled:opacity-50 disabled:transform-none"
                     >
                         {isSubmitting ? 'در حال ذخیره...' : 'ذخیره تغییرات'}
                     </button>

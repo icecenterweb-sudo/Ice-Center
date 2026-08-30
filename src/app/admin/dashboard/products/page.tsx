@@ -73,7 +73,7 @@ async function ProductsContent() {
                 </div>
                 <Link
                     href="/admin/dashboard/products/add"
-                    className="flex items-center gap-2 bg-gradient-to-r from-ocean to-sky-breeze hover:from-royal hover:to-ocean text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-ocean/20 transition-all transform hover:scale-105 text-sm"
+                    className="flex items-center gap-2 bg-ocean hover:bg-royal text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-ocean/20 transition-all transform hover:scale-105 text-sm"
                 >
                     <Plus className="w-5 h-5" />
                     افزودن محصول جدید

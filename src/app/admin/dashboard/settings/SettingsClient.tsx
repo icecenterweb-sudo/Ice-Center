@@ -117,7 +117,7 @@ export default function SettingsClient() {
                 <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-sm px-6 py-3 rounded-2xl shadow-lg shadow-blue-500/20 hover:shadow-xl transition-all cursor-pointer disabled:opacity-50"
+                    className="inline-flex items-center justify-center gap-2 bg-ocean hover:bg-royal text-white font-black text-sm px-6 py-3 rounded-2xl shadow-lg shadow-ocean/20 hover:shadow-xl transition-all cursor-pointer disabled:opacity-50"
                 >
                     {saving ? (
                         <>
