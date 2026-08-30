@@ -39,7 +39,7 @@ export async function PATCH(
             );
         }
 
-        const body = await request.json();
+        const body = await request.json().catch(() => null);
         const validation = moderationSchema.safeParse(body);
         if (!validation.success) {
             return NextResponse.json(

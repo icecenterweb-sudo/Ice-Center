@@ -96,7 +96,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             );
         }
 
-        const body = await request.json();
+        const body = await request.json().catch(() => null);
         const validation = updateSlideSchema.safeParse(body);
 
         if (!validation.success) {

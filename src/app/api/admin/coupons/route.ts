@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     if (!auth.ok) return auth.response;
 
     try {
-        const body = await request.json();
+        const body = await request.json().catch(() => null);
         const validation = couponSchema.safeParse(body);
         if (!validation.success) {
             return NextResponse.json({ error: validation.error.issues[0].message }, { status: 400 });

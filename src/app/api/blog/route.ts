@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
         const auth = await requireRole(request, 'BLOG');
         if (!auth.ok) return auth.response;
 
-        const body = await request.json();
+        const body = await request.json().catch(() => null);
 
         // Validate input
         const result = createPostSchema.safeParse(body);

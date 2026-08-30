@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
         const auth = await requireRole(request, 'OFFERS');
         if (!auth.ok) return auth.response;
 
-        const body = await request.json();
+        const body = await request.json().catch(() => null);
         const validation = createOfferSchema.safeParse(body);
 
         if (!validation.success) {

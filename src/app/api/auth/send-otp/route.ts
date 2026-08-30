@@ -7,7 +7,7 @@ import { logSystemError } from '@/lib/error-logger'
 
 export async function POST(request: NextRequest) {
     try {
-        const { phone } = await request.json()
+        const { phone } = await request.json().catch(() => ({})) as { phone?: string }
 
         // Validate input
         if (!phone) {

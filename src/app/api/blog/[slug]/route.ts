@@ -49,7 +49,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         if (!auth.ok) return auth.response;
 
         const { slug } = await params;
-        const body = await request.json();
+        const body = await request.json().catch(() => null);
 
         // Validate input
         const result = updatePostSchema.safeParse(body);

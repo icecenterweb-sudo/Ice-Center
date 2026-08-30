@@ -62,7 +62,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     try {
         const { id } = await params;
         const couponId = parseInt(id, 10);
-        const body = await request.json();
+        const body = await request.json().catch(() => null);
         const validation = couponUpdateSchema.safeParse(body);
         if (!validation.success) {
             return NextResponse.json({ error: validation.error.issues[0].message }, { status: 400 });

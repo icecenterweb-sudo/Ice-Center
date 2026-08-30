@@ -18,10 +18,10 @@ export async function PATCH(
     if (isNaN(roomId)) return NextResponse.json({ error: 'شناسه نامعتبر' }, { status: 400 });
 
     try {
-        const body = await request.json();
-        const newStatus: 'OPEN' | 'CLOSED' = body.status;
+        const body = await request.json().catch(() => null);
+        const newStatus: 'OPEN' | 'CLOSED' | undefined = body?.status;
 
-        if (!['OPEN', 'CLOSED'].includes(newStatus)) {
+        if (newStatus !== 'OPEN' && newStatus !== 'CLOSED') {
             return NextResponse.json({ error: 'وضعیت نامعتبر' }, { status: 400 });
         }
 

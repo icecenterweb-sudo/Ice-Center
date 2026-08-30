@@ -17,7 +17,7 @@ import { logSystemError } from '@/lib/error-logger'
 
 export async function POST(request: NextRequest) {
     try {
-        const { phone, code, source } = await request.json()
+        const { phone, code, source } = await request.json().catch(() => ({})) as { phone?: string; code?: string; source?: string }
         const normalizedCode = typeof code === 'string' ? toEnglishDigits(code).replace(/\D/g, '') : ''
 
         // Validate input

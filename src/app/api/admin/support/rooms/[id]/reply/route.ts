@@ -23,7 +23,7 @@ export async function POST(
     if (isNaN(roomId)) return NextResponse.json({ error: 'شناسه نامعتبر' }, { status: 400 });
 
     try {
-        const body = await request.json();
+        const body = await request.json().catch(() => null);
         const validation = replySchema.safeParse(body);
         if (!validation.success) {
             return NextResponse.json({ error: validation.error.issues[0].message }, { status: 400 });

@@ -143,7 +143,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             );
         }
 
-        const body = await request.json();
+        const body = await request.json().catch(() => null);
         const validation = updateOfferSchema.safeParse(body);
 
         if (!validation.success) {

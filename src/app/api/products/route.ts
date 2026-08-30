@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate input with zod schema
-    const body = await request.json();
+    const body = await request.json().catch(() => null);
     const validationResult = productSchema.safeParse(body);
 
     if (!validationResult.success) {

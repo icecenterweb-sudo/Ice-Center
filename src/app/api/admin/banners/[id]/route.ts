@@ -87,7 +87,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
             );
         }
 
-        const body = await request.json();
+        const body = await request.json().catch(() => null);
 
         const result = updateBannerSchema.safeParse(body);
         if (!result.success) {
