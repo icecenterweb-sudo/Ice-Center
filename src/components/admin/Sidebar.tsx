@@ -27,6 +27,7 @@ import {
     ShoppingBag,
     BookOpen,
     Sparkles,
+    Ticket,
     Sliders
 } from 'lucide-react';
 import { canAccessSection, AdminSection } from '@/lib/admin-roles';
@@ -46,6 +47,7 @@ const menuItems: { icon: React.ComponentType<{ className?: string }>; label: str
     { icon: MessageSquare, label: 'پشتیبانی آنلاین', href: '/admin/dashboard/support', section: 'SUPPORT' },
     { icon: Terminal, label: 'مدیریت خطاها', href: '/admin/dashboard/errors', section: 'ERRORS' },
     { icon: Shield, label: 'مدیریت دسترسی‌ها', href: '/admin/dashboard/admins', section: 'ADMIN_MANAGEMENT' },
+    { icon: Ticket, label: 'کوپن‌ها', href: '/admin/dashboard/coupons', section: 'COUPONS' },
 ];
 
 const MENU_GROUPS: {
@@ -69,6 +71,7 @@ const MENU_GROUPS: {
         items: [
             menuItems[1], // Products
             menuItems[3], // Offers
+            menuItems[14], // Coupons
             menuItems[4], // Categories
         ],
     },
@@ -103,6 +106,7 @@ const PREFIX_ACTIVE_HREFS = new Set([
     '/admin/dashboard/orders',      // [id]
     '/admin/dashboard/users',       // [id]
     '/admin/dashboard/offers',      // add / [id] / [id]/edit
+    '/admin/dashboard/coupons',     // add / [id] / [id]/edit
     '/admin/dashboard/categories',  // add / edit/[id] / subcategories/**
     '/admin/dashboard/blog',        // new / [id] / [id]/edit
     '/admin/dashboard/appearance',  // banners/** / slides/**
