@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import prisma from '@/lib/db';
-import { verifyUserToken } from '@/lib/jwt';
+import { requireUser } from '@/lib/user-auth';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limiter';
 import type { Prisma } from '@prisma/client';
 
 /**
@@ -12,17 +12,9 @@ import type { Prisma } from '@prisma/client';
  */
 export async function GET(request: NextRequest) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get('user_token')?.value;
-
-        if (!token) {
-            return NextResponse.json({ error: 'ابتدا وارد شوید' }, { status: 401 });
-        }
-
-        const payload = await verifyUserToken(token);
-        if (!payload) {
-            return NextResponse.json({ error: 'توکن نامعتبر است' }, { status: 401 });
-        }
+        const auth = await requireUser();
+        if (!auth.ok) return auth.response;
+        const payload = auth.payload;
 
         const { searchParams } = new URL(request.url);
         const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50);
@@ -62,16 +54,14 @@ export async function GET(request: NextRequest) {
  */
 export async function POST() {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get('user_token')?.value;
+        const auth = await requireUser();
+        if (!auth.ok) return auth.response;
+        const payload = auth.payload;
 
-        if (!token) {
-            return NextResponse.json({ error: 'ابتدا وارد شوید' }, { status: 401 });
-        }
-
-        const payload = await verifyUserToken(token);
-        if (!payload) {
-            return NextResponse.json({ error: 'توکن نامعتبر است' }, { status: 401 });
+        // Rate limit per user
+        const rateLimit = await checkRateLimit(`notifications-read:${payload.userId}`, RATE_LIMITS.normal);
+        if (!rateLimit.allowed) {
+            return NextResponse.json({ error: 'درخواست‌های بیش از حد. کمی بعد تلاش کنید' }, { status: 429 });
         }
 
         // Mark all unread notifications as read

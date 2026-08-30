@@ -27,12 +27,21 @@ export async function GET(request: NextRequest) {
     }
 
     try {
+        const postIdNum = parseInt(postId, 10);
+        if (isNaN(postIdNum) || postIdNum < 1) {
+            return NextResponse.json(
+                { error: 'postId نامعتبر است' },
+                { status: 400 }
+            );
+        }
+
         const comments = await prisma.blogComment.findMany({
             where: {
-                postId: parseInt(postId),
+                postId: postIdNum,
                 status: 'APPROVED',
                 parentId: null, // Only top-level comments
             },
+            take: 100, // Cap: prevent unbounded fetch on high-traffic posts
             include: {
                 user: {
                     select: {
@@ -81,7 +90,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const body = await request.json();
+        const body = await request.json().catch(() => null);
         const validation = createCommentSchema.safeParse(body);
 
         if (!validation.success) {

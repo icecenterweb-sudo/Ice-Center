@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { verifyUserToken, USER_TOKEN_COOKIE } from '@/lib/jwt'
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limiter'
 
 export async function POST(request: NextRequest) {
     try {
@@ -24,8 +25,16 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // Parse request body
-        const { firstName, lastName } = await request.json()
+        // Rate limit per user
+        const rateLimit = await checkRateLimit(`update-profile:${payload.userId}`, RATE_LIMITS.normal)
+        if (!rateLimit.allowed) {
+            return NextResponse.json(
+                { error: 'درخواست‌های بیش از حد. کمی بعد تلاش کنید' },
+                { status: 429 }
+            )
+        }
+
+        const { firstName, lastName } = await request.json().catch(() => ({})) as { firstName?: string; lastName?: string }
 
         // Validate input - at least one field should be provided
         if (!firstName && !lastName) {

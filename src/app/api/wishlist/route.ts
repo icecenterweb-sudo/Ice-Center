@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { verifyUserToken } from '@/lib/jwt';
-import { cookies } from 'next/headers';
+import { requireUser } from '@/lib/user-auth';
 import { z } from 'zod';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limiter';
 
 const addToWishlistSchema = z.object({
     productId: z.number().int().positive(),
@@ -13,21 +13,14 @@ const addToWishlistSchema = z.object({
  */
 export async function GET() {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get('user_token')?.value;
-
-        if (!token) {
-            return NextResponse.json({ error: 'لطفا وارد شوید' }, { status: 401 });
-        }
-
-        const payload = await verifyUserToken(token);
-        if (!payload) {
-            return NextResponse.json({ error: 'توکن نامعتبر است' }, { status: 401 });
-        }
+        const auth = await requireUser();
+        if (!auth.ok) return auth.response;
+        const payload = auth.payload;
 
         const wishlistItems = await prisma.wishlistItem.findMany({
             where: { userId: payload.userId },
             orderBy: { createdAt: 'desc' },
+            take: 100, // Cap: prevent unbounded fetch
             include: {
                 product: {
                     select: {
@@ -67,19 +60,17 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get('user_token')?.value;
+        const auth = await requireUser();
+        if (!auth.ok) return auth.response;
+        const payload = auth.payload;
 
-        if (!token) {
-            return NextResponse.json({ error: 'لطفا وارد شوید' }, { status: 401 });
+        // Rate limit per user
+        const rateLimit = await checkRateLimit(`wishlist:${payload.userId}`, RATE_LIMITS.normal);
+        if (!rateLimit.allowed) {
+            return NextResponse.json({ error: 'درخواست‌های بیش از حد. کمی بعد تلاش کنید' }, { status: 429 });
         }
 
-        const payload = await verifyUserToken(token);
-        if (!payload) {
-            return NextResponse.json({ error: 'توکن نامعتبر است' }, { status: 401 });
-        }
-
-        const body = await request.json();
+        const body = await request.json().catch(() => null);
         const validation = addToWishlistSchema.safeParse(body);
         if (!validation.success) {
             return NextResponse.json({ error: validation.error.issues[0].message }, { status: 400 });
@@ -137,17 +128,9 @@ export async function POST(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get('user_token')?.value;
-
-        if (!token) {
-            return NextResponse.json({ error: 'لطفا وارد شوید' }, { status: 401 });
-        }
-
-        const payload = await verifyUserToken(token);
-        if (!payload) {
-            return NextResponse.json({ error: 'توکن نامعتبر است' }, { status: 401 });
-        }
+        const auth = await requireUser();
+        if (!auth.ok) return auth.response;
+        const payload = auth.payload;
 
         const { searchParams } = new URL(request.url);
         const productId = parseInt(searchParams.get('productId') || '');

@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { recordAnalyticsEvent, AnalyticsEventKind } from '@/lib/analytics'
+import { checkRateLimit, getClientIp, RATE_LIMITS } from '@/lib/rate-limiter'
 import { verifyUserToken } from '@/lib/jwt'
 import { cookies } from 'next/headers'
 
 export async function POST(request: NextRequest) {
     try {
+        // Rate limit: unauthenticated endpoint — prevent log-flooding / DB
+        // write amplification
+        const clientIp = getClientIp(request)
+        const rateLimit = await checkRateLimit(`analytics-event:${clientIp}`, RATE_LIMITS.relaxed)
+        if (!rateLimit.allowed) {
+            return NextResponse.json({ success: false }, { status: 429 })
+        }
+
         const body = await request.json().catch(() => ({}))
         const {
             type,
