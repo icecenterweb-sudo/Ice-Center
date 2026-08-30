@@ -26,10 +26,6 @@ function getErrorCode(error: unknown): string | undefined {
     : undefined;
 }
 
-function getErrorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback;
-}
-
 // دریافت یک محصول
 export async function GET(
   _request: NextRequest,
@@ -86,7 +82,7 @@ export async function PUT(
       }, { status: 400 });
     }
 
-    const body = await request.json();
+    const body = await request.json().catch(() => null);
     const validation = updateProductSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json({
@@ -119,10 +115,12 @@ export async function PUT(
       }, { status: 404 });
     }
 
+    // Static fallback only — never leak internal error details (e.g. Prisma
+    // constraint messages) to the client. Matches the POST handler pattern.
     return NextResponse.json({
       success: false,
-      message: getErrorMessage(error, 'خطا در ویرایش محصول')
-    }, { status: 400 });
+      message: 'خطا در ویرایش محصول'
+    }, { status: 500 });
   }
 }
 
@@ -171,9 +169,10 @@ export async function DELETE(
       }, { status: 404 });
     }
 
+    // Static fallback only — never leak internal error details to the client.
     return NextResponse.json({
       success: false,
-      message: getErrorMessage(error, 'خطا در حذف محصول')
+      message: 'خطا در حذف محصول'
     }, { status: 500 });
   }
 }
