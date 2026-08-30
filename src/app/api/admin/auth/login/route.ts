@@ -8,7 +8,7 @@ import { logSystemError } from '@/lib/error-logger'
 
 export async function POST(request: NextRequest) {
     try {
-        const { phone, otp } = await request.json()
+        const { phone, otp } = await request.json().catch(() => ({})) as { phone?: string; otp?: string }
 
         // Validate input
         if (!phone || !otp) {
@@ -52,51 +52,57 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // Verify OTP against database (proper OTP validation with attempt cap #31)
-        const validOtp = await prisma.otpRequest.findFirst({
-            where: {
-                phone,
-                verified: false,
-                expiresAt: { gt: new Date() },
-            },
-            orderBy: { createdAt: 'desc' },
-        });
-
-        if (!validOtp) {
-            return NextResponse.json(
-                { error: 'کد تأیید نامعتبر یا منقضی شده است' },
-                { status: 401 }
-            );
-        }
-
-        // Enforce attempt cap (#31)
-        const MAX_ADMIN_ATTEMPTS = 3;
-        if (validOtp.attempts >= MAX_ADMIN_ATTEMPTS) {
-            return NextResponse.json(
-                { error: 'تعداد تلاش‌های مجاز تمام شده است. لطفاً کد جدید دریافت کنید.' },
-                { status: 401 }
-            );
-        }
-
-        if (validOtp.code !== hashOtp(otp)) {
-            // Increment OTP attempts
-            await prisma.otpRequest.update({
-                where: { id: validOtp.id },
-                data: { attempts: validOtp.attempts + 1 }
+        // Verify OTP against database — atomic check-and-mark transaction that
+        // prevents two concurrent requests with the same code from both
+        // succeeding (mirrors the pattern in src/lib/otp.ts #31)
+        const otpResult = await prisma.$transaction(async (tx) => {
+            const validOtp = await tx.otpRequest.findFirst({
+                where: {
+                    phone,
+                    verified: false,
+                    expiresAt: { gt: new Date() },
+                },
+                orderBy: { createdAt: 'desc' },
             });
 
-            const remaining = MAX_ADMIN_ATTEMPTS - validOtp.attempts - 1;
-            return NextResponse.json(
-                { error: remaining > 0 ? `کد تأیید اشتباه است (${remaining} تلاش باقی‌مانده)` : 'تعداد تلاش‌های مجاز تمام شده است' },
-                { status: 401 }
-            );
-        }
+            if (!validOtp) {
+                return { ok: false as const, error: 'کد تأیید نامعتبر یا منقضی شده است' };
+            }
 
-        // Mark OTP as verified
-        await prisma.otpRequest.update({
-            where: { id: validOtp.id },
-            data: { verified: true }
-        });
+            // Enforce attempt cap (#31)
+            const MAX_ADMIN_ATTEMPTS = 3;
+            if (validOtp.attempts >= MAX_ADMIN_ATTEMPTS) {
+                return { ok: false as const, error: 'تعداد تلاش‌های مجاز تمام شده است. لطفاً کد جدید دریافت کنید.' };
+            }
+
+            if (validOtp.code !== hashOtp(otp)) {
+                // Increment OTP attempts
+                await tx.otpRequest.update({
+                    where: { id: validOtp.id },
+                    data: { attempts: validOtp.attempts + 1 }
+                });
+
+                const remaining = MAX_ADMIN_ATTEMPTS - validOtp.attempts - 1;
+                return {
+                    ok: false as const,
+                    error: remaining > 0
+                        ? `کد تأیید اشتباه است (${remaining} تلاش باقی‌مانده)`
+                        : 'تعداد تلاش‌های مجاز تمام شده است'
+                };
+            }
+
+            // Mark OTP as verified
+            await tx.otpRequest.update({
+                where: { id: validOtp.id },
+                data: { verified: true }
+            });
+
+            return { ok: true as const };
+        }, { isolationLevel: 'ReadCommitted' });
+
+        if (!otpResult.ok) {
+            return NextResponse.json({ error: otpResult.error }, { status: 401 });
+        }
 
         // Check if admin is active
         if (admin.status !== 'ACTIVE') {

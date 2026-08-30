@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAdminToken, verifyUserToken, ADMIN_TOKEN_COOKIE, USER_TOKEN_COOKIE } from '@/lib/jwt'
+import { validateOrigin } from '@/lib/security'
 
 /**
  * Next.js Proxy — Edge-level route protection.
@@ -10,9 +11,27 @@ import { verifyAdminToken, verifyUserToken, ADMIN_TOKEN_COOKIE, USER_TOKEN_COOKI
  * - /api/admin/** (except /api/admin/auth/**) — Requires valid admin token
  * - /profile/** — Requires valid user token
  * - /checkout/** — Requires valid user token
+ *
+ * CSRF: state-changing requests (POST/PUT/PATCH/DELETE) within these protected
+ * route groups must pass the origin-vs-host check in validateOrigin().
  */
 export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl
+
+    // ============================================
+    // CSRF origin check — state-changing methods only.
+    // Applied to the same route groups this proxy already protects.
+    // Reuses the shared helper from src/lib/security.ts.
+    // ============================================
+    if (
+        ['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method) &&
+        !validateOrigin(request)
+    ) {
+        return NextResponse.json(
+            { success: false, error: 'Cross-origin request rejected' },
+            { status: 403 }
+        )
+    }
 
     // ============================================
     // Admin Dashboard Pages — Redirect to login

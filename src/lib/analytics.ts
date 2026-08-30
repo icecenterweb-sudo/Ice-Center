@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { prisma } from '@/lib/db'
+import { getClientIp } from '@/lib/rate-limiter'
 
 export type AnalyticsEventKind =
     | 'PAGE_VIEW'
@@ -162,12 +163,6 @@ function normalizePath(path?: string | null): string | null {
     const trimmed = path.trim()
     if (!trimmed.startsWith('/')) return null
     return trimmed.slice(0, 500)
-}
-
-function getClientIp(request: Request): string {
-    return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-        || request.headers.get('x-real-ip')
-        || 'unknown'
 }
 
 function hashIp(ip: string): string {
