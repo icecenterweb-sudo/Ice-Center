@@ -1,21 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Gift } from 'lucide-react';
-import toast from 'react-hot-toast';
+import Link from 'next/link';
+import { ArrowRight, Gift, ShoppingBag } from 'lucide-react';
 
 export default function DiscountsPage() {
     const router = useRouter();
-    const [couponCode, setCouponCode] = useState('');
-
-    const handleSubmit = () => {
-        if (!couponCode.trim()) {
-            toast.error('کد تخفیف را وارد کنید');
-            return;
-        }
-        toast.success('کد تخفیف در صفحه پرداخت قابل اعمال است');
-    };
 
     return (
         <div className="pb-20 lg:pb-0">
@@ -35,36 +26,30 @@ export default function DiscountsPage() {
             {/* Desktop Header */}
             <div className="hidden lg:block bg-white rounded-2xl p-6 mb-6 shadow-sm">
                 <h1 className="text-lg font-bold text-gray-800">کدهای تخفیف</h1>
-                <p className="text-sm text-gray-500 mt-1">کدهای تخفیف فعال شما</p>
+                <p className="text-sm text-gray-500 mt-1">راهنمای استفاده از کدهای تخفیف</p>
             </div>
 
-            {/* Empty State */}
+            {/* Info State */}
             <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
                 <div className="w-20 h-20 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Gift className="w-10 h-10 text-purple-400" />
                 </div>
                 <h2 className="text-base font-bold text-gray-800 mb-2">
-                    کد تخفیفی ندارید
+                    اعمال کدهای تخفیف در صفحه پرداخت
                 </h2>
-                <p className="text-xs text-gray-500 mb-6">
-                    کدهای تخفیف فعال شما اینجا نمایش داده می‌شوند
+                <p className="text-xs text-gray-500 mb-6 max-w-xs mx-auto leading-6">
+                    کدهای تخفیف در این صفحه ذخیره یا فعال نمی‌شوند؛ هنگام تکمیل خرید، در صفحه پرداخت کادر «کد تخفیف» را در خلاصه سفارش
+                    خواهید دید و می‌توانید کد خود را همان‌جا وارد کنید.
                 </p>
 
-                {/* Add Discount Code Input */}
-                <div className="flex gap-2 max-w-xs mx-auto">
-                    <input
-                        type="text"
-                        value={couponCode}
-                        onChange={(e) => setCouponCode(e.target.value)}
-                        placeholder="کد تخفیف را وارد کنید"
-                        className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-center focus:outline-none focus:border-ocean"
-                    />
-                    <button
-                        onClick={handleSubmit}
-                        className="px-4 py-2.5 bg-ocean hover:bg-blue-600 text-white text-sm font-medium rounded-xl transition-colors"
+                <div className="flex items-center justify-center gap-3">
+                    <Link
+                        href="/products"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-ocean hover:bg-blue-600 text-white text-sm font-medium rounded-xl transition-colors"
                     >
-                        ثبت
-                    </button>
+                        <ShoppingBag className="w-4 h-4" />
+                        مشاهده محصولات
+                    </Link>
                 </div>
             </div>
         </div>
