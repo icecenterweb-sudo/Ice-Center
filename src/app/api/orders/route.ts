@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { prisma } from '@/lib/db';
-import { verifyUserToken } from '@/lib/jwt';
-import { cookies } from 'next/headers';
+import { requireUser } from '@/lib/user-auth';
 import { getCartItemPrices } from '@/lib/offers/queries';
 import { resolveUnitPrice } from '@/lib/offers/pricing';
 import { calculateShippingCost } from '@/lib/shipping';
@@ -16,21 +15,25 @@ import { logSystemError } from '@/lib/error-logger';
 class OrderError extends Error {}
 
 /**
+ * Detect a Prisma P2002 unique-constraint violation targeting the
+ * orderNumber column specifically (not e.g. coupon usage constraints).
+ */
+function isOrderNumberCollision(error: unknown): boolean {
+    if (typeof error !== 'object' || error === null) return false;
+    if ((error as { code?: unknown }).code !== 'P2002') return false;
+    const target = (error as { meta?: { target?: unknown } }).meta?.target;
+    const targetStr = Array.isArray(target) ? target.join(',') : String(target ?? '');
+    return targetStr.includes('orderNumber');
+}
+
+/**
  * GET /api/orders?page=1&limit=20 - Get user's order history (paginated, B4)
  */
 export async function GET(request: NextRequest) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get('user_token')?.value;
-
-        if (!token) {
-            return NextResponse.json({ error: 'لطفا وارد شوید' }, { status: 401 });
-        }
-
-        const payload = await verifyUserToken(token);
-        if (!payload) {
-            return NextResponse.json({ error: 'توکن نامعتبر است' }, { status: 401 });
-        }
+        const auth = await requireUser();
+        if (!auth.ok) return auth.response;
+        const payload = auth.payload;
 
         // B4: bound the query. Defaults keep the existing UI working
         // (it only reads `data.orders`); clients may pass page/limit.
@@ -76,19 +79,14 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get('user_token')?.value;
+        const auth = await requireUser();
+        if (!auth.ok) return auth.response;
+        const payload = auth.payload;
 
-        if (!token) {
-            return NextResponse.json({ error: 'لطفا وارد شوید' }, { status: 401 });
+        const body = await request.json().catch(() => null);
+        if (!body || typeof body !== 'object') {
+            return NextResponse.json({ error: 'داده ارسالی نامعتبر است' }, { status: 400 });
         }
-
-        const payload = await verifyUserToken(token);
-        if (!payload) {
-            return NextResponse.json({ error: 'توکن نامعتبر است' }, { status: 401 });
-        }
-
-        const body = await request.json();
         const { addressId, notes, couponCode } = body;
 
         // Get user with address
@@ -148,8 +146,14 @@ export async function POST(request: NextRequest) {
             };
         });
 
-        // Generate unique order number with crypto random bytes
-        const orderNumber = `ICE-${crypto.randomBytes(5).toString('hex').toUpperCase()}`;
+        // Generate a timestamp-prefixed order number.
+        // Format: ICE-YYMMDD-XXXXXX — the date prefix makes support lookups
+        // easy; 3 random bytes (2^24) per day keeps collisions negligible.
+        const generateOrderNumber = () => {
+            const d = new Date();
+            const ymd = `${String(d.getFullYear()).slice(2)}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+            return `ICE-${ymd}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+        };
 
         // Validate coupon (if provided) and compute discount server-side
         let discount = 0;
@@ -188,7 +192,8 @@ export async function POST(request: NextRequest) {
         const shippingCost = calculateShippingCost(subtotal);
 
         // Create order in transaction
-        const order = await prisma.$transaction(async (tx) => {
+        const createOrderInTx = () => prisma.$transaction(async (tx) => {
+            const orderNumber = generateOrderNumber();
             // Atomic coupon re-validation with row-level lock (#9)
             if (couponId) {
                 const couponRows = await tx.$queryRaw<{
@@ -326,6 +331,19 @@ export async function POST(request: NextRequest) {
 
             return newOrder;
         });
+
+        // Retry the (rare) orderNumber unique-constraint collision (P2002).
+        // Each retry regenerates a fresh order number inside the transaction.
+        const order = await (async () => {
+            for (let attempt = 1; ; attempt++) {
+                try {
+                    return await createOrderInTx();
+                } catch (txError) {
+                    if (attempt < 3 && isOrderNumberCollision(txError)) continue;
+                    throw txError;
+                }
+            }
+        })();
 
         return NextResponse.json({
             success: true,
