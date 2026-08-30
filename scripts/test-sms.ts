@@ -3,6 +3,12 @@ import type { IncomingMessage } from 'http';
 
 console.log('Script started');
 
+const apiKey = process.env.MELIPAYAMAK_API_KEY;
+if (!apiKey) {
+    console.error('MELIPAYAMAK_API_KEY environment variable is required.');
+    process.exit(1);
+}
+
 // Use the previously tested number
 const data = JSON.stringify({
     'to': '09130027927'
@@ -11,11 +17,11 @@ const data = JSON.stringify({
 const options = {
     hostname: 'console.melipayamak.com',
     port: 443,
-    path: '/api/send/otp/c9e9786d954841d0a03bbab359faa072',
+    path: `/api/send/otp/${apiKey}`,
     method: 'POST',
     headers: {
         'Content-Type': 'application/json',
-        'Content-Length': data.length
+        'Content-Length': Buffer.byteLength(data)
     }
 };
 
