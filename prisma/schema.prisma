@@ -790,6 +790,9 @@ model ProductReview {
   @@index([productId, status])
   @@index([userId])
   @@index([status])
+  // One review per user per product — enforces the duplicate-check in
+  // POST /api/products/[id]/reviews at the DB level (race-safe)
+  @@unique([productId, userId])
 }
 
 // =============================================================================
