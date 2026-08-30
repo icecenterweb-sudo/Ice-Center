@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { prisma } from '@/lib/db'
 import { verifyUserToken, USER_TOKEN_COOKIE } from '@/lib/jwt'
 import { getCartItemPrices } from '@/lib/offers/queries';
+import { MAX_QUANTITY_PER_ITEM } from '@/lib/constants';
 
 export async function POST(request: NextRequest) {
     await connection(); // Required for cookies() with cacheComponents
@@ -19,14 +20,16 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'لطفاً وارد شوید' }, { status: 401 })
         }
 
-        const { productId, quantity } = await request.json()
+        const { productId, quantity } = await request.json().catch(() => ({})) as { productId?: number; quantity?: number }
 
         if (!productId || typeof productId !== 'number') {
             return NextResponse.json({ error: 'شناسه محصول نامعتبر است' }, { status: 400 })
         }
 
-        if (typeof quantity !== 'number' || quantity < 1) {
-            return NextResponse.json({ error: 'تعداد نامعتبر است' }, { status: 400 })
+        if (typeof quantity !== 'number' || !Number.isInteger(quantity) || quantity < 1 || quantity > MAX_QUANTITY_PER_ITEM) {
+            return NextResponse.json({
+                error: `تعداد باید بین ۱ تا ${MAX_QUANTITY_PER_ITEM} باشد`
+            }, { status: 400 })
         }
 
         // Validate stock availability

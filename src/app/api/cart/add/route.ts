@@ -3,9 +3,7 @@ import { cookies } from 'next/headers'
 import { prisma } from '@/lib/db'
 import { verifyUserToken, USER_TOKEN_COOKIE } from '@/lib/jwt'
 import { getCartItemPrices } from '@/lib/offers/queries';
-
-// Validation constants
-const MAX_QUANTITY_PER_ITEM = 100;
+import { MAX_QUANTITY_PER_ITEM } from '@/lib/constants';
 
 export async function POST(request: NextRequest) {
     await connection(); // Required for cookies() with cacheComponents
@@ -22,7 +20,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'لطفاً وارد شوید' }, { status: 401 })
         }
 
-        const { productId, quantity = 1 } = await request.json()
+        const { productId, quantity = 1 } = await request.json().catch(() => ({})) as { productId?: number; quantity?: number }
 
         // Validate productId
         if (!productId || typeof productId !== 'number' || !Number.isInteger(productId) || productId < 1) {
