@@ -36,8 +36,23 @@ export interface RateLimitResult {
 }
 
 /**
+ * Atomic INCR + conditional EXPIRE + TTL read in a single Lua script.
+ * Doing this non-atomically (INCR then EXPIRE) risks an orphaned key with no
+ * TTL if the process crashes between the two calls — permanently locking out
+ * that identifier until a manual flush.
+ */
+const LUA_INCR_EXPIRE = `
+local count = redis.call('INCR', KEYS[1])
+if count == 1 then
+  redis.call('EXPIRE', KEYS[1], ARGV[1])
+end
+local ttl = redis.call('TTL', KEYS[1])
+return {count, ttl}
+`
+
+/**
  * Check rate limit using Redis (Upstash)
- * Uses INCR + EXPIRE atomically to avoid TOCTOU race conditions.
+ * Uses an atomic Lua script (INCR + EXPIRE + TTL) to avoid TOCTOU race conditions.
  */
 async function checkRedisRateLimit(
     key: string,
@@ -49,15 +64,21 @@ async function checkRedisRateLimit(
         const redisKey = `ratelimit:${key}`
         const expireSeconds = Math.ceil(config.windowMs / 1000)
 
-        // INCR is atomic: if key doesn't exist, Redis creates it with value 1
-        const count = await redis.incr(redisKey)
+        // Single atomic call: increment, set expiry on first request, read TTL
+        // (Upstash eval decodes the Lua table {count, ttl} as an array)
+        const result = await redis.eval(
+            LUA_INCR_EXPIRE,
+            [redisKey],
+            [String(expireSeconds)]
+        ) as unknown as [number | string, number | string] | null;
+        const count = Number(result?.[0] ?? 0);
+        const ttl = Number(result?.[1] ?? -1);
 
-        // Set expiry only on the first request (when count === 1)
-        if (count === 1) {
+        // Defensive repair: if we ever encounter an orphaned key with no TTL
+        // (e.g. created by an older non-atomic code path), give it an expiry
+        if (ttl === -1) {
             await redis.expire(redisKey, expireSeconds)
         }
-
-        const ttl = await redis.ttl(redisKey)
 
         if (count > config.maxRequests) {
             return {

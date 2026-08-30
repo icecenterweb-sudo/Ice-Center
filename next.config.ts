@@ -59,6 +59,13 @@ const nextConfig: NextConfig = {
   //   enabled: process.env.ANALYZE === 'true',
   // },
 
+  // NOTE: `unoptimized: true` is a DELIBERATE site-owner decision, not an
+  // oversight. Next's built-in image optimizer is disabled because the project
+  // uses an offline WebP conversion pipeline instead (`npm run convert:webp`,
+  // see scripts/convert-to-webp.ts, backed by the sharp devDependency) plus a
+  // CDN for delivery. The other options below (formats, deviceSizes, etc.) are
+  // therefore inert while unoptimized is set — do NOT "fix" this by removing
+  // `unoptimized: true` without also removing the offline pipeline.
   images: {
     // Disable Next.js built-in image optimization
     unoptimized: true,
@@ -100,6 +107,10 @@ const nextConfig: NextConfig = {
           {
             key: 'X-Content-Type-Options',
             value: 'nosniff',
+          },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload',
           },
           {
             key: 'Referrer-Policy',

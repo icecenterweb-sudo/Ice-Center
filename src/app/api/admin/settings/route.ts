@@ -23,11 +23,13 @@ export async function POST(request: NextRequest) {
     if (!auth.ok) return auth.response;
 
     try {
-        const body = await request.json();
+        const body = await request.json().catch(() => null);
+        if (!body) {
+            return NextResponse.json({ success: false, error: 'Invalid request body' }, { status: 400 });
+        }
         const settingsData: Partial<SiteSettings> = body.settings || body;
-
         const updated = await updateSiteSettings(settingsData);
-        recordAudit(auth.payload.adminId, 'SETTINGS_UPDATE', 'SiteSetting', 0, `ویرایش تنظیمات سایت`);
+        await recordAudit(auth.payload.adminId, 'SETTINGS_UPDATE', 'SiteSetting', 0, `ویرایش تنظیمات سایت`);
         return NextResponse.json({ success: true, settings: updated });
     } catch (error) {
         console.error('Error in POST /api/admin/settings:', error);

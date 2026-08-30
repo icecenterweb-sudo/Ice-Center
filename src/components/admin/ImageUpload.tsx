@@ -147,7 +147,7 @@ export default function ImageUpload({ currentImage, onImageChange, folder }: Ima
                     <input
                         type="file"
                         name="image"
-                        accept="image/*"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
                         onChange={handleFileChange}
                         className="hidden"
                     />

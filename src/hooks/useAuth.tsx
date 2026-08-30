@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react'
 
 interface User {
     id: number
@@ -71,20 +71,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }, [])
 
+    // Memoize the context value (matching the CartContext pattern): a fresh
+    // object literal on every render re-renders every consumer of useAuth()
+    const contextValue = useMemo(() => ({
+        user,
+        isLoading,
+        isAuthenticated: !!user,
+        showAuthModal,
+        authRedirectPath,
+        openAuthModal,
+        closeAuthModal,
+        logout,
+        refreshUser,
+    }), [user, isLoading, showAuthModal, authRedirectPath, openAuthModal, closeAuthModal, logout, refreshUser])
+
     return (
-        <AuthContext.Provider
-            value={{
-                user,
-                isLoading,
-                isAuthenticated: !!user,
-                showAuthModal,
-                authRedirectPath,
-                openAuthModal,
-                closeAuthModal,
-                logout,
-                refreshUser,
-            }}
-        >
+        <AuthContext.Provider value={contextValue}>
             {children}
         </AuthContext.Provider>
     )
