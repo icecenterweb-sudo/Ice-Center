@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import prisma from '@/lib/db';
-import { verifyUserToken } from '@/lib/jwt';
+import { requireUser } from '@/lib/user-auth';
 
 type Props = {
     params: Promise<{ id: string }>;
@@ -19,17 +18,9 @@ export async function PATCH(request: NextRequest, { params }: Props) {
             return NextResponse.json({ error: 'شناسه نامعتبر' }, { status: 400 });
         }
 
-        const cookieStore = await cookies();
-        const token = cookieStore.get('user_token')?.value;
-
-        if (!token) {
-            return NextResponse.json({ error: 'ابتدا وارد شوید' }, { status: 401 });
-        }
-
-        const payload = await verifyUserToken(token);
-        if (!payload) {
-            return NextResponse.json({ error: 'توکن نامعتبر است' }, { status: 401 });
-        }
+        const auth = await requireUser();
+        if (!auth.ok) return auth.response;
+        const payload = auth.payload;
 
         // Find and update notification (ensure user owns it)
         const notification = await prisma.notification.findFirst({
@@ -70,17 +61,9 @@ export async function DELETE(request: NextRequest, { params }: Props) {
             return NextResponse.json({ error: 'شناسه نامعتبر' }, { status: 400 });
         }
 
-        const cookieStore = await cookies();
-        const token = cookieStore.get('user_token')?.value;
-
-        if (!token) {
-            return NextResponse.json({ error: 'ابتدا وارد شوید' }, { status: 401 });
-        }
-
-        const payload = await verifyUserToken(token);
-        if (!payload) {
-            return NextResponse.json({ error: 'توکن نامعتبر است' }, { status: 401 });
-        }
+        const auth = await requireUser();
+        if (!auth.ok) return auth.response;
+        const payload = auth.payload;
 
         // Delete notification (ensure user owns it)
         const notification = await prisma.notification.findFirst({

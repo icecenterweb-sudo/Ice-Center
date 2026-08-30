@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { verifyUserToken } from '@/lib/jwt';
-import { cookies } from 'next/headers';
+import { requireUser } from '@/lib/user-auth';
 
 type Props = {
     params: Promise<{ id: string }>;
@@ -19,17 +18,9 @@ export async function GET(request: NextRequest, { params }: Props) {
             return NextResponse.json({ error: 'شناسه سفارش نامعتبر است' }, { status: 400 });
         }
 
-        const cookieStore = await cookies();
-        const token = cookieStore.get('user_token')?.value;
-
-        if (!token) {
-            return NextResponse.json({ error: 'لطفا وارد شوید' }, { status: 401 });
-        }
-
-        const payload = await verifyUserToken(token);
-        if (!payload) {
-            return NextResponse.json({ error: 'توکن نامعتبر است' }, { status: 401 });
-        }
+        const auth = await requireUser();
+        if (!auth.ok) return auth.response;
+        const payload = auth.payload;
 
         const order = await prisma.order.findFirst({
             where: {

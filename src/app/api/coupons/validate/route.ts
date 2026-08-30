@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { verifyUserToken } from '@/lib/jwt';
-import { cookies } from 'next/headers';
+import { requireUser } from '@/lib/user-auth';
 import { z } from 'zod';
 import { validateCouponRules } from '@/lib/coupons';
 
@@ -16,18 +15,11 @@ const applySchema = z.object({
  */
 export async function POST(request: NextRequest) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get('user_token')?.value;
-        if (!token) {
-            return NextResponse.json({ error: 'لطفا وارد شوید' }, { status: 401 });
-        }
+        const auth = await requireUser();
+        if (!auth.ok) return auth.response;
+        const payload = auth.payload;
 
-        const payload = await verifyUserToken(token);
-        if (!payload) {
-            return NextResponse.json({ error: 'توکن نامعتبر است' }, { status: 401 });
-        }
-
-        const body = await request.json();
+        const body = await request.json().catch(() => null);
         const validation = applySchema.safeParse(body);
         if (!validation.success) {
             return NextResponse.json({ error: validation.error.issues[0].message }, { status: 400 });
