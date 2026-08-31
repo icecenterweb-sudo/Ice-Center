@@ -50,6 +50,23 @@ const menuItems: { icon: React.ComponentType<{ className?: string }>; label: str
     { icon: Ticket, label: 'کوپن‌ها', href: '/admin/dashboard/coupons', section: 'COUPONS' },
 ];
 
+/**
+ * Stable-reference grouping (BUG_ANALYSIS.md §5):
+ * MENU_GROUPS used to reference items positionally (menuItems[10], ...) which
+ * silently broke if an item was ever inserted mid-array. Items are now
+ * resolved by their unique href, so inserting/reordering menuItems is safe.
+ */
+const MENU_ITEM_BY_HREF = new Map(menuItems.map((item) => [item.href, item]));
+
+function getMenuItem(href: string): (typeof menuItems)[number] {
+    const item = MENU_ITEM_BY_HREF.get(href);
+    if (!item) {
+        // Fail fast: a renamed href must be updated here too.
+        throw new Error(`Sidebar: no menu item registered for href "${href}"`);
+    }
+    return item;
+}
+
 const MENU_GROUPS: {
     title: string;
     icon: React.ComponentType<{ className?: string }>;
@@ -59,43 +76,43 @@ const MENU_GROUPS: {
         title: 'عملیات روزمره',
         icon: Compass,
         items: [
-            menuItems[0], // Dashboard
-            menuItems[10], // Orders
-            menuItems[9], // Users
-            menuItems[11], // Support
+            getMenuItem('/admin/dashboard'), // Dashboard
+            getMenuItem('/admin/dashboard/orders'), // Orders
+            getMenuItem('/admin/dashboard/users'), // Users
+            getMenuItem('/admin/dashboard/support'), // Support
         ],
     },
     {
         title: 'فروشگاه',
         icon: ShoppingBag,
         items: [
-            menuItems[1], // Products
-            menuItems[3], // Offers
-            menuItems[14], // Coupons
-            menuItems[4], // Categories
+            getMenuItem('/admin/dashboard/products'), // Products
+            getMenuItem('/admin/dashboard/offers'), // Offers
+            getMenuItem('/admin/dashboard/coupons'), // Coupons
+            getMenuItem('/admin/dashboard/categories'), // Categories
         ],
     },
     {
         title: 'محتوا',
         icon: BookOpen,
         items: [
-            menuItems[5], // Blog
-            menuItems[2], // Comments Management
+            getMenuItem('/admin/dashboard/blog'), // Blog
+            getMenuItem('/admin/dashboard/comments'), // Comments Management
         ],
     },
     {
         title: 'بازاریابی و ظاهر',
         icon: Sparkles,
-        items: [menuItems[7]], // Appearance
+        items: [getMenuItem('/admin/dashboard/appearance')], // Appearance
     },
     {
         title: 'سیستم',
         icon: Sliders,
         items: [
-            menuItems[6], // Analytics
-            menuItems[8], // Settings
-            menuItems[12], // Errors
-            menuItems[13], // Admin Management
+            getMenuItem('/admin/dashboard/analytics'), // Analytics
+            getMenuItem('/admin/dashboard/settings'), // Settings
+            getMenuItem('/admin/dashboard/errors'), // Errors
+            getMenuItem('/admin/dashboard/admins'), // Admin Management
         ],
     },
 ];

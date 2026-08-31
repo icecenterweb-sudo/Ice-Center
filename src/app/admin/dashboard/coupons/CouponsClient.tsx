@@ -203,7 +203,11 @@ export default function CouponsClient() {
                                                     >
                                                         ویرایش
                                                     </Link>
-                                                    <DeleteCouponButton couponId={coupon.id} couponCode={coupon.code} />
+                                                    <DeleteCouponButton
+                                                        couponId={coupon.id}
+                                                        couponCode={coupon.code}
+                                                        onDeleted={() => setCoupons((prev) => prev.filter((c) => c.id !== coupon.id))}
+                                                    />
                                                 </div>
                                             </td>
                                         </tr>

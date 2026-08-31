@@ -9,9 +9,11 @@ import ConfirmDialog from '@/components/admin/ConfirmDialog';
 interface DeleteCouponButtonProps {
     couponId: number;
     couponCode: string;
+    /** Optional callback fired after a successful delete so client-fetched lists can update immediately. */
+    onDeleted?: () => void;
 }
 
-export default function DeleteCouponButton({ couponId, couponCode }: DeleteCouponButtonProps) {
+export default function DeleteCouponButton({ couponId, couponCode, onDeleted }: DeleteCouponButtonProps) {
     const router = useRouter();
     const [isDeleting, setIsDeleting] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
@@ -28,6 +30,10 @@ export default function DeleteCouponButton({ couponId, couponCode }: DeleteCoupo
             if (data.success) {
                 toast.success('کد تخفیف با موفقیت حذف شد');
                 setShowConfirm(false);
+                // router.refresh() alone is not enough here: the list lives in a
+                // client component's state (fetched via useEffect), and refresh()
+                // only re-renders server components. Update local state too.
+                onDeleted?.();
                 router.refresh();
             } else {
                 toast.error(data.error || 'خطا در حذف کد تخفیف');
