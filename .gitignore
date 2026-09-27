@@ -36,6 +36,11 @@ yarn-error.log*
 # local database backups
 /backups/
 /db-backup*.json
+/backup*.json
+
+# agent and tool metadata
+.claude/
+.agents/
 
 # vps package
 ice-center-vps.zip
